@@ -1,0 +1,1013 @@
+/* ==========================================================================
+   Mobile UI for SillyTavern
+   Everything that changes the stock interface is scoped to html.stmui-on.
+   Theme colors come from SillyTavern's own --SmartTheme* variables.
+   ========================================================================== */
+
+:root {
+    --stmui-accent: var(--SmartThemeQuoteColor, #e18a24);
+    --stmui-text: var(--SmartThemeBodyColor, #dcdcd2);
+    --stmui-muted: color-mix(in srgb, var(--stmui-text) 62%, transparent);
+    --stmui-surface: var(--SmartThemeBlurTintColor, #171717);
+    --stmui-raised: color-mix(in srgb, var(--stmui-text) 7%, var(--stmui-surface));
+    --stmui-line: color-mix(in srgb, var(--stmui-text) 16%, transparent);
+    --stmui-tap: 48px;
+    --stmui-radius: 14px;
+}
+
+/* ---- Settings panel (visible on every device) --------------------------- */
+
+.stmui-settings .stmui-status-line {
+    margin: 6px 0 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--stmui-raised);
+    font-size: 0.9em;
+}
+
+.stmui-settings .stmui-status-line.stmui-status-active {
+    border-left: 3px solid var(--stmui-accent);
+}
+
+.stmui-settings .stmui-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 6px 0;
+}
+
+.stmui-settings .stmui-field-label {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.stmui-settings .stmui-note {
+    display: block;
+    margin: 4px 0 8px;
+    opacity: 0.7;
+}
+
+.stmui-settings .checkbox_label {
+    margin: 6px 0;
+}
+
+/* ---- Lorebook picker (inline control that replaces a native <select>) ---- */
+
+.stmui-native-hidden,
+.stmui-native-hidden + .select2-container {
+    display: none !important;
+}
+
+.stmui-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.stmui-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+}
+
+.stmui-chips-empty {
+    padding: 4px 2px;
+    color: var(--stmui-muted);
+    font-style: italic;
+}
+
+.stmui-chip {
+    display: inline-flex;
+    align-items: stretch;
+    max-width: 100%;
+    min-width: 0;
+    border: 1px solid color-mix(in srgb, var(--stmui-accent) 55%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--stmui-accent) 16%, transparent);
+    color: var(--stmui-text);
+    overflow: hidden;
+}
+
+.stmui-chip-text {
+    min-width: 0;
+    padding: 8px 4px 8px 14px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.stmui-chip-x {
+    flex: 0 0 auto;
+    width: 40px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.stmui-chip-x:active {
+    background: color-mix(in srgb, var(--stmui-accent) 35%, transparent);
+}
+
+.stmui-chip-more {
+    padding: 8px 14px;
+    border-style: dashed;
+    font: inherit;
+    cursor: pointer;
+}
+
+.stmui-open,
+.stmui-clear {
+    min-height: var(--stmui-tap);
+}
+
+.stmui-open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.stmui-open .stmui-count {
+    margin-left: auto;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--stmui-text) 14%, transparent);
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+}
+
+.stmui-open .stmui-open-label {
+    margin-right: auto;
+}
+
+.stmui-picker-single {
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.stmui-single {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: var(--stmui-tap);
+    margin: 0;
+    padding: 8px 14px;
+    text-align: left;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.stmui-single-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.stmui-single-empty .stmui-single-label {
+    color: var(--stmui-muted);
+}
+
+.stmui-chevron {
+    flex: 0 0 auto;
+    opacity: 0.7;
+    font-size: 0.8em;
+}
+
+.stmui-clear {
+    flex: 0 0 var(--stmui-tap);
+    padding: 0;
+    margin: 0;
+}
+
+/* ---- Bottom sheet -------------------------------------------------------- */
+
+dialog.stmui-sheet {
+    position: fixed;
+    inset: var(--stmui-vv-top, 0px) 0 auto 0;
+    width: 100%;
+    max-width: none;
+    height: var(--stmui-vv-height, 100dvh);
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--stmui-text);
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+dialog.stmui-sheet:not([open]) {
+    display: none;
+}
+
+dialog.stmui-sheet::backdrop {
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.18s ease;
+}
+
+dialog.stmui-sheet.stmui-sheet-open::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.stmui-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 640px;
+    max-height: min(88%, 760px);
+    min-height: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    border: 1px solid var(--stmui-line);
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+    background: linear-gradient(var(--stmui-surface), var(--stmui-surface)), #101010;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+    outline: none;
+    transform: translateY(24px);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    box-sizing: border-box;
+    overscroll-behavior: contain;
+}
+
+.stmui-sheet-open .stmui-panel {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.stmui-head {
+    flex: 0 0 auto;
+    padding: 6px 16px 4px;
+    touch-action: none;
+}
+
+.stmui-grab {
+    width: 44px;
+    height: 5px;
+    margin: 2px auto 10px;
+    border-radius: 3px;
+    background: var(--stmui-line);
+}
+
+.stmui-head-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stmui-head-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.stmui-title {
+    margin: 0;
+    font-size: 1.15em;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.stmui-subtitle {
+    margin: 2px 0 0;
+    color: var(--stmui-muted);
+    font-size: 0.85em;
+    line-height: 1.3;
+}
+
+.stmui-subtitle:empty {
+    display: none;
+}
+
+.stmui-done {
+    flex: 0 0 auto;
+    min-height: 44px;
+    min-width: 84px;
+    margin: 0;
+    padding: 0 18px;
+    border-color: var(--stmui-accent);
+    font-weight: 600;
+}
+
+.stmui-search {
+    position: relative;
+    flex: 0 0 auto;
+    margin: 8px 16px 4px;
+}
+
+.stmui-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--stmui-muted);
+    pointer-events: none;
+}
+
+input[type='search'].stmui-search-input {
+    width: 100%;
+    min-height: 46px;
+    margin: 0;
+    padding: 8px 46px 8px 40px;
+    border-radius: 12px;
+    font-size: 16px;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input[type='search'].stmui-search-input::-webkit-search-cancel-button {
+    display: none;
+}
+
+.stmui-search-clear {
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: var(--stmui-muted);
+    cursor: pointer;
+}
+
+.stmui-search-clear[hidden] {
+    display: none;
+}
+
+.stmui-tools {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 16px 2px;
+}
+
+.stmui-tools:empty {
+    display: none;
+}
+
+.stmui-segmented {
+    display: inline-flex;
+    flex: 1 1 auto;
+    padding: 3px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 12px;
+    background: var(--stmui-raised);
+}
+
+.stmui-seg {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--stmui-text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.stmui-seg-on {
+    background: color-mix(in srgb, var(--stmui-accent) 22%, var(--stmui-surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--stmui-accent) 60%, transparent);
+    font-weight: 600;
+}
+
+.stmui-seg-count {
+    min-width: 1.6em;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--stmui-text) 14%, transparent);
+    font-size: 0.8em;
+    font-variant-numeric: tabular-nums;
+}
+
+.stmui-clear-all {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 46px;
+    margin: 0;
+    padding: 0 14px;
+}
+
+.stmui-clear-all[disabled] {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.stmui-list {
+    flex: 1 1 auto;
+    min-height: 120px;
+    margin: 6px 0 0;
+    padding: 4px 10px 8px;
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.stmui-row {
+    display: flex;
+    align-items: stretch;
+    margin: 2px 0;
+    border-radius: 12px;
+    transition: background 0.12s ease;
+}
+
+.stmui-row-btn {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    min-height: 54px;
+    padding: 8px 10px 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.stmui-row-btn:active {
+    background: color-mix(in srgb, var(--stmui-text) 10%, transparent);
+}
+
+.stmui-row-on {
+    background: color-mix(in srgb, var(--stmui-accent) 15%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--stmui-accent) 45%, transparent);
+}
+
+.stmui-row-flash {
+    background: color-mix(in srgb, var(--stmui-accent) 30%, transparent);
+}
+
+.stmui-mark {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 2px solid color-mix(in srgb, var(--stmui-text) 40%, transparent);
+    border-radius: 8px;
+    color: transparent;
+    font-size: 13px;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.stmui-picker-single .stmui-mark,
+#stmui-sheet [aria-multiselectable='false'] .stmui-mark {
+    border-radius: 50%;
+}
+
+#stmui-sheet [aria-multiselectable='false'] .stmui-mark i {
+    font-size: 9px;
+}
+
+.stmui-row-on .stmui-mark {
+    border-color: var(--stmui-accent);
+    background: var(--stmui-accent);
+    color: var(--stmui-surface);
+}
+
+.stmui-main {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.stmui-name {
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.stmui-name-none {
+    color: var(--stmui-muted);
+    font-style: italic;
+}
+
+.stmui-name mark {
+    padding: 0 1px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--stmui-accent) 45%, transparent);
+    color: inherit;
+}
+
+.stmui-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.stmui-badge {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--stmui-text) 14%, transparent);
+    color: var(--stmui-muted);
+    font-size: 0.72em;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.stmui-edit {
+    flex: 0 0 52px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--stmui-muted);
+    cursor: pointer;
+}
+
+.stmui-edit:active {
+    background: color-mix(in srgb, var(--stmui-text) 12%, transparent);
+}
+
+.stmui-empty {
+    padding: 28px 16px;
+    color: var(--stmui-muted);
+    text-align: center;
+}
+
+.stmui-foot {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding: 8px 18px 10px;
+    border-top: 1px solid var(--stmui-line);
+    font-size: 0.85em;
+}
+
+.stmui-foot p {
+    margin: 0;
+}
+
+.stmui-status {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.stmui-hint {
+    color: var(--stmui-muted);
+}
+
+/* Landscape phones: use the full height, keep the sheet narrower */
+@media (orientation: landscape) and (max-height: 520px) {
+    .stmui-panel {
+        max-height: 100%;
+        max-width: 560px;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .stmui-grab {
+        display: none;
+    }
+
+    .stmui-head {
+        padding-top: 10px;
+    }
+
+    .stmui-list {
+        min-height: 80px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stmui-panel,
+    dialog.stmui-sheet::backdrop,
+    .stmui-row {
+        transition: none;
+    }
+}
+
+/* ==========================================================================
+   Touch sizing (html.stmui-touch = Mobile UI active + "larger touch targets")
+   ========================================================================== */
+
+html.stmui-touch {
+    --topBarBlockSize: calc(48px + env(safe-area-inset-top, 0px));
+    --bottomFormBlockSize: 52px;
+    --bottomFormIconSize: 44px;
+}
+
+html.stmui-on body {
+    overflow-x: hidden;
+}
+
+/* -- Top bar: full-height tap targets, notch aware ------------------------ */
+
+html.stmui-touch #top-bar {
+    height: var(--topBarBlockSize);
+}
+
+html.stmui-touch #top-settings-holder {
+    box-sizing: border-box;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+    align-items: stretch;
+}
+
+html.stmui-touch #top-settings-holder > .drawer {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 64px;
+    width: auto;
+    height: auto;
+}
+
+html.stmui-touch #top-settings-holder .drawer-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+html.stmui-touch #top-settings-holder .drawer-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    font-size: 24px;
+    line-height: 1;
+}
+
+/* -- Send bar: bigger buttons, safe-area padding ------------------------- */
+
+html.stmui-touch #form_sheld {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    box-sizing: border-box;
+}
+
+html.stmui-touch #send_form {
+    min-height: var(--bottomFormBlockSize);
+    height: auto;
+}
+
+html.stmui-touch #leftSendForm,
+html.stmui-touch #rightSendForm {
+    height: auto;
+    align-items: center;
+}
+
+/* No display overrides here: SillyTavern shows and hides several of these buttons itself. */
+html.stmui-touch #send_form .fa-solid.interactable,
+html.stmui-touch #send_form .mes_stop,
+html.stmui-touch #send_but,
+html.stmui-touch #mes_continue,
+html.stmui-touch #options_button,
+html.stmui-touch #extensionsMenuButton {
+    box-sizing: border-box;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+html.stmui-touch #send_textarea {
+    min-height: 44px;
+    padding: 10px 8px;
+    font-size: 16px;
+    line-height: 1.35;
+}
+
+/* -- Controls inside drawers and dialogs --------------------------------- */
+
+html.stmui-touch select,
+html.stmui-touch input.text_pole:not([type='checkbox']):not([type='radio']):not([type='range']),
+html.stmui-touch input[type='text'],
+html.stmui-touch input[type='search'],
+html.stmui-touch input[type='number'],
+html.stmui-touch input[type='password'],
+html.stmui-touch input[type='url'] {
+    min-height: 44px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+html.stmui-touch textarea,
+html.stmui-touch textarea.text_pole {
+    font-size: 16px;
+}
+
+html.stmui-touch select {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+html.stmui-touch .menu_button,
+html.stmui-touch .menu_button_icon {
+    box-sizing: border-box;
+    min-height: 42px;
+    padding: 8px 12px;
+}
+
+html.stmui-touch .menu_button.fa-fw,
+html.stmui-touch .menu_button.fa-solid,
+html.stmui-touch .menu_button_icon {
+    min-width: 42px;
+}
+
+html.stmui-touch .inline-drawer-toggle,
+html.stmui-touch .inline-drawer-header {
+    min-height: 48px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    align-items: center;
+}
+
+html.stmui-touch .checkbox_label,
+html.stmui-touch label.checkbox_label {
+    min-height: 40px;
+    align-items: center;
+    gap: 10px;
+}
+
+html.stmui-touch input[type='checkbox'],
+html.stmui-touch input[type='radio'] {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+}
+
+html.stmui-touch input[type='radio'] {
+    border-radius: 50%;
+}
+
+html.stmui-touch input[type='checkbox']::before {
+    width: 0.7em;
+    height: 0.7em;
+}
+
+/* Sliders: keep the visible 5px track but give fingers a 36px-tall hit area. */
+html.stmui-touch input[type='range'] {
+    box-sizing: content-box;
+    margin-top: 0 !important;
+    padding: 15px 0 !important;
+    background-clip: content-box !important;
+    background-origin: content-box !important;
+    touch-action: pan-y;
+}
+
+html.stmui-touch input[type='range']::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+}
+
+html.stmui-touch input[type='range']::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+}
+
+html.stmui-touch .neo-range-input {
+    min-height: 40px;
+    font-size: 16px;
+}
+
+/* -- Message actions ------------------------------------------------------ */
+
+html.stmui-touch .mes_buttons .mes_button,
+html.stmui-touch .extraMesButtons .mes_button {
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+html.stmui-touch .swipe_left,
+html.stmui-touch .swipe_right {
+    min-width: 40px;
+    min-height: 40px;
+}
+
+/* -- Dialogs: never wider or taller than the visible screen --------------- */
+
+html.stmui-on dialog.popup {
+    box-sizing: border-box;
+    max-width: calc(100vw - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+html.stmui-on .popup-body,
+html.stmui-on .popup-content {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+html.stmui-on .popup-controls .menu_button {
+    flex: 1 1 auto;
+}
+
+/* -- Overflow guards ------------------------------------------------------ */
+
+html.stmui-on .mes_text,
+html.stmui-on .mes_text * {
+    overflow-wrap: anywhere;
+}
+
+html.stmui-on .mes_text pre,
+html.stmui-on .mes_text table {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+html.stmui-on .mes_text img,
+html.stmui-on .mes_text video {
+    max-width: 100%;
+    height: auto;
+}
+
+html.stmui-on .drawer-content {
+    max-width: 100vw;
+    box-sizing: border-box;
+}
+
+/* -- Landscape phones: reclaim vertical space ----------------------------- */
+
+@media (orientation: landscape) and (max-height: 520px) {
+    html.stmui-touch {
+        --topBarBlockSize: calc(40px + env(safe-area-inset-top, 0px));
+        --bottomFormBlockSize: 44px;
+    }
+
+    html.stmui-touch #top-settings-holder .drawer-icon {
+        font-size: 20px;
+    }
+
+    html.stmui-touch #send_form .fa-solid.interactable,
+    html.stmui-touch #send_but,
+    html.stmui-touch #options_button,
+    html.stmui-touch #extensionsMenuButton {
+        min-height: 40px;
+    }
+}
+
+/* -- Wand menu and option menus: finger-sized rows ------------------------ */
+
+html.stmui-touch #extensionsMenu .list-group-item,
+html.stmui-touch #options .options-content > a,
+html.stmui-touch #options .options-content > .list-group-item {
+    min-height: 44px;
+    align-items: center;
+}
+
+html.stmui-touch #extensionsMenu,
+html.stmui-touch #options .options-content {
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - var(--topBarBlockSize) - var(--bottomFormBlockSize) - 24px);
+    overflow-y: auto;
+}
+
+/* Short viewports (landscape, or the on-screen keyboard is up): compact chrome so
+   the list keeps room. Toggled by script from the visual viewport, and by media query. */
+dialog.stmui-compact .stmui-panel {
+    max-height: 100%;
+}
+
+dialog.stmui-compact .stmui-grab,
+dialog.stmui-compact .stmui-subtitle,
+dialog.stmui-compact .stmui-hint {
+    display: none;
+}
+
+dialog.stmui-compact .stmui-head {
+    padding: 8px 12px 0;
+}
+
+dialog.stmui-compact .stmui-title {
+    font-size: 1em;
+}
+
+dialog.stmui-compact .stmui-done {
+    min-height: 38px;
+    min-width: 72px;
+}
+
+dialog.stmui-compact .stmui-search {
+    margin: 6px 12px 2px;
+}
+
+dialog.stmui-compact input[type='search'].stmui-search-input {
+    min-height: 40px;
+}
+
+dialog.stmui-compact .stmui-tools {
+    margin: 4px 12px 0;
+}
+
+dialog.stmui-compact .stmui-seg {
+    min-height: 34px;
+}
+
+dialog.stmui-compact .stmui-clear-all {
+    min-height: 40px;
+}
+
+dialog.stmui-compact .stmui-list {
+    min-height: 0;
+    margin-top: 4px;
+}
+
+dialog.stmui-compact .stmui-row-btn {
+    min-height: 46px;
+}
+
+dialog.stmui-compact .stmui-foot {
+    padding: 4px 14px 6px;
+}
+
+/* While typing in a cramped viewport, give the list the space the segmented control used. */
+dialog.stmui-compact .stmui-panel:has(.stmui-search-input:focus) .stmui-tools {
+    display: none;
+}
+
+/* Wide-but-short (landscape phone): search and filters share one row. */
+.stmui-controls {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 520px) {
+    dialog.stmui-compact .stmui-controls {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        margin: 6px 12px 0;
+    }
+
+    dialog.stmui-compact .stmui-controls .stmui-search {
+        flex: 1 1 36%;
+        margin: 0;
+    }
+
+    dialog.stmui-compact .stmui-controls .stmui-tools {
+        flex: 1 1 64%;
+        margin: 0;
+    }
+}
+
+/* Long lists keep one stable height so the search field does not jump while filtering. */
+.stmui-panel-fixed {
+    height: min(88%, 760px);
+}
+
+dialog.stmui-compact .stmui-panel-fixed {
+    height: 100%;
+}
+
+/* Keep the search field legible on any theme, light or dark. */
+input[type='search'].stmui-search-input {
+    border: 1px solid var(--stmui-line);
+    background: var(--stmui-raised);
+    color: var(--stmui-text);
+}
+
+input[type='search'].stmui-search-input::placeholder {
+    color: var(--stmui-muted);
+    opacity: 1;
+}
+
+input[type='search'].stmui-search-input:focus {
+    outline: 2px solid color-mix(in srgb, var(--stmui-accent) 70%, transparent);
+    outline-offset: 0;
+}
