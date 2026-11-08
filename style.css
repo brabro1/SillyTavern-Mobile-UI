@@ -29,6 +29,18 @@
     --stmui-safe-left: env(safe-area-inset-left, 0px);
     --stmui-safe-right: env(safe-area-inset-right, 0px);
     --stmui-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* iOS-style sheet curve and a gentle overshoot for small things that pop. */
+    --stmui-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+    --stmui-ease-pop: cubic-bezier(0.34, 1.4, 0.5, 1);
+    --stmui-user-tint: color-mix(in srgb, var(--stmui-accent) 9%, transparent);
+    --stmui-bot-tint: color-mix(in srgb, var(--stmui-text) 5%, transparent);
+}
+
+.stmui-svg {
+    display: block;
+    flex: 0 0 auto;
+    width: 1em;
+    height: 1em;
 }
 
 /* Pages, menus and popups need an opaque surface even when the theme's tint is translucent. */
@@ -1152,17 +1164,43 @@ html.stmui-shell.stmui-keyboard .stmui-tabbar {
     text-overflow: ellipsis;
 }
 
-.stmui-tab:active .stmui-tab-icon {
-    background: var(--stmui-raised-2);
-}
-
 .stmui-tab-on {
     color: var(--stmui-text);
 }
 
 .stmui-tab-on .stmui-tab-icon {
-    background: color-mix(in srgb, var(--stmui-accent) 24%, transparent);
     color: var(--stmui-accent);
+}
+
+.stmui-tab-icon .stmui-svg {
+    width: 23px;
+    height: 23px;
+}
+
+/* The pill behind the active tab; it slides from tab to tab. */
+.stmui-tab-indicator {
+    position: absolute;
+    top: 7px;
+    left: var(--stmui-safe-left);
+    width: calc((100% - var(--stmui-safe-left) - var(--stmui-safe-right)) / 5);
+    height: 32px;
+    pointer-events: none;
+    transform: translateX(calc(var(--stmui-tab-index, 0) * 100%));
+}
+
+.stmui-tab-indicator::before {
+    content: '';
+    display: block;
+    width: 58px;
+    height: 100%;
+    margin: 0 auto;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--stmui-accent) 22%, transparent);
+}
+
+.stmui-tab {
+    position: relative;
+    z-index: 1;
 }
 
 /* -- Make room: SillyTavern's own top bar steps aside --------------------- */
@@ -1297,13 +1335,13 @@ html.stmui-chat body:not(.bubblechat):not(.documentstyle) #chat .mes {
     margin: 6px 8px;
     padding: 12px 12px 10px;
     border: 1px solid var(--stmui-line);
-    border-radius: 20px;
-    background: color-mix(in srgb, var(--stmui-text) 5%, transparent);
+    border-radius: 22px;
+    background: var(--stmui-bot-tint);
 }
 
 html.stmui-chat body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user='true'] {
     border-color: color-mix(in srgb, var(--stmui-accent) 28%, transparent);
-    background: color-mix(in srgb, var(--stmui-accent) 9%, transparent);
+    background: var(--stmui-user-tint);
 }
 
 html.stmui-chat body:not(.bubblechat):not(.documentstyle) #chat .mes[is_system='true'] {
@@ -2333,4 +2371,605 @@ html.stmui-on .mes_text video {
         width: 38px;
         height: 38px;
     }
+}
+
+/* ==========================================================================
+   Appearance: themes, font, icons, controls
+   ========================================================================== */
+
+/* Modern font: the phone's own UI font (Roboto / Google Sans on Android). */
+html.stmui-font {
+    --mainFontFamily: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* Theme backdrop replaces the chat background image with the theme's gradient. */
+html.stmui-themed.stmui-backdrop body {
+    background: var(--stmui-backdrop) !important;
+}
+
+html.stmui-themed.stmui-backdrop #bg1,
+html.stmui-themed.stmui-backdrop #bg_custom {
+    display: none !important;
+}
+
+html.stmui-themed.stmui-backdrop #chat {
+    background-color: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* Icons inside our own chrome */
+.stmui-ab-btn .stmui-svg {
+    width: 22px;
+    height: 22px;
+}
+
+.stmui-ab-avatar .stmui-svg {
+    width: 20px;
+    height: 20px;
+}
+
+.stmui-ab-avatar img {
+    box-shadow: inset 0 0 0 1px var(--stmui-line);
+}
+
+.stmui-tile-icon .stmui-svg {
+    width: 22px;
+    height: 22px;
+}
+
+.stmui-menu-row .stmui-menu-row-icon {
+    width: 21px;
+    height: 21px;
+    color: var(--stmui-accent);
+}
+
+.stmui-menu-row .stmui-menu-row-go {
+    width: 16px;
+    height: 16px;
+    color: var(--stmui-faint);
+}
+
+.stmui-menu-row-note {
+    color: var(--stmui-muted);
+    font-size: 0.85em;
+}
+
+/* -- Buttons, fields, checkboxes and sliders share one look on pages ------ */
+
+html.stmui-touch :is(.drawer-content, .popup, #character_popup, #select_chat_popup) .menu_button {
+    border: 1px solid var(--stmui-line);
+    border-radius: 14px;
+    background-color: var(--stmui-raised);
+    color: var(--stmui-text);
+    font-weight: 600;
+    filter: none;
+    opacity: 1;
+}
+
+html.stmui-touch :is(.drawer-content, .popup, #character_popup) .menu_button:is(.toggleEnabled, .active, .selected) {
+    border-color: color-mix(in srgb, var(--stmui-accent) 60%, transparent);
+    background-color: var(--stmui-accent-soft);
+    color: var(--stmui-accent);
+}
+
+html.stmui-touch :is(.drawer-content, .popup, #character_popup) .menu_button:is(.redWarningBG, .red_button, .danger) {
+    border-color: color-mix(in srgb, #ef4444 45%, transparent);
+    background-color: color-mix(in srgb, #ef4444 16%, var(--stmui-raised));
+    color: color-mix(in srgb, #ef4444 75%, var(--stmui-text));
+}
+
+html.stmui-touch .popup-controls .menu_button.popup-button-ok {
+    border-color: transparent;
+    background-color: var(--stmui-accent);
+    color: var(--stmui-on-accent);
+}
+
+html.stmui-touch :is(.drawer-content, .popup, #character_popup, #select_chat_popup) :is(.text_pole, select, .neo-range-input, input[type='number']) {
+    border: 1px solid var(--stmui-line);
+    background-color: var(--stmui-raised);
+    color: var(--stmui-text);
+    box-shadow: none;
+}
+
+html.stmui-touch :is(.drawer-content, .popup, #character_popup, #select_chat_popup) :is(.text_pole, select):focus {
+    border-color: color-mix(in srgb, var(--stmui-accent) 70%, transparent);
+    outline: 3px solid color-mix(in srgb, var(--stmui-accent) 22%, transparent);
+    outline-offset: 0;
+}
+
+html.stmui-touch input[type='checkbox']:not(.stmui-switch):not(.del_checkbox) {
+    border: 2px solid color-mix(in srgb, var(--stmui-text) 45%, transparent);
+    border-radius: 7px;
+    background-color: transparent;
+    outline: none;
+    box-shadow: none;
+    filter: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+html.stmui-touch input[type='checkbox']:not(.stmui-switch):not(.del_checkbox):checked {
+    border-color: var(--stmui-accent);
+    background-color: var(--stmui-accent);
+}
+
+html.stmui-touch input[type='checkbox']:not(.stmui-switch)::before {
+    box-shadow: inset 1em 1em var(--stmui-on-accent);
+}
+
+html.stmui-touch input[type='range'] {
+    background-color: var(--stmui-raised-2) !important;
+    background-image: linear-gradient(var(--stmui-accent), var(--stmui-accent)) !important;
+    background-repeat: no-repeat !important;
+    border-radius: 999px !important;
+    box-shadow: none !important;
+}
+
+/* The filled part follows the value (set by index.js as --stmui-fill). */
+html.stmui-touch input[type='range'][style*='--stmui-fill'] {
+    background-size: var(--stmui-fill) 100% !important;
+}
+
+html.stmui-touch input[type='range']::-webkit-slider-thumb {
+    border: 3px solid var(--stmui-accent) !important;
+    background: #fff !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.stmui-touch input[type='range']::-moz-range-thumb {
+    border: 3px solid var(--stmui-accent);
+    background: #fff;
+}
+
+html.stmui-touch input[type='range']:hover {
+    filter: none;
+}
+
+html.stmui-touch .drawer-content .standoutHeader {
+    border: 1px solid var(--stmui-line) !important;
+    border-radius: 16px;
+    background: var(--stmui-raised) !important;
+    box-shadow: none !important;
+}
+
+/* -- Characters page tidy-up ---------------------------------------------- */
+
+html.stmui-touch #HotSwapWrapper .hotswap::before {
+    color: var(--stmui-faint);
+    font-size: 0.8em;
+}
+
+html.stmui-touch #rm_button_selected_ch h2 {
+    margin: 4px 2px 8px;
+    font-size: 1.25em;
+    font-weight: 800;
+}
+
+/* ==========================================================================
+   Theme picker sheet
+   ========================================================================== */
+
+.stmui-themes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+@media (min-width: 520px) {
+    .stmui-themes {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.stmui-theme-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 8px 8px 12px;
+    border: 1.5px solid var(--stmui-line);
+    border-radius: 22px;
+    background: var(--stmui-raised);
+    color: var(--stmui-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.stmui-theme-on {
+    border-color: var(--stmui-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--stmui-accent) 25%, transparent);
+}
+
+.stmui-theme-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    height: 116px;
+    padding: 9px;
+    border-radius: 15px;
+    background: var(--p-backdrop);
+    box-shadow: inset 0 0 0 1px rgba(127, 127, 127, 0.18);
+    overflow: hidden;
+}
+
+.stmui-tp-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 14px;
+}
+
+.stmui-tp-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--p-accent);
+}
+
+.stmui-tp-line {
+    width: 46%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--p-text);
+    opacity: 0.75;
+}
+
+.stmui-tp-msg {
+    height: 22px;
+    border-radius: 9px;
+}
+
+.stmui-tp-bot {
+    width: 78%;
+    background: var(--p-raised);
+}
+
+.stmui-tp-user {
+    align-self: flex-end;
+    width: 60%;
+    background: color-mix(in srgb, var(--p-accent) 38%, var(--p-bg));
+}
+
+.stmui-tp-tabs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 16px;
+    margin-top: auto;
+    border-radius: 8px;
+    background: var(--p-bg);
+}
+
+.stmui-tp-pill {
+    width: 22px;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--p-accent);
+}
+
+.stmui-theme-name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-height: 24px;
+    padding: 2px 4px 0;
+    font-weight: 700;
+}
+
+.stmui-theme-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--stmui-accent);
+    color: var(--stmui-on-accent);
+}
+
+.stmui-theme-check .stmui-svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 3;
+}
+
+.stmui-theme-note {
+    padding: 0 4px;
+    color: var(--stmui-muted);
+    font-size: 0.78em;
+    line-height: 1.25;
+}
+
+.stmui-menu-heading {
+    margin: 20px 4px 8px;
+    color: var(--stmui-muted);
+    font-size: 0.76em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.stmui-menu-foot {
+    margin: 8px 4px 4px;
+    color: var(--stmui-muted);
+    font-size: 0.85em;
+}
+
+.stmui-motion-seg {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.stmui-switch-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 62px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--stmui-line);
+    cursor: pointer;
+}
+
+.stmui-switch-row:last-child {
+    border-bottom: 0;
+}
+
+.stmui-switch-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.stmui-switch-text small {
+    color: var(--stmui-muted);
+    line-height: 1.3;
+}
+
+html input[type='checkbox'].stmui-switch {
+    position: relative;
+    display: block;
+    flex: 0 0 auto;
+    width: 50px !important;
+    height: 30px !important;
+    margin: 0;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px !important;
+    background: var(--stmui-raised-2);
+    outline: none;
+    box-shadow: none;
+    filter: none;
+    transform: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+html input[type='checkbox'].stmui-switch::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    clip-path: none;
+    transform: none;
+    transition: transform 0.28s var(--stmui-ease-pop);
+}
+
+html input[type='checkbox'].stmui-switch:checked {
+    border-color: transparent;
+    background: var(--stmui-accent);
+}
+
+html input[type='checkbox'].stmui-switch:checked::before {
+    transform: translateX(20px);
+}
+
+/* ==========================================================================
+   Motion. Everything animates transform and opacity only, so it stays on the
+   GPU. "Light" keeps quick fades and drops blur; "Off" drops both.
+   ========================================================================== */
+
+@keyframes stmui-pop {
+    0% { transform: scale(0.8); }
+    55% { transform: scale(1.14); }
+    100% { transform: scale(1); }
+}
+
+@keyframes stmui-rise {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+}
+
+@keyframes stmui-fade {
+    from { opacity: 0; }
+}
+
+@keyframes stmui-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(28px);
+    }
+}
+
+@keyframes stmui-swap {
+    from {
+        opacity: 0;
+        transform: translateX(12px);
+    }
+}
+
+@keyframes stmui-mes-in {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.985);
+    }
+}
+
+@keyframes stmui-menu-in {
+    from {
+        opacity: 0;
+        translate: 0 18px;
+        scale: 0.97;
+    }
+}
+
+@keyframes stmui-toast-in {
+    from {
+        opacity: 0;
+        translate: 0 -14px;
+    }
+}
+
+/* -- Smooth (default) ------------------------------------------------------ */
+
+html.stmui-motion-full .stmui-tab-indicator {
+    transition: transform 0.45s var(--stmui-ease-pop);
+}
+
+html.stmui-motion-full .stmui-tab-on .stmui-tab-icon .stmui-svg {
+    animation: stmui-pop 0.45s var(--stmui-ease-pop);
+}
+
+html.stmui-motion-full .stmui-tab-label {
+    transition: color 0.2s ease;
+}
+
+html.stmui-motion-full :is(.stmui-tab, .stmui-tile, .stmui-menu-row, .stmui-ab-btn, .stmui-ab-who, .stmui-theme-card, .stmui-row-btn, .stmui-done, .stmui-seg, .stmui-open, .stmui-single, #send_but, #options_button, #extensionsMenuButton) {
+    transition: transform 0.18s var(--stmui-ease), background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+html.stmui-motion-full :is(.stmui-tab, .stmui-tile, .stmui-menu-row, .stmui-ab-btn, .stmui-theme-card, .stmui-row-btn, .stmui-done, .stmui-seg, .stmui-open, .stmui-single, #options_button, #extensionsMenuButton):active {
+    transform: scale(0.95);
+}
+
+html.stmui-motion-full .stmui-ab-who:not([disabled]):active {
+    transform: scale(0.98);
+}
+
+html.stmui-motion-full #send_but:active {
+    transform: scale(0.86) rotate(-10deg);
+}
+
+html.stmui-motion-full.stmui-touch :is(.drawer-content, .popup, #character_popup) .menu_button {
+    transition: transform 0.16s var(--stmui-ease), background-color 0.16s ease;
+}
+
+html.stmui-motion-full.stmui-touch :is(.drawer-content, .popup, #character_popup) .menu_button:active {
+    transform: scale(0.94);
+}
+
+html.stmui-motion-full.stmui-shell #top-settings-holder .drawer-content.openDrawer {
+    animation: stmui-slide-in 0.34s var(--stmui-ease);
+}
+
+html.stmui-motion-full .stmui-ab-swap :is(.stmui-ab-text, .stmui-ab-avatar) {
+    animation: stmui-swap 0.32s var(--stmui-ease);
+}
+
+html.stmui-motion-full.stmui-chat #chat .mes.last_mes {
+    animation: stmui-mes-in 0.4s var(--stmui-ease);
+}
+
+html.stmui-motion-full .stmui-panel {
+    transition: transform 0.44s var(--stmui-ease-sheet), opacity 0.24s ease;
+}
+
+html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card) {
+    animation: stmui-rise 0.42s var(--stmui-ease) backwards;
+}
+
+html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(2) { animation-delay: 30ms; }
+html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(3) { animation-delay: 60ms; }
+html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(4) { animation-delay: 90ms; }
+html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(5) { animation-delay: 120ms; }
+html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(6) { animation-delay: 150ms; }
+html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(n+7) { animation-delay: 180ms; }
+
+html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(-n+10) {
+    animation: stmui-rise 0.4s var(--stmui-ease) backwards;
+}
+
+html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(2) { animation-delay: 35ms; }
+html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(3) { animation-delay: 70ms; }
+html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(4) { animation-delay: 105ms; }
+html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(5) { animation-delay: 140ms; }
+html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(n+6) { animation-delay: 175ms; }
+
+html.stmui-motion-full.stmui-touch :is(#options, #extensionsMenu) {
+    animation: stmui-menu-in 0.32s var(--stmui-ease-sheet);
+}
+
+html.stmui-motion-full.stmui-touch dialog.popup[opening] {
+    animation: stmui-sheet-up 0.4s var(--stmui-ease-sheet);
+}
+
+html.stmui-motion-full body #toast-container > div {
+    animation: stmui-toast-in 0.34s var(--stmui-ease-pop);
+}
+
+/* -- Light ------------------------------------------------------------------- */
+
+html.stmui-motion-light .stmui-tab-indicator {
+    transition: transform 0.18s ease-out;
+}
+
+html.stmui-motion-light.stmui-shell #top-settings-holder .drawer-content.openDrawer,
+html.stmui-motion-light .stmui-ab-swap :is(.stmui-ab-text, .stmui-ab-avatar),
+html.stmui-motion-light.stmui-touch :is(#options, #extensionsMenu),
+html.stmui-motion-light.stmui-touch dialog.popup[opening] {
+    animation: stmui-fade 0.14s ease-out;
+}
+
+html.stmui-motion-light .stmui-panel {
+    transition: transform 0.18s ease-out, opacity 0.14s ease-out;
+}
+
+/* No glass in Light and Off: blur is the most expensive effect on phones. */
+html.stmui-motion-light,
+html.stmui-motion-off {
+    --blurStrength: 0 !important;
+}
+
+html:is(.stmui-motion-light, .stmui-motion-off) :is(.stmui-appbar, .stmui-tabbar, #form_sheld, #chat, #send_form) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+html.stmui-shell:is(.stmui-motion-light, .stmui-motion-off) :is(.stmui-appbar, .stmui-tabbar) {
+    background: var(--stmui-solid);
+}
+
+/* -- Off --------------------------------------------------------------------- */
+
+html.stmui-motion-off *:not(.fa-spin):not(.fa-spinner),
+html.stmui-motion-off *::before,
+html.stmui-motion-off *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.stmui-on *:not(.fa-spin):not(.fa-spinner) {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Theme switch: the new look grows out of the tapped card (see revealChange). */
+html.stmui-vt::view-transition-old(root),
+html.stmui-vt::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
 }

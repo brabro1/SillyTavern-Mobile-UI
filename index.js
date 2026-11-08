@@ -15,6 +15,9 @@
  * event, so SillyTavern applies selections exactly as it does today.
  */
 
+import { svgIcon, iconCss } from './icons.js';
+import { THEMES, findTheme, themeCss } from './themes.js';
+
 const MODULE = 'mobileUI';
 const MODE_KEY = 'stmui_mode';
 const LOG = '[Mobile UI]';
@@ -28,7 +31,19 @@ const DEFAULTS = Object.freeze({
     lorebookPicker: true,
     longSelects: false,
     wandShortcut: true,
+    theme: 'st',
+    themeBackdrop: true,
+    modernFont: true,
+    customIcons: true,
+    /** 'full' | 'light' | 'off' */
+    motion: 'full',
 });
+
+const MOTION_LABELS = {
+    full: 'Smooth: animations and glass effects',
+    light: 'Light: quick fades, no blur (faster)',
+    off: 'Off: no animations (fastest)',
+};
 
 /** Selects that get the lorebook picker. `kind` mirrors the underlying control. */
 const LOREBOOK_TARGETS = [
@@ -86,25 +101,25 @@ const LOREBOOK_TARGETS = [
     },
 ];
 
-/** SillyTavern's top-bar drawers, keyed by the id of their `.drawer` element. */
+/** SillyTavern's top-bar drawers, keyed by the id of their `.drawer` element. Icons come from icons.js. */
 const PAGES = {
-    'ai-config-button': { title: 'Presets', long: 'AI response settings', icon: 'fa-sliders' },
-    'sys-settings-button': { title: 'API', long: 'API connection', icon: 'fa-plug' },
-    'advanced-formatting-button': { title: 'Formatting', long: 'Prompt formatting', icon: 'fa-font' },
-    'WI-SP-button': { title: 'Lorebooks', long: 'Lorebooks and World Info', icon: 'fa-book-atlas' },
-    'user-settings-button': { title: 'Settings', long: 'User settings and theme', icon: 'fa-user-gear' },
-    'backgrounds-button': { title: 'Backgrounds', long: 'Chat backgrounds', icon: 'fa-image' },
-    'extensions-settings-button': { title: 'Extensions', long: 'Extensions and add-ons', icon: 'fa-cubes' },
-    'persona-management-button': { title: 'Personas', long: 'Who you are in the chat', icon: 'fa-face-smile' },
-    'rightNavHolder': { title: 'Characters', long: 'Characters and groups', icon: 'fa-address-book' },
+    'ai-config-button': { title: 'Presets', long: 'AI response settings', icon: 'sliders' },
+    'sys-settings-button': { title: 'API', long: 'API connection', icon: 'plug' },
+    'advanced-formatting-button': { title: 'Formatting', long: 'Prompt formatting', icon: 'type' },
+    'WI-SP-button': { title: 'Lorebooks', long: 'Lorebooks and World Info', icon: 'book' },
+    'user-settings-button': { title: 'Settings', long: 'User settings', icon: 'settings' },
+    'backgrounds-button': { title: 'Backgrounds', long: 'Chat backgrounds', icon: 'image' },
+    'extensions-settings-button': { title: 'Extensions', long: 'Extensions and add-ons', icon: 'puzzle' },
+    'persona-management-button': { title: 'Personas', long: 'Who you are in the chat', icon: 'smile' },
+    'rightNavHolder': { title: 'Characters', long: 'Characters and groups', icon: 'users' },
 };
 
 const TABS = [
-    { id: 'chat', label: 'Chat', icon: 'fa-comment-dots' },
-    { id: 'rightNavHolder', label: 'Characters', icon: 'fa-address-book' },
-    { id: 'WI-SP-button', label: 'Lorebooks', icon: 'fa-book-atlas' },
-    { id: 'ai-config-button', label: 'Presets', icon: 'fa-sliders' },
-    { id: 'more', label: 'More', icon: 'fa-grip' },
+    { id: 'chat', label: 'Chat', icon: 'chat' },
+    { id: 'rightNavHolder', label: 'Characters', icon: 'users' },
+    { id: 'WI-SP-button', label: 'Lorebooks', icon: 'book' },
+    { id: 'ai-config-button', label: 'Presets', icon: 'sliders' },
+    { id: 'more', label: 'More', icon: 'grid' },
 ];
 
 /** Order of the tiles in the "More" sheet; drawers added by other extensions follow. */
@@ -163,6 +178,8 @@ function h(tag, attrs = {}, children = []) {
 }
 
 const icon = (classes) => h('i', { class: `fa-solid ${classes}`, 'aria-hidden': 'true' });
+/** Our own line icon (icons.js), or a Font Awesome class for drawers we do not know. */
+const ui = (name, className = '') => (name.startsWith('fa-') ? icon(`${name} ${className}`) : svgIcon(name, className));
 
 function normalizeText(text) {
     return String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -722,8 +739,10 @@ class MenuSheet {
     }
 
     refresh() {
+        const scroll = this.body.scrollTop;
         this.body.replaceChildren();
         this.fill(this.body);
+        this.body.scrollTop = scroll;
     }
 }
 
@@ -960,7 +979,7 @@ class Shell {
 
     build() {
         // ---- top app bar
-        this.back = h('button', { type: 'button', class: 'stmui-ab-btn stmui-ab-back', 'aria-label': 'Back to chat', onclick: () => closePages() }, [icon('fa-arrow-left')]);
+        this.back = h('button', { type: 'button', class: 'stmui-ab-btn stmui-ab-back', 'aria-label': 'Back to chat', onclick: () => closePages() }, [ui('arrow-left')]);
         this.avatar = h('span', { class: 'stmui-ab-avatar', 'aria-hidden': 'true' });
         this.titleEl = h('span', { class: 'stmui-ab-title' });
         this.subEl = h('span', { class: 'stmui-ab-sub' });
@@ -975,14 +994,14 @@ class Shell {
                 'aria-label': 'Chat history',
                 title: 'Chat history',
                 onclick: () => document.getElementById('option_select_chat')?.click(),
-            }, [icon('fa-clock-rotate-left')]),
+            }, [ui('history')]),
             h('button', {
                 type: 'button',
                 class: 'stmui-ab-btn stmui-ab-new',
                 'aria-label': 'Start a new chat',
                 title: 'New chat',
                 onclick: () => document.getElementById('option_start_new_chat')?.click(),
-            }, [icon('fa-pen-to-square')]),
+            }, [ui('chat-plus')]),
         ]);
         this.appbar = h('header', { id: 'stmui-appbar', class: 'stmui-appbar', 'data-stmui': '1' }, [this.back, this.who, this.actions]);
 
@@ -996,13 +1015,15 @@ class Shell {
                 'aria-label': tab.label,
                 onclick: () => this.onTab(tab.id),
             }, [
-                h('span', { class: 'stmui-tab-icon' }, [icon(tab.icon)]),
+                h('span', { class: 'stmui-tab-icon' }, [ui(tab.icon)]),
                 h('span', { class: 'stmui-tab-label', text: tab.label }),
             ]);
             this.tabs.set(tab.id, button);
             return button;
         });
-        this.tabbar = h('nav', { id: 'stmui-tabbar', class: 'stmui-tabbar', 'aria-label': 'Main', 'data-stmui': '1' }, tabButtons);
+        // One pill slides between tabs instead of each tab fading its own background.
+        this.indicator = h('span', { class: 'stmui-tab-indicator', 'aria-hidden': 'true' });
+        this.tabbar = h('nav', { id: 'stmui-tabbar', class: 'stmui-tabbar', 'aria-label': 'Main', 'data-stmui': '1' }, [this.indicator, ...tabButtons]);
 
         for (const el of [this.appbar, this.tabbar]) shieldFromDrawerAutoClose(el);
         document.body.append(this.appbar, this.tabbar);
@@ -1115,12 +1136,24 @@ class Shell {
     }
 
     render(pageId) {
+        const before = this.titleEl.textContent;
+        this.renderContent(pageId);
+        // A short slide when the title changes, so moving between pages feels connected.
+        if (before && before !== this.titleEl.textContent) {
+            this.who.classList.remove('stmui-ab-swap');
+            void this.who.offsetWidth;
+            this.who.classList.add('stmui-ab-swap');
+        }
+    }
+
+    renderContent(pageId) {
         const root = document.documentElement;
         root.classList.toggle('stmui-page-open', !!pageId);
         if (pageId) root.dataset.stmuiPage = pageId;
         else delete root.dataset.stmuiPage;
 
         const tabId = !pageId ? 'chat' : (this.tabs.has(pageId) ? pageId : 'more');
+        this.tabbar.style.setProperty('--stmui-tab-index', String(TABS.findIndex(tab => tab.id === tabId)));
         for (const [id, button] of this.tabs) {
             const on = id === tabId;
             button.classList.toggle('stmui-tab-on', on);
@@ -1130,6 +1163,7 @@ class Shell {
 
         if (pageId) {
             const drawer = drawerById(pageId);
+            if (drawer && settings.touchSizing) requestAnimationFrame(() => fillRanges(drawer));
             const info = drawer ? pageInfo(drawer) : { title: '', icon: 'fa-gear' };
             this.titleEl.textContent = info.title;
             this.subEl.textContent = info.long ?? '';
@@ -1139,7 +1173,7 @@ class Shell {
                 if (editing) this.subEl.textContent = name ? `Editing ${name}` : 'New character';
                 else if (isShown(document.getElementById('rm_group_chats_block'))) this.subEl.textContent = 'Group chat';
             }
-            this.avatar.replaceChildren(icon(info.icon));
+            this.avatar.replaceChildren(ui(info.icon));
             this.avatar.classList.add('stmui-ab-avatar-icon');
             this.who.disabled = true;
             this.appbar.classList.add('stmui-ab-page');
@@ -1171,7 +1205,7 @@ class Shell {
         this.subEl.classList.toggle('stmui-ab-offline', !connected);
         this.avatar.classList.remove('stmui-ab-avatar-icon');
         if (image) this.avatar.replaceChildren(h('img', { src: image, alt: '' }));
-        else this.avatar.replaceChildren(icon(context.groupId ? 'fa-users' : (hasChat ? 'fa-user' : 'fa-comments')));
+        else this.avatar.replaceChildren(ui(context.groupId ? 'users' : (hasChat ? 'user' : 'chats')));
         this.actions.hidden = !hasChat;
     }
 }
@@ -1202,7 +1236,7 @@ function openMoreSheet() {
                         openPage(drawer.id);
                     },
                 }, [
-                    h('span', { class: 'stmui-tile-icon' }, [icon(info.icon)]),
+                    h('span', { class: 'stmui-tile-icon' }, [ui(info.icon)]),
                     h('span', { class: 'stmui-tile-label', text: info.title }),
                     note ? h('span', { class: 'stmui-tile-note', text: note }) : null,
                 ]);
@@ -1213,17 +1247,23 @@ function openMoreSheet() {
             const inChat = !!(context.groupId || context.characterId !== undefined);
             const row = (iconName, label, onclick, disabled = false) => h('button', {
                 type: 'button', class: 'stmui-menu-row', disabled, onclick,
-            }, [icon(`${iconName} stmui-menu-row-icon`), h('span', { text: label }), icon('fa-chevron-right stmui-menu-row-go')]);
+            }, [ui(iconName, 'stmui-menu-row-icon'), h('span', { text: label }), ui('chevron-right', 'stmui-menu-row-go')]);
+            const themeName = findTheme(settings.theme)?.name ?? 'Your theme';
             body.append(h('div', { class: 'stmui-menu-list' }, [
-                row('fa-clock-rotate-left', 'Chat history', () => {
+                h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row stmui-menu-row-theme',
+                    onclick: () => openThemeSheet(),
+                }, [ui('palette', 'stmui-menu-row-icon'), h('span', { text: 'Themes' }), h('small', { class: 'stmui-menu-row-note', text: themeName }), ui('chevron-right', 'stmui-menu-row-go')]),
+                row('history', 'Chat history', () => {
                     closeSheet(true);
                     document.getElementById('option_select_chat')?.click();
                 }, !inChat),
-                row('fa-pen-to-square', 'Start a new chat', () => {
+                row('chat-plus', 'Start a new chat', () => {
                     closeSheet(true);
                     document.getElementById('option_start_new_chat')?.click();
                 }, !inChat),
-                row('fa-mobile-screen', 'Mobile UI settings', () => {
+                row('phone', 'Mobile UI settings', () => {
                     closeSheet(true);
                     openMobileSettings();
                 }),
@@ -1251,6 +1291,226 @@ function syncShell() {
         shell.destroy();
         shell = null;
     }
+}
+
+// ------------------------------------------------------------ slider fill
+
+/** SillyTavern leaves the slider's filled part at a fixed width; make it follow the value. */
+function updateRangeFill(input) {
+    const min = input.min === '' ? 0 : Number(input.min);
+    const max = input.max === '' ? 100 : Number(input.max);
+    const value = Number(input.value);
+    const percent = max > min ? Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100)) : 0;
+    input.style.setProperty('--stmui-fill', `${percent.toFixed(1)}%`);
+}
+
+function fillRanges(root = document) {
+    for (const input of root.querySelectorAll('input[type="range"]')) updateRangeFill(input);
+}
+
+function watchRanges(on) {
+    const $ = $j();
+    $(document).off('.stmuiRange');
+    if (on) {
+        // jQuery delegation sees both real input and SillyTavern's own .trigger('input').
+        $(document).on('input.stmuiRange change.stmuiRange', 'input[type="range"]', function () {
+            updateRangeFill(this);
+        });
+        fillRanges();
+    } else {
+        for (const input of document.querySelectorAll('input[type="range"]')) input.style.removeProperty('--stmui-fill');
+    }
+}
+
+// ------------------------------------------------------------ appearance
+
+function ensureStyle(id) {
+    let element = document.getElementById(id);
+    if (!element) {
+        element = h('style', { id });
+        document.head.append(element);
+    }
+    return element;
+}
+
+let originalThemeColor;
+
+/** Android's status bar follows <meta name="theme-color">; match it to the app bar. */
+function syncThemeColor(theme) {
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (originalThemeColor === undefined) originalThemeColor = meta ? meta.getAttribute('content') : null;
+    if (!active) {
+        if (meta && originalThemeColor === null) meta.remove();
+        else if (meta) meta.setAttribute('content', originalThemeColor);
+        return;
+    }
+    if (!meta) {
+        meta = h('meta', { name: 'theme-color' });
+        document.head.append(meta);
+    }
+    const own = getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim();
+    meta.setAttribute('content', theme ? theme.bg : (own || '#171717'));
+}
+
+function applyAppearance() {
+    const root = document.documentElement;
+    const theme = active ? findTheme(settings.theme) : null;
+    root.classList.toggle('stmui-themed', !!theme);
+    root.classList.toggle('stmui-backdrop', !!theme && settings.themeBackdrop);
+    root.classList.toggle('stmui-font', active && settings.modernFont);
+    root.classList.toggle('stmui-icons', active && settings.customIcons);
+    for (const level of Object.keys(MOTION_LABELS)) root.classList.toggle(`stmui-motion-${level}`, active && settings.motion === level);
+    if (theme) root.dataset.stmuiTheme = theme.id;
+    else delete root.dataset.stmuiTheme;
+
+    if (active) {
+        ensureStyle('stmui-theme-css').textContent = themeCss(theme, 'html.stmui-on.stmui-themed');
+        if (settings.customIcons) {
+            const icons = ensureStyle('stmui-icons-css');
+            if (!icons.textContent) icons.textContent = iconCss('html.stmui-icons');
+        }
+    } else {
+        document.getElementById('stmui-theme-css')?.remove();
+        document.getElementById('stmui-icons-css')?.remove();
+    }
+    syncThemeColor(theme);
+}
+
+/** Runs `change` behind a circular reveal that grows from `origin` (View Transitions). */
+function revealChange(origin, change) {
+    const root = document.documentElement;
+    const canAnimate = typeof document.startViewTransition === 'function'
+        && settings.motion === 'full'
+        && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!canAnimate) {
+        change();
+        return;
+    }
+    const rect = origin?.getBoundingClientRect?.();
+    const x = rect ? rect.left + rect.width / 2 : innerWidth / 2;
+    const y = rect ? rect.top + rect.height / 2 : innerHeight / 2;
+    const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    root.classList.add('stmui-vt');
+    // The browser runs the change once it has captured the old look. If that capture
+    // is ever delayed (busy or backgrounded page), apply the change anyway.
+    let done = false;
+    const run = () => {
+        if (done) return;
+        done = true;
+        change();
+    };
+    window.setTimeout(run, 700);
+    const transition = document.startViewTransition(run);
+    transition.ready.then(() => {
+        root.animate(
+            { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+            { duration: 560, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', pseudoElement: '::view-transition-new(root)' },
+        );
+    }).catch(() => {});
+    transition.finished.finally(() => root.classList.remove('stmui-vt'));
+}
+
+function setAppearance(key, value, origin) {
+    if (settings[key] === value) return;
+    const change = () => {
+        settings[key] = value;
+        saveSettings();
+        applyAppearance();
+        syncSettingsInputs();
+        shell?.update();
+        // Switches already show their new state; re-render only what depends on the choice.
+        if (sheet && !sheet.picker && (key === 'theme' || key === 'motion')) sheet.refresh();
+    };
+    if (key === 'theme') revealChange(origin, change);
+    else change();
+}
+
+/** Colors for a theme card preview. "Your theme" reads SillyTavern's own values. */
+function previewColors(theme) {
+    if (theme) {
+        return { bg: theme.bg, raised: theme.raised, text: theme.text, accent: theme.accent, user: theme.user, backdrop: theme.backdrop };
+    }
+    // SillyTavern writes its theme colors inline on <html>; our overrides live in a stylesheet.
+    const inline = document.documentElement.style;
+    const read = (name, fallback) => inline.getPropertyValue(name).trim() || fallback;
+    const bg = read('--SmartThemeBlurTintColor', '#171717');
+    const text = read('--SmartThemeBodyColor', '#dcdcd2');
+    const accent = read('--SmartThemeQuoteColor', '#e18a24');
+    return {
+        bg,
+        raised: `color-mix(in srgb, ${text} 9%, ${bg})`,
+        text,
+        accent,
+        user: `color-mix(in srgb, ${accent} 16%, transparent)`,
+        backdrop: bg,
+    };
+}
+
+function themeCard(theme, current) {
+    const id = theme?.id ?? 'st';
+    const colors = previewColors(theme);
+    const preview = h('span', { class: 'stmui-theme-preview', 'aria-hidden': 'true' }, [
+        h('span', { class: 'stmui-tp-bar' }, [h('span', { class: 'stmui-tp-dot' }), h('span', { class: 'stmui-tp-line' })]),
+        h('span', { class: 'stmui-tp-msg stmui-tp-bot' }),
+        h('span', { class: 'stmui-tp-msg stmui-tp-user' }),
+        h('span', { class: 'stmui-tp-tabs' }, [h('span', { class: 'stmui-tp-pill' })]),
+    ]);
+    for (const [key, value] of Object.entries(colors)) preview.style.setProperty(`--p-${key}`, value);
+    const selected = current === id;
+    return h('button', {
+        type: 'button',
+        class: `stmui-theme-card ${selected ? 'stmui-theme-on' : ''}`,
+        'aria-pressed': String(selected),
+        'data-theme': id,
+        onclick: event => setAppearance('theme', id, event.currentTarget),
+    }, [
+        preview,
+        h('span', { class: 'stmui-theme-name' }, [
+            h('span', { text: theme?.name ?? 'Your theme' }),
+            selected ? h('span', { class: 'stmui-theme-check' }, [ui('check')]) : null,
+        ]),
+        h('span', { class: 'stmui-theme-note', text: theme?.note ?? 'Your SillyTavern colors' }),
+    ]);
+}
+
+function switchRow(key, label, hint) {
+    const input = h('input', { type: 'checkbox', class: 'stmui-switch', role: 'switch' });
+    input.checked = !!settings[key];
+    input.addEventListener('change', () => setAppearance(key, input.checked));
+    return h('label', { class: 'stmui-switch-row' }, [
+        h('span', { class: 'stmui-switch-text' }, [h('span', { text: label }), hint ? h('small', { text: hint }) : null]),
+        input,
+    ]);
+}
+
+function motionControl() {
+    const names = { full: 'Smooth', light: 'Light', off: 'Off' };
+    return h('div', { class: 'stmui-segmented stmui-motion-seg', role: 'group', 'aria-label': 'Animations' },
+        Object.keys(names).map(level => h('button', {
+            type: 'button',
+            class: `stmui-seg ${settings.motion === level ? 'stmui-seg-on' : ''}`,
+            'aria-pressed': String(settings.motion === level),
+            onclick: () => setAppearance('motion', level),
+        }, [names[level]])));
+}
+
+function openThemeSheet() {
+    showSheet(new MenuSheet({
+        title: 'Themes',
+        subtitle: 'Changes the look on your phone. Your SillyTavern theme stays saved.',
+        fill: body => {
+            body.append(h('div', { class: 'stmui-themes' }, [themeCard(null, settings.theme), ...THEMES.map(theme => themeCard(theme, settings.theme))]));
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'Look and feel' }));
+            body.append(h('div', { class: 'stmui-menu-list' }, [
+                switchRow('themeBackdrop', 'Theme background', 'Use the theme\'s backdrop instead of your chat background.'),
+                switchRow('modernFont', 'Modern font', 'Your phone\'s own system font, crisp at every size.'),
+                switchRow('customIcons', 'New icons', 'Rounded line icons everywhere.'),
+            ]));
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'Animations' }));
+            body.append(motionControl());
+            body.append(h('p', { class: 'stmui-menu-foot', text: MOTION_LABELS[settings.motion] }));
+        },
+    }));
 }
 
 // -------------------------------------------------- long single selects
@@ -1420,6 +1680,8 @@ function applyState() {
     const changed = next !== active;
     active = next;
     setFeatureClasses();
+    applyAppearance();
+    watchRanges(active && settings.touchSizing);
     if (active) startObserver();
     else {
         stopObserver();
@@ -1485,6 +1747,21 @@ function buildSettings() {
                 ]),
                 h('small', { class: 'stmui-note', text: 'Pick "Always on" if your phone is not detected.' }),
                 h('hr'),
+                h('label', { class: 'stmui-field', for: 'stmui_theme' }, [
+                    h('span', { class: 'stmui-field-label', text: 'Theme' }),
+                    h('select', { id: 'stmui_theme', class: 'text_pole' }, [
+                        h('option', { value: 'st', text: 'Your SillyTavern theme' }),
+                        ...THEMES.map(theme => h('option', { value: theme.id, text: `${theme.name}: ${theme.note}` })),
+                    ]),
+                ]),
+                h('label', { class: 'stmui-field', for: 'stmui_motion' }, [
+                    h('span', { class: 'stmui-field-label', text: 'Animations' }),
+                    h('select', { id: 'stmui_motion', class: 'text_pole' }, Object.entries(MOTION_LABELS).map(([value, text]) => h('option', { value, text }))),
+                ]),
+                check('stmui_backdrop', 'Theme background', "Use the theme's backdrop instead of your chat background."),
+                check('stmui_font', 'Modern font', "Your phone's own system font."),
+                check('stmui_icons', 'New icons', 'Rounded line icons everywhere.'),
+                h('hr'),
                 check('stmui_shell', 'App navigation', 'Top bar with the current character, and tabs at the bottom.'),
                 check('stmui_chat', 'Modern chat look', 'Message cards, bigger text and a rounded message box.'),
                 check('stmui_touch', 'Touch-friendly panels', 'Bigger buttons and sliders, roomier settings, bottom-sheet menus.'),
@@ -1498,10 +1775,14 @@ function buildSettings() {
     ]);
     container.append(panel);
 
-    const bind = (id, key) => {
+    const bind = (id, key, appearance = false) => {
         const input = document.getElementById(id);
         input.checked = !!settings[key];
         input.addEventListener('change', () => {
+            if (appearance) {
+                setAppearance(key, input.checked);
+                return;
+            }
             settings[key] = input.checked;
             saveSettings();
             applyState();
@@ -1515,6 +1796,14 @@ function buildSettings() {
     bind('stmui_lorebook', 'lorebookPicker');
     bind('stmui_wand', 'wandShortcut');
     bind('stmui_long', 'longSelects');
+    bind('stmui_backdrop', 'themeBackdrop', true);
+    bind('stmui_font', 'modernFont', true);
+    bind('stmui_icons', 'customIcons', true);
+    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion']]) {
+        const select = document.getElementById(id);
+        select.value = settings[key];
+        select.addEventListener('change', () => setAppearance(key, select.value));
+    }
 
     modeSelect.value = readMode();
     modeSelect.addEventListener('change', () => {
@@ -1522,6 +1811,19 @@ function buildSettings() {
         applyState();
     });
     updateStatusLine();
+}
+
+/** Keeps the Extensions-panel controls in step when settings change from a sheet. */
+function syncSettingsInputs() {
+    const pairs = { stmui_backdrop: 'themeBackdrop', stmui_font: 'modernFont', stmui_icons: 'customIcons' };
+    for (const [id, key] of Object.entries(pairs)) {
+        const input = document.getElementById(id);
+        if (input) input.checked = !!settings[key];
+    }
+    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion']]) {
+        const select = document.getElementById(id);
+        if (select) select.value = settings[key];
+    }
 }
 
 // ------------------------------------------------------------------- init

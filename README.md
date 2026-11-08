@@ -26,15 +26,23 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 
 **Picking a character opens their chat.** Tap someone in the Characters list and you're in the conversation.
 
-**Follows your theme.** It uses the colors of whatever SillyTavern theme you have, dark or light.
+**12 themes to choose from.** Midnight, AMOLED, Mocha, Ocean, Forest, Sakura, Ember, Nord and Neon are dark. Paper, Cloud and Lavender are light. Each one recolors all of SillyTavern, and the new look spreads out from where you tap. Pick **Your theme** to keep your own SillyTavern colors. Your saved SillyTavern theme is never changed.
+
+**New icons everywhere.** A matching set of rounded line icons replaces SillyTavern's mixed icons in the tabs, menus and every settings page.
+
+**Smooth, light animations.** Pages slide in, the tab highlight glides between tabs, sheets spring up, and new messages fade in. Only cheap effects are used, so they stay smooth on a phone. Pick **Light** or **Off** if your phone is older or you prefer less motion.
+
+| Themes | Midnight | Paper |
+| :---: | :---: | :---: |
+| ![Theme picker](docs/screenshots/themes.jpg) | ![Midnight theme](docs/screenshots/midnight.jpg) | ![Paper theme](docs/screenshots/light.jpg) |
 
 | Characters | More | Lorebooks |
 | :---: | :---: | :---: |
 | ![Character list](docs/screenshots/characters.jpg) | ![More menu](docs/screenshots/more.jpg) | ![Lorebook picker](docs/screenshots/lorebooks.jpg) |
 
-| Presets | ☰ menu | Light theme |
-| :---: | :---: | :---: |
-| ![Presets page](docs/screenshots/presets.jpg) | ![Options menu](docs/screenshots/menu.jpg) | ![Light theme](docs/screenshots/light.jpg) |
+| Presets | ☰ menu |
+| :---: | :---: |
+| ![Presets page](docs/screenshots/presets.jpg) | ![Options menu](docs/screenshots/menu.jpg) |
 
 ## Install
 
@@ -68,6 +76,15 @@ git pull
 
 Reload the page afterwards. If you still see the old look, reload once more. Chrome sometimes keeps the old files for a moment.
 
+## Themes
+
+Tap **More → Themes**. Tap any theme to switch right away. Below the themes you can also choose:
+
+- **Theme background**: use the theme's backdrop, or keep your own chat background picture.
+- **Modern font**: use your phone's own crisp system font.
+- **New icons**: the rounded line icons, or SillyTavern's originals.
+- **Animations**: **Smooth** (everything), **Light** (quick fades, no blur, faster on older phones) or **Off**.
+
 ## Settings
 
 Find them under **More → Mobile UI settings**. Each part can be switched on or off:
@@ -76,6 +93,7 @@ Find them under **More → Mobile UI settings**. Each part can be switched on or
 | --- | --- |
 | Enable Mobile UI | Turns everything on or off. Off gives you the normal SillyTavern back. |
 | Use it on this device | **Automatic** (phones only), **Always on** or **Off**. This is saved per device. |
+| Theme, Animations, Theme background, Modern font, New icons | Same choices as in **More → Themes**. |
 | App navigation | The top bar and the bottom tabs. |
 | Modern chat look | Message cards, bigger text, rounded message box. |
 | Touch-friendly panels | Bigger buttons and sliders, roomier settings, menus from the bottom. |
@@ -99,4 +117,4 @@ Find them under **More → Mobile UI settings**. Each part can be switched on or
 
 ## License
 
-MIT
+MIT. The icon style follows [Lucide](https://lucide.dev) (ISC); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
