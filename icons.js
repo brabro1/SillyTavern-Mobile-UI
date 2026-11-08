@@ -221,7 +221,7 @@ export const FA_MAP = {
     'fa-arrow-down-9-1': 'sort', 'fa-arrow-down-wide-short': 'sort', 'fa-sort': 'sort',
     'fa-crown': 'crown',
     'fa-hat-wizard': 'sparkles',
-    'fa-person-circle-question': 'help',
+    'fa-person-circle-question': 'user-plus',
 };
 
 const SVG_OPEN = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';

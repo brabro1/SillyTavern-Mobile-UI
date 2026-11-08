@@ -32,6 +32,27 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 
 **Smooth, light animations.** Pages slide in, the tab highlight glides between tabs, sheets spring up, and new messages fade in. Only cheap effects are used, so they stay smooth on a phone. Pick **Light** or **Off** if your phone is older or you prefer less motion.
 
+**A send button with a little launch.** Tap send and the paper plane shoots off with a ripple, then lands back in the button.
+
+**Recent chats that are easy to read.** On the start screen each chat is a card: the character, the chat's name, the date, the last message, and pin, rename and delete buttons.
+
+**Personas on two tabs.** **All personas** to pick who you are, **Edit** to change the current one, with its picture and name at the top. No more scrolling past the whole list to reach the description.
+
+**A prompt editor that fits.** Editing a prompt in Presets opens a full page. Long names wrap onto several lines, and Close, Reset and a big Save button stay at the bottom. The back arrow and the back gesture close it.
+
+**Phone features** (under **More → Phone features**):
+
+- **Message menu:** tap ⋯ on a message for every action with its name: copy, edit, branch, translate, delete and more.
+- **Jump to latest:** a round button takes you back to the newest message when you scroll up.
+- **Keep unsent messages:** what you type is kept for each chat, even if the browser reloads.
+- **Keep screen on while replying:** the screen doesn't turn off while a reply is being written.
+- **Chat text size:** Small, Normal, Large or Extra large.
+- **Vibration:** a short buzz on send and tab taps.
+
+| Recent chats | Prompt editor | Personas |
+| :---: | :---: | :---: |
+| ![Recent chats on the start screen](docs/screenshots/recent.jpg) | ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) |
+
 | Themes | Midnight | Paper |
 | :---: | :---: | :---: |
 | ![Theme picker](docs/screenshots/themes.jpg) | ![Midnight theme](docs/screenshots/midnight.jpg) | ![Paper theme](docs/screenshots/light.jpg) |
@@ -85,6 +106,10 @@ Tap **More → Themes**. Tap any theme to switch right away. Below the themes yo
 - **New icons**: the rounded line icons, or SillyTavern's originals.
 - **Animations**: **Smooth** (everything), **Light** (quick fades, no blur, faster on older phones) or **Off**.
 
+## Phone features
+
+Tap **More → Phone features** to choose the chat text size and switch each helper on or off. All of them are on to start with.
+
 ## Settings
 
 Find them under **More → Mobile UI settings**. Each part can be switched on or off:
@@ -94,6 +119,7 @@ Find them under **More → Mobile UI settings**. Each part can be switched on or
 | Enable Mobile UI | Turns everything on or off. Off gives you the normal SillyTavern back. |
 | Use it on this device | **Automatic** (phones only), **Always on** or **Off**. This is saved per device. |
 | Theme, Animations, Theme background, Modern font, New icons | Same choices as in **More → Themes**. |
+| Chat text size, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Send animation, Vibration | Same choices as in **More → Phone features**. |
 | App navigation | The top bar and the bottom tabs. |
 | Modern chat look | Message cards, bigger text, rounded message box. |
 | Touch-friendly panels | Bigger buttons and sliders, roomier settings, menus from the bottom. |

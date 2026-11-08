@@ -37,7 +37,27 @@ const DEFAULTS = Object.freeze({
     customIcons: true,
     /** 'full' | 'light' | 'off' */
     motion: 'full',
+    /** 'small' | 'normal' | 'large' | 'xl' */
+    textSize: 'normal',
+    sendEffect: true,
+    haptics: true,
+    jumpButton: true,
+    messageMenu: true,
+    saveDrafts: true,
+    keepAwake: true,
 });
+
+const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extra large' };
+
+/** Phone features shown as switches in More → Phone features and in the settings panel. */
+const EXTRAS = [
+    { key: 'messageMenu', id: 'stmui_msgmenu', label: 'Message menu', hint: 'Tap ⋯ on a message for a full list of actions with names.' },
+    { key: 'jumpButton', id: 'stmui_jump', label: 'Jump to latest', hint: 'A button that takes you back to the newest message.' },
+    { key: 'saveDrafts', id: 'stmui_drafts', label: 'Keep unsent messages', hint: 'What you type is kept for each chat, even if the browser reloads.' },
+    { key: 'keepAwake', id: 'stmui_awake', label: 'Keep screen on while replying', hint: 'The screen stays on until the reply is finished.' },
+    { key: 'sendEffect', id: 'stmui_sendfx', label: 'Send animation', hint: 'A little launch effect when you send.' },
+    { key: 'haptics', id: 'stmui_haptics', label: 'Vibration', hint: 'A short buzz on send and tab taps (Android).' },
+];
 
 const MOTION_LABELS = {
     full: 'Smooth: animations and glass effects',
@@ -815,8 +835,12 @@ function closeSheet(immediate = false) {
  */
 const nav = { depth: 0, suppress: 0, timer: 0, guard: 0, observer: null };
 
-/** Older SillyTavern overlays that are plain <div>s rather than <dialog>s. */
+/**
+ * Older SillyTavern overlays that are plain <div>s rather than <dialog>s.
+ * The prompt editor comes first: it sits on top of the Presets page.
+ */
 const OVERLAYS = [
+    { selector: '#completion_prompt_manager_popup', close: () => closePromptEditor(), open: () => promptEditorOpen() },
     { selector: '#shadow_select_chat_popup', close: '#select_chat_cross' },
     { selector: '#character_popup', close: '#character_cross' },
 ];
@@ -825,8 +849,102 @@ function isShown(element) {
     return !!element && getComputedStyle(element).display !== 'none';
 }
 
+// ------------------------------------------------------- prompt editor
+
+const PROMPT_EDITOR = '#completion_prompt_manager_popup';
+
+function promptEditor() {
+    return document.querySelector(PROMPT_EDITOR);
+}
+
+/**
+ * 'edit', 'inspect' or null. SillyTavern shows it with jQuery's slideDown and hides
+ * it with slideUp, so its inline display is the truth. (The computed value lags:
+ * drawers fade their `display` out with a transition. The class is not reliable
+ * either: SillyTavern's tap-outside handler can drop it on its own.)
+ */
+function promptEditorMode() {
+    const popup = promptEditor();
+    const shown = popup?.style.display;
+    if (!shown || shown === 'none') return null;
+    return document.getElementById('completion_prompt_manager_popup_inspect')?.style.display === 'flex' ? 'inspect' : 'edit';
+}
+
+/** Open and not already sliding away (SillyTavern drops the class when it starts closing). */
+function promptEditorOpen() {
+    const popup = promptEditor();
+    if (!promptEditorMode()) return false;
+    return popup.classList.contains('openDrawer') || !$j()(popup).is(':animated');
+}
+
+/** Closes the prompt editor the way its own ✕ does, without saving. */
+function closePromptEditor() {
+    const mode = promptEditorMode();
+    if (!mode) return false;
+    const button = mode === 'inspect'
+        ? document.getElementById('completion_prompt_manager_popup_close_button')
+        : document.getElementById('completion_prompt_manager_popup_entry_form_close');
+    if (button) button.click();
+    else $j()(PROMPT_EDITOR).slideUp(150).removeClass('openDrawer');
+    return true;
+}
+
+/**
+ * The prompt name is a one-line <input>, so long names get cut off on a phone.
+ * Show a wrapping box over it that writes straight back into SillyTavern's input.
+ */
+function syncPromptNameBox() {
+    const input = document.getElementById('completion_prompt_manager_popup_entry_form_name');
+    if (!input) return;
+    let box = document.getElementById('stmui_prompt_name');
+    const want = active && settings.touchSizing;
+    if (!want) {
+        box?.remove();
+        input.classList.remove('stmui-native-hidden');
+        return;
+    }
+    if (!box) {
+        box = h('textarea', {
+            id: 'stmui_prompt_name',
+            class: 'text_pole stmui-prompt-name',
+            rows: '1',
+            'aria-label': 'Prompt name',
+            enterkeyhint: 'done',
+            autocomplete: 'off',
+            spellcheck: 'false',
+        });
+        box.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                box.blur();
+            }
+        });
+        box.addEventListener('input', () => {
+            const clean = box.value.replace(/[\r\n]+/g, ' ');
+            if (clean !== box.value) box.value = clean;
+            input.value = clean;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            fitTextarea(box);
+            shell?.update();
+        });
+        input.after(box);
+        input.classList.add('stmui-native-hidden');
+    }
+    if (document.activeElement !== box && box.value !== input.value) box.value = input.value;
+    box.disabled = input.disabled;
+    box.readOnly = input.readOnly;
+    fitTextarea(box);
+}
+
+/** Grows a textarea with its text where the browser cannot do it in CSS. */
+function fitTextarea(box) {
+    if (CSS.supports?.('field-sizing', 'content') || !box.isConnected) return;
+    box.style.height = 'auto';
+    box.style.height = `${box.scrollHeight}px`;
+}
+
 function openOverlays() {
-    return OVERLAYS.filter(overlay => isShown(document.querySelector(overlay.selector)));
+    return OVERLAYS.filter(overlay => (overlay.open ? overlay.open() : isShown(document.querySelector(overlay.selector))));
 }
 
 function openLayerCount() {
@@ -894,7 +1012,9 @@ function closeTopLayer() {
     }
     const overlays = openOverlays();
     if (overlays.length) {
-        $j()(overlays[0].close).trigger('click');
+        const { close } = overlays[0];
+        if (typeof close === 'function') close();
+        else $j()(close).trigger('click');
         return true;
     }
     if (currentPageId()) {
@@ -956,6 +1076,8 @@ function openPage(id) {
 }
 
 function closePages() {
+    // The prompt editor lives outside the Presets drawer and would stay on screen.
+    closePromptEditor();
     for (const content of document.querySelectorAll('#top-settings-holder > .drawer > .drawer-content.openDrawer')) {
         content.parentElement.querySelector(':scope > .drawer-toggle')?.click();
     }
@@ -979,7 +1101,15 @@ class Shell {
 
     build() {
         // ---- top app bar
-        this.back = h('button', { type: 'button', class: 'stmui-ab-btn stmui-ab-back', 'aria-label': 'Back to chat', onclick: () => closePages() }, [ui('arrow-left')]);
+        this.back = h('button', {
+            type: 'button',
+            class: 'stmui-ab-btn stmui-ab-back',
+            'aria-label': 'Back',
+            // Step back one level: the prompt editor first, then the page.
+            onclick: () => {
+                if (!closePromptEditor()) closePages();
+            },
+        }, [ui('arrow-left')]);
         this.avatar = h('span', { class: 'stmui-ab-avatar', 'aria-hidden': 'true' });
         this.titleEl = h('span', { class: 'stmui-ab-title' });
         this.subEl = h('span', { class: 'stmui-ab-sub' });
@@ -1065,7 +1195,7 @@ class Shell {
         this.appbar.remove();
         this.tabbar.remove();
         const root = document.documentElement;
-        root.classList.remove('stmui-page-open', 'stmui-keyboard');
+        root.classList.remove('stmui-page-open', 'stmui-keyboard', 'stmui-prompt-editor');
         delete root.dataset.stmuiPage;
     }
 
@@ -1081,6 +1211,7 @@ class Shell {
     }
 
     onTab(id) {
+        buzz(6);
         if (id === 'more') {
             openMoreSheet();
             return;
@@ -1167,6 +1298,18 @@ class Shell {
             const info = drawer ? pageInfo(drawer) : { title: '', icon: 'fa-gear' };
             this.titleEl.textContent = info.title;
             this.subEl.textContent = info.long ?? '';
+            this.subEl.classList.remove('stmui-ab-offline');
+            // Switch back to "Presets" as soon as the editor starts sliding away.
+            const editorMode = promptEditorOpen() ? promptEditorMode() : null;
+            root.classList.toggle('stmui-prompt-editor', !!editorMode);
+            if (editorMode === 'edit') {
+                const name = document.getElementById('completion_prompt_manager_popup_entry_form_name')?.value?.trim();
+                this.titleEl.textContent = 'Edit prompt';
+                this.subEl.textContent = name || 'New prompt';
+            } else if (editorMode === 'inspect') {
+                this.titleEl.textContent = 'Prompt list';
+                this.subEl.textContent = 'Prompts linked to this marker';
+            }
             if (pageId === 'rightNavHolder') {
                 const editing = isShown(document.getElementById('rm_ch_create_block'));
                 const name = document.getElementById('character_name_pole')?.value?.trim();
@@ -1181,6 +1324,7 @@ class Shell {
         }
 
         this.appbar.classList.remove('stmui-ab-page');
+        root.classList.remove('stmui-prompt-editor');
         this.who.disabled = false;
         const context = ctx();
         let name = 'SillyTavern';
@@ -1201,7 +1345,8 @@ class Shell {
         this.titleEl.textContent = name;
         const status = context.onlineStatus;
         const connected = status && status !== 'no_connection';
-        this.subEl.textContent = connected ? String(status) : 'Not connected';
+        // Some APIs report "Valid" (the key check) instead of a model name.
+        this.subEl.textContent = !connected ? 'Not connected' : (/^valid$/i.test(String(status)) ? 'Connected' : String(status));
         this.subEl.classList.toggle('stmui-ab-offline', !connected);
         this.avatar.classList.remove('stmui-ab-avatar-icon');
         if (image) this.avatar.replaceChildren(h('img', { src: image, alt: '' }));
@@ -1263,6 +1408,7 @@ function openMoreSheet() {
                     closeSheet(true);
                     document.getElementById('option_start_new_chat')?.click();
                 }, !inChat),
+                row('sparkles', 'Phone features', () => openExtrasSheet()),
                 row('phone', 'Mobile UI settings', () => {
                     closeSheet(true);
                     openMobileSettings();
@@ -1416,10 +1562,11 @@ function setAppearance(key, value, origin) {
         settings[key] = value;
         saveSettings();
         applyAppearance();
+        syncExtras();
         syncSettingsInputs();
         shell?.update();
         // Switches already show their new state; re-render only what depends on the choice.
-        if (sheet && !sheet.picker && (key === 'theme' || key === 'motion')) sheet.refresh();
+        if (sheet && !sheet.picker && ['theme', 'motion', 'textSize'].includes(key)) sheet.refresh();
     };
     if (key === 'theme') revealChange(origin, change);
     else change();
@@ -1665,6 +1812,447 @@ function syncWandShortcut() {
     if (button) button.style.display = '';
 }
 
+// ---------------------------------------------------------- phone extras
+
+const extras = {
+    wired: false,
+    jump: null,
+    jumpFrame: 0,
+    formObserver: null,
+    wakeLock: null,
+    generating: false,
+    wakeTimer: 0,
+    draftTimer: 0,
+    draftKey: null,
+    personaObserver: null,
+};
+
+function motionAllowed() {
+    return settings.motion !== 'off' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** A short vibration. Android only allows it right after a tap. */
+function buzz(pattern = 10) {
+    // Chrome logs an error for vibrate() without a real tap (for example a scripted click).
+    if (active && settings.haptics && navigator.userActivation?.isActive !== false) {
+        try {
+            navigator.vibrate?.(pattern);
+        } catch {
+            // Not allowed here; nothing to do.
+        }
+    }
+}
+
+/**
+ * The send animation runs on its own layer above the button: SillyTavern hides
+ * the button as soon as the reply starts, which would cut an animation on it short.
+ */
+function playSendFx(button) {
+    if (!active || !settings.sendEffect || !settings.chatStyle || !motionAllowed()) return;
+    const rect = button.getBoundingClientRect();
+    if (!rect.width) return;
+    const light = settings.motion === 'light';
+    const fx = h('div', { class: `stmui-send-fx${light ? ' stmui-send-fx-light' : ''}`, 'aria-hidden': 'true' }, [
+        h('span', { class: 'stmui-send-ring' }),
+        light ? null : h('span', { class: 'stmui-send-ring stmui-send-ring-2' }),
+        ...(light ? [] : Array.from({ length: 6 }, (_, i) => h('span', { class: 'stmui-send-spark', style: `--i: ${i}` }))),
+        h('span', { class: 'stmui-send-plane' }, [svgIcon('send')]),
+    ]);
+    fx.style.left = `${rect.left + rect.width / 2}px`;
+    fx.style.top = `${rect.top + rect.height / 2}px`;
+    document.body.append(fx);
+    button.classList.remove('stmui-launch');
+    void button.offsetWidth;
+    button.classList.add('stmui-launch');
+    setTimeout(() => {
+        fx.remove();
+        button.classList.remove('stmui-launch');
+    }, 900);
+}
+
+function onSendPointerDown(event) {
+    if (!active || event.button > 0) return;
+    if (event.target.closest?.('#send_but')) buzz(12);
+}
+
+function onSendClick(event) {
+    if (!active) return;
+    const button = event.target.closest?.('#send_but');
+    if (button) playSendFx(button);
+}
+
+// -- jump to latest
+
+function onChatScroll() {
+    if (extras.jumpFrame) return;
+    extras.jumpFrame = requestAnimationFrame(() => {
+        extras.jumpFrame = 0;
+        const chat = document.getElementById('chat');
+        if (!chat || !extras.jump) return;
+        const distance = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
+        extras.jump.classList.toggle('stmui-jump-on', distance > Math.max(320, chat.clientHeight * 0.7));
+    });
+}
+
+function syncJumpButton() {
+    const chat = document.getElementById('chat');
+    const sheld = document.getElementById('sheld');
+    const want = active && settings.jumpButton && chat && sheld;
+    if (!want) {
+        extras.jump?.remove();
+        extras.jump = null;
+        chat?.removeEventListener('scroll', onChatScroll);
+        cancelAnimationFrame(extras.jumpFrame);
+        extras.jumpFrame = 0;
+        extras.formObserver?.disconnect();
+        extras.formObserver = null;
+        sheld?.style.removeProperty('--stmui-form-h');
+        return;
+    }
+    if (extras.jump) return;
+    extras.jump = h('button', {
+        type: 'button',
+        class: 'stmui-jump',
+        'aria-label': 'Jump to the latest message',
+        title: 'Latest message',
+        onclick: () => {
+            buzz(8);
+            chat.scrollTo({ top: chat.scrollHeight, behavior: motionAllowed() ? 'smooth' : 'auto' });
+        },
+    }, [ui('arrow-down')]);
+    shieldFromDrawerAutoClose(extras.jump);
+    sheld.append(extras.jump);
+    chat.addEventListener('scroll', onChatScroll, { passive: true });
+    // Sit just above the message box, however tall it grows.
+    const form = document.getElementById('form_sheld');
+    if (form && 'ResizeObserver' in window) {
+        extras.formObserver = new ResizeObserver(() => sheld.style.setProperty('--stmui-form-h', `${Math.round(form.offsetHeight)}px`));
+        extras.formObserver.observe(form);
+    }
+    onChatScroll();
+}
+
+// -- drafts
+
+function draftKeyNow() {
+    const context = ctx();
+    const chatId = context.getCurrentChatId?.() ?? context.chatId;
+    if (!chatId) return null;
+    const owner = context.groupId ? `g:${context.groupId}` : (context.characterId !== undefined ? `c:${context.characters?.[context.characterId]?.avatar ?? context.characterId}` : null);
+    return owner ? `stmui_draft:${owner}:${chatId}` : null;
+}
+
+function readDraft(key) {
+    try {
+        return key ? localStorage.getItem(key) : null;
+    } catch {
+        return null;
+    }
+}
+
+function writeDraft(key, value) {
+    if (!key) return;
+    try {
+        if (value && value.trim()) localStorage.setItem(key, value);
+        else localStorage.removeItem(key);
+    } catch {
+        // Storage full or blocked: drafts are a convenience only.
+    }
+}
+
+function onDraftInput(event) {
+    if (!active || !settings.saveDrafts || event.target?.id !== 'send_textarea') return;
+    window.clearTimeout(extras.draftTimer);
+    const value = event.target.value;
+    const key = extras.draftKey ?? draftKeyNow();
+    extras.draftTimer = window.setTimeout(() => writeDraft(key, value), 400);
+}
+
+/** Called when the chat changes: put away the old chat's draft and bring back this one's. */
+function restoreDraft() {
+    if (!active || !settings.saveDrafts) return;
+    const textarea = document.getElementById('send_textarea');
+    if (!textarea) return;
+    window.clearTimeout(extras.draftTimer);
+    const previous = extras.draftKey;
+    const next = draftKeyNow();
+    extras.draftKey = next;
+    if (previous && previous === next) return;
+    let changed = false;
+    const current = textarea.value;
+    if (current.trim()) {
+        if (previous) writeDraft(previous, current);
+        // SillyTavern keeps one copy of the box across reloads; if that text is
+        // another chat's draft, it stays saved there instead of following you here.
+        const owner = previous || draftKeyWithText(current, next);
+        if (owner && owner !== next && readDraft(owner) === current) {
+            textarea.value = '';
+            changed = true;
+        }
+    }
+    const saved = readDraft(next);
+    if (saved && !textarea.value.trim()) {
+        textarea.value = saved;
+        changed = true;
+    }
+    // Let SillyTavern resize the box and update its own saved copy.
+    if (changed) textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function draftKeyWithText(text, except) {
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith('stmui_draft:') && key !== except && localStorage.getItem(key) === text) return key;
+        }
+    } catch {
+        // Storage blocked.
+    }
+    return null;
+}
+
+function clearDraft() {
+    window.clearTimeout(extras.draftTimer);
+    writeDraft(extras.draftKey ?? draftKeyNow(), '');
+}
+
+// -- keep the screen on while a reply streams in
+
+async function setAwake(on) {
+    window.clearTimeout(extras.wakeTimer);
+    if (!on) {
+        const lock = extras.wakeLock;
+        extras.wakeLock = null;
+        lock?.release?.().catch(() => {});
+        return;
+    }
+    if (!active || !settings.keepAwake || extras.wakeLock || !navigator.wakeLock || document.visibilityState !== 'visible') return;
+    try {
+        const lock = await navigator.wakeLock.request('screen');
+        extras.wakeLock = lock;
+        lock.addEventListener('release', () => {
+            if (extras.wakeLock === lock) extras.wakeLock = null;
+        });
+        // Never hold the screen on forever if an end event goes missing.
+        extras.wakeTimer = window.setTimeout(() => setAwake(false), 10 * 60 * 1000);
+    } catch {
+        // Not allowed (battery saver, insecure page): just skip it.
+    }
+}
+
+function onGenerating(on) {
+    extras.generating = on;
+    setAwake(on);
+}
+
+function onVisibility() {
+    // Android drops the lock when you leave the tab; take it back on return.
+    if (document.visibilityState === 'visible' && extras.generating) setAwake(true);
+}
+
+// -- message menu
+
+const MESSAGE_ACTION_ORDER = ['mes_copy', 'mes_edit', 'mes_swipe_picker', 'mes_create_branch', 'mes_create_bookmark', 'mes_hide', 'mes_unhide', 'mes_translate', 'mes_narrate', 'sd_message_gen', 'mes_embed', 'mes_prompt'];
+
+function messageActionLabel(button) {
+    const title = (button.getAttribute('title') || '').split('\n')[0].trim();
+    if (title) return title;
+    if (button.classList.contains('mes_bookmark')) return 'Open checkpoint';
+    return 'Action';
+}
+
+function onMessageMenuClick(event) {
+    if (!active || !settings.messageMenu) return;
+    const hint = event.target.closest?.('#chat .extraMesButtonsHint');
+    if (!hint) return;
+    const message = hint.closest('.mes');
+    if (!message) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    buzz(8);
+    openMessageMenu(message);
+}
+
+function openMessageMenu(message) {
+    const name = message.getAttribute('ch_name') || 'Message';
+    const preview = (message.querySelector('.mes_text')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const run = button => {
+        closeSheet(true);
+        // A real click so SillyTavern's own handlers (and other extensions') run.
+        button.click();
+    };
+    showSheet(new MenuSheet({
+        title: name,
+        subtitle: preview.length > 90 ? `${preview.slice(0, 90)}…` : preview,
+        fill: body => {
+            if (!message.isConnected) {
+                body.append(h('p', { class: 'stmui-menu-foot', text: 'This message is no longer in the chat.' }));
+                return;
+            }
+            const buttons = Array.from(message.querySelectorAll('.mes_buttons .mes_button'))
+                .filter(button => !button.classList.contains('extraMesButtonsHint') && getComputedStyle(button).display !== 'none');
+            const rank = button => {
+                const index = MESSAGE_ACTION_ORDER.findIndex(name => button.classList.contains(name));
+                return index === -1 ? 50 : index;
+            };
+            buttons.sort((a, b) => rank(a) - rank(b));
+            const rows = buttons.map(button => {
+                const faClass = Array.from(button.classList).find(name => name.startsWith('fa-') && !['fa-solid', 'fa-regular', 'fa-fw', 'fa-xs', 'fa-sm', 'fa-lg'].includes(name));
+                return h('button', { type: 'button', class: 'stmui-menu-row', onclick: () => run(button) }, [
+                    faClass ? ui(faClass, 'stmui-menu-row-icon') : ui('sparkles', 'stmui-menu-row-icon'),
+                    h('span', { text: messageActionLabel(button) }),
+                ]);
+            });
+            const edit = message.querySelector('.mes_edit');
+            if (edit && getComputedStyle(edit).display !== 'none') {
+                rows.push(h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row stmui-menu-row-danger',
+                    onclick: () => {
+                        closeSheet(true);
+                        // SillyTavern deletes from edit mode and asks to confirm first.
+                        edit.click();
+                        setTimeout(() => message.querySelector('.mes_edit_delete')?.click(), 120);
+                    },
+                }, [ui('trash', 'stmui-menu-row-icon'), h('span', { text: 'Delete message' })]));
+            }
+            body.append(h('div', { class: 'stmui-menu-list' }, rows));
+        },
+    }));
+}
+
+// -- personas: list and editor on separate tabs
+
+function syncPersonaTabs() {
+    const block = document.getElementById('persona-management-block');
+    let bar = document.getElementById('stmui_persona_tabs');
+    const want = active && settings.touchSizing && block;
+    if (!want) {
+        bar?.remove();
+        document.querySelector('#persona_controls .stmui-persona-face')?.remove();
+        block?.classList.remove('stmui-persona-split', 'stmui-persona-edit');
+        extras.personaObserver?.disconnect();
+        extras.personaObserver = null;
+        return;
+    }
+    if (!bar) {
+        const tab = (mode, iconName, label) => h('button', {
+            type: 'button',
+            class: 'stmui-seg',
+            'data-mode': mode,
+            onclick: () => {
+                block.classList.toggle('stmui-persona-edit', mode === 'edit');
+                updatePersonaTabs();
+                block.closest('.drawer-content')?.scrollTo?.({ top: 0 });
+            },
+        }, [ui(iconName), h('span', { class: 'stmui-seg-text', text: label })]);
+        bar = h('div', { id: 'stmui_persona_tabs', class: 'stmui-segmented stmui-persona-tabs', role: 'tablist' }, [
+            tab('list', 'users', 'All personas'),
+            tab('edit', 'pencil', 'Edit current'),
+        ]);
+        block.before(bar);
+        block.classList.add('stmui-persona-split');
+        // The list re-renders when you pick someone, and the name changes with it.
+        extras.personaObserver = new MutationObserver(updatePersonaTabs);
+        const name = document.getElementById('your_name');
+        const list = document.getElementById('user_avatar_block');
+        if (name) extras.personaObserver.observe(name, { childList: true, characterData: true, subtree: true });
+        if (list) extras.personaObserver.observe(list, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    }
+    updatePersonaTabs();
+}
+
+function updatePersonaTabs() {
+    const block = document.getElementById('persona-management-block');
+    const bar = document.getElementById('stmui_persona_tabs');
+    if (!block || !bar) return;
+    const editing = block.classList.contains('stmui-persona-edit');
+    const name = document.getElementById('your_name')?.textContent?.trim();
+    for (const button of bar.querySelectorAll('.stmui-seg')) {
+        const on = (button.dataset.mode === 'edit') === editing;
+        button.classList.toggle('stmui-seg-on', on);
+        button.setAttribute('aria-selected', String(on));
+        if (button.dataset.mode === 'edit') {
+            const label = name && name !== '[Persona Name]' ? `Edit ${name}` : 'Edit current';
+            const text = button.querySelector('.stmui-seg-text');
+            if (text.textContent !== label) text.textContent = label;
+        }
+    }
+    // The current persona's picture next to its name.
+    const controls = document.getElementById('persona_controls');
+    const src = document.querySelector('#user_avatar_block .avatar-container.selected img')?.getAttribute('src');
+    if (controls) {
+        let face = controls.querySelector('.stmui-persona-face');
+        if (!face) {
+            face = h('span', { class: 'stmui-persona-face', 'aria-hidden': 'true' }, [h('img', { alt: '' })]);
+            controls.prepend(face);
+        }
+        const img = face.querySelector('img');
+        face.hidden = !src;
+        if (src && img.getAttribute('src') !== src) img.setAttribute('src', src);
+    }
+}
+
+function applyTextSize() {
+    const root = document.documentElement;
+    if (active && settings.textSize && settings.textSize !== 'normal') root.dataset.stmuiText = settings.textSize;
+    else delete root.dataset.stmuiText;
+}
+
+function syncExtras() {
+    applyTextSize();
+    syncJumpButton();
+    syncPersonaTabs();
+    syncPromptNameBox();
+    if (!active || !settings.keepAwake) setAwake(false);
+    if (extras.wired) return;
+    extras.wired = true;
+    // The prompt editor slides over the Presets page: keep its name box and the bar title current.
+    const editor = promptEditor();
+    if (editor) {
+        // Its slide animation changes the style every frame; react a few times a second at most.
+        let timer = 0;
+        new MutationObserver(() => {
+            if (timer || !active) return;
+            timer = window.setTimeout(() => {
+                timer = 0;
+                syncPromptNameBox();
+                shell?.update();
+            }, 60);
+        }).observe(editor, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+    // Capture phase: runs before SillyTavern's own delegated handlers.
+    document.addEventListener('pointerdown', onSendPointerDown, true);
+    document.addEventListener('click', onSendClick, true);
+    document.addEventListener('click', onMessageMenuClick, true);
+    document.addEventListener('input', onDraftInput, true);
+    document.addEventListener('visibilitychange', onVisibility);
+}
+
+function textSizeControl() {
+    return h('div', { class: 'stmui-segmented stmui-text-seg', role: 'group', 'aria-label': 'Chat text size' },
+        Object.entries(TEXT_SIZES).map(([size, label]) => h('button', {
+            type: 'button',
+            class: `stmui-seg ${settings.textSize === size ? 'stmui-seg-on' : ''}`,
+            'aria-pressed': String(settings.textSize === size),
+            'aria-label': label,
+            onclick: () => setAppearance('textSize', size),
+        }, [h('span', { class: `stmui-aa stmui-aa-${size}`, text: 'Aa' })])));
+}
+
+function openExtrasSheet() {
+    showSheet(new MenuSheet({
+        title: 'Phone features',
+        subtitle: 'Small helpers that make SillyTavern nicer on a phone.',
+        fill: body => {
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'Chat text size' }));
+            body.append(textSizeControl());
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'Helpers' }));
+            body.append(h('div', { class: 'stmui-menu-list' }, EXTRAS.map(extra => switchRow(extra.key, extra.label, extra.hint))));
+        },
+    }));
+}
+
 // ------------------------------------------------------------ activation
 
 function setFeatureClasses() {
@@ -1694,6 +2282,7 @@ function applyState() {
     else scheduleHistorySync();
     scan();
     syncWandShortcut();
+    syncExtras();
     updateStatusLine();
     if (changed) console.info(LOG, active ? 'active' : 'inactive');
 }
@@ -1761,6 +2350,12 @@ function buildSettings() {
                 check('stmui_backdrop', 'Theme background', "Use the theme's backdrop instead of your chat background."),
                 check('stmui_font', 'Modern font', "Your phone's own system font."),
                 check('stmui_icons', 'New icons', 'Rounded line icons everywhere.'),
+                h('label', { class: 'stmui-field', for: 'stmui_textsize' }, [
+                    h('span', { class: 'stmui-field-label', text: 'Chat text size' }),
+                    h('select', { id: 'stmui_textsize', class: 'text_pole' }, Object.entries(TEXT_SIZES).map(([value, text]) => h('option', { value, text }))),
+                ]),
+                h('hr'),
+                ...EXTRAS.map(extra => check(extra.id, extra.label, extra.hint)),
                 h('hr'),
                 check('stmui_shell', 'App navigation', 'Top bar with the current character, and tabs at the bottom.'),
                 check('stmui_chat', 'Modern chat look', 'Message cards, bigger text and a rounded message box.'),
@@ -1799,7 +2394,8 @@ function buildSettings() {
     bind('stmui_backdrop', 'themeBackdrop', true);
     bind('stmui_font', 'modernFont', true);
     bind('stmui_icons', 'customIcons', true);
-    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion']]) {
+    for (const extra of EXTRAS) bind(extra.id, extra.key, true);
+    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion'], ['stmui_textsize', 'textSize']]) {
         const select = document.getElementById(id);
         select.value = settings[key];
         select.addEventListener('change', () => setAppearance(key, select.value));
@@ -1816,11 +2412,12 @@ function buildSettings() {
 /** Keeps the Extensions-panel controls in step when settings change from a sheet. */
 function syncSettingsInputs() {
     const pairs = { stmui_backdrop: 'themeBackdrop', stmui_font: 'modernFont', stmui_icons: 'customIcons' };
+    for (const extra of EXTRAS) pairs[extra.id] = extra.key;
     for (const [id, key] of Object.entries(pairs)) {
         const input = document.getElementById(id);
         if (input) input.checked = !!settings[key];
     }
-    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion']]) {
+    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion'], ['stmui_textsize', 'textSize']]) {
         const select = document.getElementById(id);
         if (select) select.value = settings[key];
     }
@@ -1853,11 +2450,21 @@ function init() {
     eventSource?.on?.(event_types.APP_READY, () => {
         buildSettings();
         applyState();
+        // SillyTavern puts back the last message box text on load; sort it into the right chat.
+        restoreDraft();
     });
     eventSource?.on?.(event_types.CHAT_CHANGED, () => {
         sheet?.refresh();
         shell?.onChatChanged();
+        restoreDraft();
+        // A new chat starts at the bottom; hide the jump button until you scroll up.
+        setTimeout(onChatScroll, 300);
     });
+    if (event_types.MESSAGE_SENT) eventSource?.on?.(event_types.MESSAGE_SENT, clearDraft);
+    if (event_types.GENERATION_STARTED) eventSource?.on?.(event_types.GENERATION_STARTED, () => onGenerating(true));
+    for (const name of ['GENERATION_ENDED', 'GENERATION_STOPPED']) {
+        if (event_types[name]) eventSource?.on?.(event_types[name], () => onGenerating(false));
+    }
     for (const name of ['ONLINE_STATUS_CHANGED', 'CHARACTER_EDITED', 'CHARACTER_RENAMED', 'GROUP_UPDATED', 'SETTINGS_UPDATED']) {
         if (event_types[name]) eventSource?.on?.(event_types[name], refreshShell);
     }
