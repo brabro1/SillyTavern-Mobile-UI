@@ -1,9 +1,14 @@
 /**
  * Mobile UI for SillyTavern
  *
- * A phone-only touch interface layer. Everything is scoped behind the
- * `stmui-on` class on <html>; removing the class (or disabling the extension)
- * restores the stock interface.
+ * Turns SillyTavern on a phone into an app-style interface: a top app bar, a
+ * bottom tab bar, full-screen pages that the Android back gesture closes, a
+ * restyled chat, and touch-first controls everywhere.
+ *
+ * Everything is scoped behind classes on <html> (`stmui-on` and feature
+ * classes). Removing them, or disabling the extension, restores the stock
+ * interface. Nothing is moved out of SillyTavern's own DOM: the app bar and tab
+ * bar only click SillyTavern's existing drawer toggles.
  *
  * The lorebook pickers never replace SillyTavern's own <select> elements. They
  * hide them, then read from and write to them, dispatching a normal `change`
@@ -16,8 +21,11 @@ const LOG = '[Mobile UI]';
 
 const DEFAULTS = Object.freeze({
     enabled: true,
-    lorebookPicker: true,
+    appShell: true,
+    chatStyle: true,
     touchSizing: true,
+    backGesture: true,
+    lorebookPicker: true,
     longSelects: false,
     wandShortcut: true,
 });
@@ -76,6 +84,37 @@ const LOREBOOK_TARGETS = [
         noneLabel: 'Close editor',
         placeholder: 'Pick a lorebook to edit',
     },
+];
+
+/** SillyTavern's top-bar drawers, keyed by the id of their `.drawer` element. */
+const PAGES = {
+    'ai-config-button': { title: 'Presets', long: 'AI response settings', icon: 'fa-sliders' },
+    'sys-settings-button': { title: 'API', long: 'API connection', icon: 'fa-plug' },
+    'advanced-formatting-button': { title: 'Formatting', long: 'Prompt formatting', icon: 'fa-font' },
+    'WI-SP-button': { title: 'Lorebooks', long: 'Lorebooks and World Info', icon: 'fa-book-atlas' },
+    'user-settings-button': { title: 'Settings', long: 'User settings and theme', icon: 'fa-user-gear' },
+    'backgrounds-button': { title: 'Backgrounds', long: 'Chat backgrounds', icon: 'fa-image' },
+    'extensions-settings-button': { title: 'Extensions', long: 'Extensions and add-ons', icon: 'fa-cubes' },
+    'persona-management-button': { title: 'Personas', long: 'Who you are in the chat', icon: 'fa-face-smile' },
+    'rightNavHolder': { title: 'Characters', long: 'Characters and groups', icon: 'fa-address-book' },
+};
+
+const TABS = [
+    { id: 'chat', label: 'Chat', icon: 'fa-comment-dots' },
+    { id: 'rightNavHolder', label: 'Characters', icon: 'fa-address-book' },
+    { id: 'WI-SP-button', label: 'Lorebooks', icon: 'fa-book-atlas' },
+    { id: 'ai-config-button', label: 'Presets', icon: 'fa-sliders' },
+    { id: 'more', label: 'More', icon: 'fa-grip' },
+];
+
+/** Order of the tiles in the "More" sheet; drawers added by other extensions follow. */
+const MORE_ORDER = [
+    'sys-settings-button',
+    'persona-management-button',
+    'advanced-formatting-button',
+    'user-settings-button',
+    'backgrounds-button',
+    'extensions-settings-button',
 ];
 
 const LONG_SELECT_MIN_OPTIONS = 14;
@@ -145,6 +184,13 @@ function highlight(text, query) {
     }
     if (cursor < text.length) nodes.push(text.slice(cursor));
     return nodes;
+}
+
+/** Keeps SillyTavern's "close drawers on outside tap" handler away from our own chrome. */
+function shieldFromDrawerAutoClose(element) {
+    for (const type of ['mousedown', 'touchstart']) {
+        element.addEventListener(type, event => event.stopPropagation(), { passive: true });
+    }
 }
 
 function readMode() {
@@ -372,7 +418,62 @@ class Picker {
     }
 }
 
-// ------------------------------------------------------------------ sheet
+// ------------------------------------------------------------------ sheets
+
+/** Grab handle, title, subtitle and the close button shared by every sheet. */
+function buildSheetHead(target, title, subtitle, doneLabel) {
+    target.title = h('h3', { class: 'stmui-title', text: title });
+    target.subtitle = h('p', { class: 'stmui-subtitle', text: subtitle ?? '' });
+    const done = h('button', { type: 'button', class: 'stmui-done menu_button', onclick: () => closeSheet() }, [doneLabel]);
+    target.head = h('div', { class: 'stmui-head' }, [
+        h('div', { class: 'stmui-grab', 'aria-hidden': 'true' }),
+        h('div', { class: 'stmui-head-row' }, [
+            h('div', { class: 'stmui-head-text' }, [target.title, target.subtitle]),
+            done,
+        ]),
+    ]);
+    return target.head;
+}
+
+/** Backdrop tap, Escape, swipe-down and drawer shielding, shared by every sheet. */
+function wireSheet(target) {
+    const { dialog, panel, head } = target;
+    dialog.addEventListener('click', event => {
+        if (event.target === dialog) closeSheet();
+    });
+    // SillyTavern closes unpinned drawers on any mousedown/touchstart outside them.
+    // The sheet lives outside the drawer, so keep those events from reaching <html>.
+    shieldFromDrawerAutoClose(dialog);
+    dialog.addEventListener('cancel', event => {
+        event.preventDefault();
+        closeSheet();
+    });
+
+    let startY = null;
+    let dy = 0;
+    const begin = event => {
+        if (event.target.closest('button')) return;
+        startY = event.touches[0].clientY;
+        dy = 0;
+        panel.style.transition = 'none';
+    };
+    const move = event => {
+        if (startY === null) return;
+        dy = Math.max(0, event.touches[0].clientY - startY);
+        panel.style.transform = `translateY(${dy}px)`;
+    };
+    const end = () => {
+        if (startY === null) return;
+        startY = null;
+        panel.style.transition = '';
+        panel.style.transform = '';
+        if (dy > 90) closeSheet();
+    };
+    head.addEventListener('touchstart', begin, { passive: true });
+    head.addEventListener('touchmove', move, { passive: true });
+    head.addEventListener('touchend', end);
+    head.addEventListener('touchcancel', end);
+}
 
 class Sheet {
     /**
@@ -384,7 +485,6 @@ class Sheet {
         this.query = '';
         this.filter = options.filter ?? 'all';
         this.closing = false;
-        this.pushedHistory = false;
         this.build();
     }
 
@@ -394,18 +494,7 @@ class Sheet {
         this.panel = h('div', { class: 'stmui-panel', tabindex: '-1' });
         if (picker.items().length > 6) this.panel.classList.add('stmui-panel-fixed');
 
-        this.title = h('h3', { class: 'stmui-title', text: picker.title });
-        this.subtitle = h('p', { class: 'stmui-subtitle', text: picker.config.subtitle ?? '' });
-        const done = h('button', { type: 'button', class: 'stmui-done menu_button', onclick: () => closeSheet() }, [
-            picker.multi ? 'Done' : 'Close',
-        ]);
-        this.head = h('div', { class: 'stmui-head' }, [
-            h('div', { class: 'stmui-grab', 'aria-hidden': 'true' }),
-            h('div', { class: 'stmui-head-row' }, [
-                h('div', { class: 'stmui-head-text' }, [this.title, this.subtitle]),
-                done,
-            ]),
-        ]);
+        buildSheetHead(this, picker.title, picker.config.subtitle, picker.multi ? 'Done' : 'Close');
 
         this.input = h('input', {
             type: 'search',
@@ -449,49 +538,10 @@ class Sheet {
         this.panel.append(this.head, this.controls, this.list, h('div', { class: 'stmui-foot' }, [this.status, this.hint]));
         this.dialog.append(this.panel);
 
-        this.dialog.addEventListener('click', event => {
-            if (event.target === this.dialog) closeSheet();
-        });
-        // SillyTavern closes unpinned drawers on any mousedown/touchstart outside them.
-        // The sheet lives outside the drawer, so keep those events from reaching <html>.
-        for (const type of ['mousedown', 'touchstart']) {
-            this.dialog.addEventListener(type, event => event.stopPropagation(), { passive: true });
-        }
-        this.dialog.addEventListener('cancel', event => {
-            event.preventDefault();
-            closeSheet();
-        });
+        wireSheet(this);
         this.list.addEventListener('click', event => this.onListClick(event));
-        this.wireSwipe();
         this.renderTools();
         this.renderList(true);
-    }
-
-    wireSwipe() {
-        let startY = null;
-        let dy = 0;
-        const begin = event => {
-            if (event.target.closest('button')) return;
-            startY = event.touches[0].clientY;
-            dy = 0;
-            this.panel.style.transition = 'none';
-        };
-        const move = event => {
-            if (startY === null) return;
-            dy = Math.max(0, event.touches[0].clientY - startY);
-            this.panel.style.transform = `translateY(${dy}px)`;
-        };
-        const end = () => {
-            if (startY === null) return;
-            startY = null;
-            this.panel.style.transition = '';
-            this.panel.style.transform = '';
-            if (dy > 90) closeSheet();
-        };
-        this.head.addEventListener('touchstart', begin, { passive: true });
-        this.head.addEventListener('touchmove', move, { passive: true });
-        this.head.addEventListener('touchend', end);
-        this.head.addEventListener('touchcancel', end);
     }
 
     onListClick(event) {
@@ -527,9 +577,8 @@ class Sheet {
         editor.value = target.value;
         editor.dispatchEvent(new Event('change', { bubbles: true }));
         // Opened from the wand menu the drawer is closed; show it so the book is visible.
-        const drawer = document.querySelector('#WorldInfo');
-        if (drawer && getComputedStyle(drawer).display === 'none') document.querySelector('#WIDrawerIcon')?.click();
-        drawer?.scrollTo?.({ top: 0 });
+        openPage('WI-SP-button');
+        document.querySelector('#WorldInfo')?.scrollTo?.({ top: 0 });
     }
 
     renderTools() {
@@ -633,7 +682,7 @@ class Sheet {
         if (!realRows) {
             const total = picker.realBookCount();
             let message = 'Nothing matches your search.';
-            if (!total) message = picker.config.noun ? 'No options available.' : 'No lorebooks found yet. Create one from the World Info panel.';
+            if (!total) message = picker.config.noun ? 'No options available.' : 'No lorebooks found yet. Create one from the Lorebooks page.';
             else if (!q && this.filter === 'selected') message = 'Nothing selected yet.';
             this.list.append(h('li', { class: 'stmui-empty', text: message }));
         }
@@ -650,6 +699,31 @@ class Sheet {
         if (resetScroll && !q && firstSelected && !picker.multi) {
             requestAnimationFrame(() => firstSelected.scrollIntoView({ block: 'center' }));
         }
+    }
+}
+
+/** A sheet with arbitrary content: the "More" menu. */
+class MenuSheet {
+    /**
+     * @param {{ title: string, subtitle?: string, fill: (body: HTMLElement) => void }} options
+     */
+    constructor({ title, subtitle, fill }) {
+        this.picker = null;
+        this.closing = false;
+        this.fill = fill;
+        this.dialog = h('dialog', { id: 'stmui-sheet', class: 'stmui-sheet stmui-menu-sheet', 'aria-label': title });
+        this.panel = h('div', { class: 'stmui-panel', tabindex: '-1' });
+        buildSheetHead(this, title, subtitle, 'Close');
+        this.body = h('div', { class: 'stmui-menu-body' });
+        this.panel.append(this.head, this.body);
+        this.dialog.append(this.panel);
+        wireSheet(this);
+        this.refresh();
+    }
+
+    refresh() {
+        this.body.replaceChildren();
+        this.fill(this.body);
     }
 }
 
@@ -675,20 +749,19 @@ function viewportFollow() {
 
 let stopViewportFollow = null;
 
-function openSheet(picker, options = {}) {
+function showSheet(instance) {
     if (sheet) closeSheet(true);
-    sheet = new Sheet(picker, options);
+    sheet = instance;
     document.body.append(sheet.dialog);
     sheet.dialog.showModal();
     stopViewportFollow = viewportFollow();
     requestAnimationFrame(() => sheet?.dialog.classList.add('stmui-sheet-open'));
-    try {
-        history.pushState({ stmuiSheet: true }, '');
-        sheet.pushedHistory = true;
-    } catch {
-        // History is optional; the Android back gesture then just leaves the sheet open.
-    }
     sheet.panel.focus({ preventScroll: true });
+    scheduleHistorySync();
+}
+
+function openSheet(picker, options = {}) {
+    showSheet(new Sheet(picker, options));
 }
 
 function closeSheet(immediate = false) {
@@ -702,12 +775,6 @@ function closeSheet(immediate = false) {
         if (current.dialog.open) current.dialog.close();
         current.dialog.remove();
     };
-    if (current.pushedHistory && history.state?.stmuiSheet) {
-        suppressPop += 1;
-        history.back();
-        // If no popstate arrives, do not leave the guard armed for a real back press.
-        setTimeout(() => { suppressPop = Math.max(0, suppressPop - 1); }, 600);
-    }
     if (immediate) {
         finish();
     } else {
@@ -716,17 +783,473 @@ function closeSheet(immediate = false) {
         current.dialog.classList.remove('stmui-sheet-open');
         setTimeout(finish, 180);
     }
+    scheduleHistorySync();
 }
 
-let suppressPop = 0;
-function onPopState() {
-    if (suppressPop > 0) {
-        suppressPop -= 1;
+// ------------------------------------------------------- back gesture
+
+/**
+ * Android's back gesture should close whatever is on top (a sheet, a popup, a
+ * page) instead of leaving SillyTavern. We keep one history entry per open
+ * layer and reconcile after every change, so pages that SillyTavern opens or
+ * closes on its own stay in step too.
+ */
+const nav = { depth: 0, suppress: 0, timer: 0, guard: 0, observer: null };
+
+/** Older SillyTavern overlays that are plain <div>s rather than <dialog>s. */
+const OVERLAYS = [
+    { selector: '#shadow_select_chat_popup', close: '#select_chat_cross' },
+    { selector: '#character_popup', close: '#character_cross' },
+];
+
+function isShown(element) {
+    return !!element && getComputedStyle(element).display !== 'none';
+}
+
+function openOverlays() {
+    return OVERLAYS.filter(overlay => isShown(document.querySelector(overlay.selector)));
+}
+
+function openLayerCount() {
+    let count = 0;
+    if (currentPageId()) count += 1;
+    count += openOverlays().length;
+    count += document.querySelectorAll('dialog.popup[open]').length;
+    if (sheet) count += 1;
+    return count;
+}
+
+function watchOverlays(on) {
+    nav.observer?.disconnect();
+    nav.observer = null;
+    if (!on) return;
+    nav.observer = new MutationObserver(() => scheduleHistorySync());
+    for (const overlay of OVERLAYS) {
+        const element = document.querySelector(overlay.selector);
+        if (element) nav.observer.observe(element, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+}
+
+function scheduleHistorySync(delay = 220) {
+    window.clearTimeout(nav.timer);
+    nav.timer = window.setTimeout(syncHistory, delay);
+}
+
+function syncHistory() {
+    nav.timer = 0;
+    if (!active || !settings.backGesture) return;
+    if (nav.suppress) {
+        scheduleHistorySync();
         return;
     }
+    const want = openLayerCount();
+    try {
+        if (want > nav.depth) {
+            while (nav.depth < want) {
+                nav.depth += 1;
+                history.pushState({ stmui: nav.depth }, '');
+            }
+        } else if (want < nav.depth) {
+            const steps = nav.depth - want;
+            nav.depth = want;
+            nav.suppress += 1;
+            history.go(-steps);
+            // If no popstate arrives, do not leave the guard armed for a real back press.
+            window.clearTimeout(nav.guard);
+            nav.guard = window.setTimeout(() => { nav.suppress = 0; }, 800);
+        }
+    } catch (error) {
+        console.debug(LOG, 'History sync skipped', error);
+    }
+}
+
+function closeTopLayer() {
     if (sheet) {
-        sheet.pushedHistory = false;
         closeSheet();
+        return true;
+    }
+    const popups = document.querySelectorAll('dialog.popup[open]');
+    if (popups.length) {
+        popups[popups.length - 1].dispatchEvent(new Event('cancel', { cancelable: true }));
+        return true;
+    }
+    const overlays = openOverlays();
+    if (overlays.length) {
+        $j()(overlays[0].close).trigger('click');
+        return true;
+    }
+    if (currentPageId()) {
+        closePages();
+        return true;
+    }
+    return false;
+}
+
+function onPopState(event) {
+    if (nav.suppress > 0) {
+        nav.suppress -= 1;
+        return;
+    }
+    if (!active || !settings.backGesture) return;
+    if (nav.depth > 0) {
+        nav.depth -= 1;
+        closeTopLayer();
+        scheduleHistorySync(400);
+    } else if (event.state?.stmui) {
+        // A leftover entry from before a reload: nothing is open, so keep going back.
+        history.back();
+    }
+}
+
+function resetHistoryTracking() {
+    window.clearTimeout(nav.timer);
+    nav.depth = 0;
+    nav.suppress = 0;
+}
+
+// ------------------------------------------------------------ pages
+
+function drawerById(id) {
+    const drawer = document.getElementById(id);
+    return drawer?.classList.contains('drawer') ? drawer : null;
+}
+
+/** The id of the top-bar drawer that is currently open, if any. */
+function currentPageId() {
+    const content = document.querySelector('#top-settings-holder > .drawer > .drawer-content.openDrawer');
+    return content?.closest('.drawer')?.id || null;
+}
+
+function pageInfo(drawer) {
+    const known = PAGES[drawer.id];
+    if (known) return known;
+    const iconEl = drawer.querySelector('.drawer-icon');
+    const faClass = Array.from(iconEl?.classList ?? []).find(name => name.startsWith('fa-') && !['fa-solid', 'fa-fw', 'fa-regular'].includes(name));
+    const title = iconEl?.getAttribute('title') || drawer.getAttribute('title') || drawer.id.replace(/[-_]+/g, ' ');
+    return { title, long: '', icon: faClass ?? 'fa-puzzle-piece' };
+}
+
+function openPage(id) {
+    const drawer = drawerById(id);
+    if (!drawer) return;
+    if (drawer.querySelector(':scope > .drawer-content')?.classList.contains('openDrawer')) return;
+    drawer.querySelector(':scope > .drawer-toggle')?.click();
+}
+
+function closePages() {
+    for (const content of document.querySelectorAll('#top-settings-holder > .drawer > .drawer-content.openDrawer')) {
+        content.parentElement.querySelector(':scope > .drawer-toggle')?.click();
+    }
+}
+
+function showCharacterList() {
+    document.getElementById('rm_button_characters')?.click();
+}
+
+// ------------------------------------------------------------ app shell
+
+let shell = null;
+
+class Shell {
+    constructor() {
+        this.drawerObserver = null;
+        this.keyboardBase = { width: 0, height: 0 };
+        this.onResize = () => this.checkKeyboard();
+        this.build();
+    }
+
+    build() {
+        // ---- top app bar
+        this.back = h('button', { type: 'button', class: 'stmui-ab-btn stmui-ab-back', 'aria-label': 'Back to chat', onclick: () => closePages() }, [icon('fa-arrow-left')]);
+        this.avatar = h('span', { class: 'stmui-ab-avatar', 'aria-hidden': 'true' });
+        this.titleEl = h('span', { class: 'stmui-ab-title' });
+        this.subEl = h('span', { class: 'stmui-ab-sub' });
+        this.who = h('button', { type: 'button', class: 'stmui-ab-who', onclick: () => this.onWhoClick() }, [
+            this.avatar,
+            h('span', { class: 'stmui-ab-text' }, [this.titleEl, this.subEl]),
+        ]);
+        this.actions = h('div', { class: 'stmui-ab-actions' }, [
+            h('button', {
+                type: 'button',
+                class: 'stmui-ab-btn stmui-ab-chats',
+                'aria-label': 'Chat history',
+                title: 'Chat history',
+                onclick: () => document.getElementById('option_select_chat')?.click(),
+            }, [icon('fa-clock-rotate-left')]),
+            h('button', {
+                type: 'button',
+                class: 'stmui-ab-btn stmui-ab-new',
+                'aria-label': 'Start a new chat',
+                title: 'New chat',
+                onclick: () => document.getElementById('option_start_new_chat')?.click(),
+            }, [icon('fa-pen-to-square')]),
+        ]);
+        this.appbar = h('header', { id: 'stmui-appbar', class: 'stmui-appbar', 'data-stmui': '1' }, [this.back, this.who, this.actions]);
+
+        // ---- bottom tab bar
+        this.tabs = new Map();
+        const tabButtons = TABS.map(tab => {
+            const button = h('button', {
+                type: 'button',
+                class: 'stmui-tab',
+                'data-tab': tab.id,
+                'aria-label': tab.label,
+                onclick: () => this.onTab(tab.id),
+            }, [
+                h('span', { class: 'stmui-tab-icon' }, [icon(tab.icon)]),
+                h('span', { class: 'stmui-tab-label', text: tab.label }),
+            ]);
+            this.tabs.set(tab.id, button);
+            return button;
+        });
+        this.tabbar = h('nav', { id: 'stmui-tabbar', class: 'stmui-tabbar', 'aria-label': 'Main', 'data-stmui': '1' }, tabButtons);
+
+        for (const el of [this.appbar, this.tabbar]) shieldFromDrawerAutoClose(el);
+        document.body.append(this.appbar, this.tabbar);
+
+        // The Characters page switches between list, editor and group views without events.
+        // Picking someone from the list should land in their chat, like a messaging app.
+        this.jumpAt = 0;
+        this.onPanelClick = event => {
+            const entry = event.target.closest?.('#rm_print_characters_block .character_select, #rm_print_characters_block .group_select');
+            const bulk = document.querySelector('#rm_print_characters_block.group_overlay_mode_select');
+            if (entry && !bulk && !event.target.closest('.ch_fav_icon, .tag, .bulk_select_checkbox')) {
+                this.jumpAt = Date.now();
+                // Tapping the character you are already chatting with does not change chats.
+                const current = ctx().characterId;
+                if (entry.dataset.chid !== undefined && current !== undefined && String(entry.dataset.chid) === String(current)) setTimeout(closePages, 200);
+            }
+            setTimeout(() => this.update(), 80);
+        };
+        document.getElementById('right-nav-panel')?.addEventListener('click', this.onPanelClick);
+
+        // Follow SillyTavern opening and closing its drawers, whoever triggers it.
+        this.drawerObserver = new MutationObserver(() => {
+            this.update();
+            scheduleHistorySync();
+        });
+        for (const content of document.querySelectorAll('#top-settings-holder > .drawer > .drawer-content')) {
+            this.drawerObserver.observe(content, { attributes: true, attributeFilter: ['class'] });
+        }
+        window.addEventListener('resize', this.onResize);
+        this.checkKeyboard();
+        this.update();
+    }
+
+    destroy() {
+        window.clearTimeout(this.settleTimer);
+        document.getElementById('right-nav-panel')?.removeEventListener('click', this.onPanelClick);
+        this.drawerObserver?.disconnect();
+        window.removeEventListener('resize', this.onResize);
+        this.appbar.remove();
+        this.tabbar.remove();
+        const root = document.documentElement;
+        root.classList.remove('stmui-page-open', 'stmui-keyboard');
+        delete root.dataset.stmuiPage;
+    }
+
+    /** Hides the tab bar while the on-screen keyboard is up (the layout shrinks with it). */
+    checkKeyboard() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        if (Math.abs(width - this.keyboardBase.width) > 40) this.keyboardBase = { width, height };
+        if (height > this.keyboardBase.height) this.keyboardBase.height = height;
+        const typing = document.activeElement?.matches?.('textarea, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), [contenteditable="true"]');
+        const keyboard = height < this.keyboardBase.height * 0.78 && !!typing;
+        document.documentElement.classList.toggle('stmui-keyboard', keyboard);
+    }
+
+    onTab(id) {
+        if (id === 'more') {
+            openMoreSheet();
+            return;
+        }
+        if (sheet) closeSheet(true);
+        if (id === 'chat') {
+            closePages();
+            return;
+        }
+        const open = currentPageId();
+        if (open === id) {
+            // Tapping the current tab goes "home" within it.
+            if (id === 'rightNavHolder') showCharacterList();
+            else document.querySelector(`#${id} > .drawer-content`)?.scrollTo?.({ top: 0, behavior: 'smooth' });
+            return;
+        }
+        openPage(id);
+        if (id === 'rightNavHolder') setTimeout(showCharacterList, 30);
+    }
+
+    /** Called when SillyTavern switches chats. */
+    onChatChanged() {
+        if (this.jumpAt && Date.now() - this.jumpAt < 4000 && currentPageId() === 'rightNavHolder') closePages();
+        this.jumpAt = 0;
+        this.update();
+    }
+
+    onWhoClick() {
+        if (currentPageId()) return;
+        const context = ctx();
+        if (context.groupId || context.characterId !== undefined) openPage('rightNavHolder');
+        else {
+            openPage('rightNavHolder');
+            setTimeout(showCharacterList, 30);
+        }
+    }
+
+    update() {
+        const pageId = currentPageId();
+        // When SillyTavern swaps one drawer for another, none is open for a moment.
+        // Wait that out instead of flashing the chat header in between.
+        if (!pageId && this.lastPage) {
+            window.clearTimeout(this.settleTimer);
+            this.settleTimer = window.setTimeout(() => {
+                this.lastPage = currentPageId();
+                this.render(this.lastPage);
+            }, 200);
+            return;
+        }
+        window.clearTimeout(this.settleTimer);
+        this.lastPage = pageId;
+        this.render(pageId);
+    }
+
+    render(pageId) {
+        const root = document.documentElement;
+        root.classList.toggle('stmui-page-open', !!pageId);
+        if (pageId) root.dataset.stmuiPage = pageId;
+        else delete root.dataset.stmuiPage;
+
+        const tabId = !pageId ? 'chat' : (this.tabs.has(pageId) ? pageId : 'more');
+        for (const [id, button] of this.tabs) {
+            const on = id === tabId;
+            button.classList.toggle('stmui-tab-on', on);
+            if (on) button.setAttribute('aria-current', 'page');
+            else button.removeAttribute('aria-current');
+        }
+
+        if (pageId) {
+            const drawer = drawerById(pageId);
+            const info = drawer ? pageInfo(drawer) : { title: '', icon: 'fa-gear' };
+            this.titleEl.textContent = info.title;
+            this.subEl.textContent = info.long ?? '';
+            if (pageId === 'rightNavHolder') {
+                const editing = isShown(document.getElementById('rm_ch_create_block'));
+                const name = document.getElementById('character_name_pole')?.value?.trim();
+                if (editing) this.subEl.textContent = name ? `Editing ${name}` : 'New character';
+                else if (isShown(document.getElementById('rm_group_chats_block'))) this.subEl.textContent = 'Group chat';
+            }
+            this.avatar.replaceChildren(icon(info.icon));
+            this.avatar.classList.add('stmui-ab-avatar-icon');
+            this.who.disabled = true;
+            this.appbar.classList.add('stmui-ab-page');
+            return;
+        }
+
+        this.appbar.classList.remove('stmui-ab-page');
+        this.who.disabled = false;
+        const context = ctx();
+        let name = 'SillyTavern';
+        let image = null;
+        let hasChat = false;
+        if (context.groupId) {
+            const group = context.groups?.find(g => String(g.id) === String(context.groupId));
+            name = group?.name ?? 'Group chat';
+            hasChat = true;
+        } else if (context.characterId !== undefined && context.characters?.[context.characterId]) {
+            const character = context.characters[context.characterId];
+            name = character.name;
+            image = character.avatar && character.avatar !== 'none'
+                ? (context.getThumbnailUrl?.('avatar', character.avatar) ?? `/thumbnail?type=avatar&file=${encodeURIComponent(character.avatar)}`)
+                : null;
+            hasChat = true;
+        }
+        this.titleEl.textContent = name;
+        const status = context.onlineStatus;
+        const connected = status && status !== 'no_connection';
+        this.subEl.textContent = connected ? String(status) : 'Not connected';
+        this.subEl.classList.toggle('stmui-ab-offline', !connected);
+        this.avatar.classList.remove('stmui-ab-avatar-icon');
+        if (image) this.avatar.replaceChildren(h('img', { src: image, alt: '' }));
+        else this.avatar.replaceChildren(icon(context.groupId ? 'fa-users' : (hasChat ? 'fa-user' : 'fa-comments')));
+        this.actions.hidden = !hasChat;
+    }
+}
+
+function openMoreSheet() {
+    showSheet(new MenuSheet({
+        title: 'More',
+        subtitle: '',
+        fill: body => {
+            const drawers = Array.from(document.querySelectorAll('#top-settings-holder > .drawer'))
+                .filter(drawer => drawer.id && !TABS.some(tab => tab.id === drawer.id));
+            drawers.sort((a, b) => {
+                const ai = MORE_ORDER.indexOf(a.id);
+                const bi = MORE_ORDER.indexOf(b.id);
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+            });
+            const openId = currentPageId();
+            const status = ctx().onlineStatus;
+            const tiles = drawers.map(drawer => {
+                const info = pageInfo(drawer);
+                let note = info.long ?? '';
+                if (drawer.id === 'sys-settings-button') note = status && status !== 'no_connection' ? 'Connected' : 'Not connected';
+                return h('button', {
+                    type: 'button',
+                    class: `stmui-tile ${openId === drawer.id ? 'stmui-tile-on' : ''} ${drawer.id === 'sys-settings-button' && note === 'Not connected' ? 'stmui-tile-warn' : ''}`,
+                    onclick: () => {
+                        closeSheet(true);
+                        openPage(drawer.id);
+                    },
+                }, [
+                    h('span', { class: 'stmui-tile-icon' }, [icon(info.icon)]),
+                    h('span', { class: 'stmui-tile-label', text: info.title }),
+                    note ? h('span', { class: 'stmui-tile-note', text: note }) : null,
+                ]);
+            });
+            body.append(h('div', { class: 'stmui-tiles' }, tiles));
+
+            const context = ctx();
+            const inChat = !!(context.groupId || context.characterId !== undefined);
+            const row = (iconName, label, onclick, disabled = false) => h('button', {
+                type: 'button', class: 'stmui-menu-row', disabled, onclick,
+            }, [icon(`${iconName} stmui-menu-row-icon`), h('span', { text: label }), icon('fa-chevron-right stmui-menu-row-go')]);
+            body.append(h('div', { class: 'stmui-menu-list' }, [
+                row('fa-clock-rotate-left', 'Chat history', () => {
+                    closeSheet(true);
+                    document.getElementById('option_select_chat')?.click();
+                }, !inChat),
+                row('fa-pen-to-square', 'Start a new chat', () => {
+                    closeSheet(true);
+                    document.getElementById('option_start_new_chat')?.click();
+                }, !inChat),
+                row('fa-mobile-screen', 'Mobile UI settings', () => {
+                    closeSheet(true);
+                    openMobileSettings();
+                }),
+            ]));
+        },
+    }));
+}
+
+function openMobileSettings() {
+    openPage('extensions-settings-button');
+    setTimeout(() => {
+        // The container uses `display: contents`, so scroll to the drawer inside it.
+        const drawer = document.querySelector('#stmui_settings .inline-drawer');
+        if (!drawer) return;
+        const content = drawer.querySelector('.inline-drawer-content');
+        if (content && getComputedStyle(content).display === 'none') drawer.querySelector('.inline-drawer-toggle')?.click();
+        drawer.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }, 250);
+}
+
+function syncShell() {
+    const want = active && settings.appShell;
+    if (want && !shell) shell = new Shell();
+    else if (!want && shell) {
+        shell.destroy();
+        shell = null;
     }
 }
 
@@ -814,27 +1337,33 @@ function startObserver() {
     if (domObserver) return;
     const selector = LOREBOOK_TARGETS.map(target => target.selector).join(',') + (settings.longSelects ? ',select' : '');
     domObserver = new MutationObserver(records => {
+        let rescan = false;
+        let layers = false;
         for (const record of records) {
+            if (record.target === document.body) layers = true;
+            if (rescan) continue;
             for (const node of record.addedNodes) {
                 if (node.nodeType !== 1 || node.closest?.('#chat')) continue;
                 if (node.matches?.(selector) || node.querySelector?.(selector)) {
-                    scheduleScan();
-                    return;
+                    rescan = true;
+                    break;
                 }
             }
-            if (settings.longSelects && record.target instanceof HTMLSelectElement && record.addedNodes.length && !pickers.has(record.target)) {
-                scheduleScan();
-                return;
+            if (!rescan && settings.longSelects && record.target instanceof HTMLSelectElement && record.addedNodes.length && !pickers.has(record.target)) {
+                rescan = true;
             }
-            if (record.removedNodes.length && pickers.size) {
+            if (!rescan && record.removedNodes.length && pickers.size) {
                 for (const select of pickers.keys()) {
                     if (!select.isConnected) {
-                        scheduleScan();
-                        return;
+                        rescan = true;
+                        break;
                     }
                 }
             }
         }
+        if (rescan) scheduleScan();
+        // SillyTavern popups are <dialog>s appended to and removed from <body>.
+        if (layers) scheduleHistorySync();
     });
     domObserver.observe(document.body, { childList: true, subtree: true });
 }
@@ -882,6 +1411,8 @@ function setFeatureClasses() {
     const root = document.documentElement;
     root.classList.toggle('stmui-on', active);
     root.classList.toggle('stmui-touch', active && settings.touchSizing);
+    root.classList.toggle('stmui-shell', active && settings.appShell);
+    root.classList.toggle('stmui-chat', active && settings.chatStyle);
 }
 
 function applyState() {
@@ -894,6 +1425,11 @@ function applyState() {
         stopObserver();
         closeSheet(true);
     }
+    syncShell();
+    const backGesture = active && settings.backGesture;
+    watchOverlays(backGesture);
+    if (!backGesture) resetHistoryTracking();
+    else scheduleHistorySync();
     scan();
     syncWandShortcut();
     updateStatusLine();
@@ -907,10 +1443,10 @@ function updateStatusLine() {
     if (!line) return;
     const mode = readMode();
     let text;
-    if (!settings.enabled) text = 'Disabled. The original interface is shown.';
+    if (!settings.enabled) text = 'Off. The original interface is shown.';
     else if (mode === 'never') text = 'Turned off on this device. The original interface is shown.';
-    else if (mode === 'always') text = 'Forced on for this device.';
-    else text = detectPhone() ? 'Phone detected. Mobile UI is active.' : 'Not a phone. The original interface is shown.';
+    else if (mode === 'always') text = 'Always on for this device.';
+    else text = detectPhone() ? 'Phone detected. Mobile UI is on.' : 'Not a phone, so the original interface is shown.';
     line.textContent = text;
     line.classList.toggle('stmui-status-active', active);
 }
@@ -920,9 +1456,12 @@ function buildSettings() {
     const container = document.getElementById('extensions_settings2') ?? document.getElementById('extensions_settings');
     if (!container) return;
 
-    const check = (id, label, hint) => h('label', { class: 'checkbox_label', for: id, title: hint ?? '' }, [
+    const check = (id, label, hint) => h('label', { class: 'checkbox_label stmui-check', for: id }, [
         h('input', { type: 'checkbox', id }),
-        h('span', { text: label }),
+        h('span', { class: 'stmui-check-text' }, [
+            h('span', { class: 'stmui-check-label', text: label }),
+            hint ? h('small', { class: 'stmui-check-hint', text: hint }) : null,
+        ]),
     ]);
 
     const modeSelect = h('select', { id: 'stmui_mode', class: 'text_pole' }, [
@@ -938,19 +1477,22 @@ function buildSettings() {
                 h('div', { class: 'inline-drawer-icon fa-solid fa-circle-chevron-down down' }),
             ]),
             h('div', { class: 'inline-drawer-content' }, [
-                check('stmui_enabled', 'Enable Mobile UI', 'Master switch. Off restores the original interface.'),
+                check('stmui_enabled', 'Enable Mobile UI', 'Off brings back the original interface.'),
                 h('p', { id: 'stmui_status', class: 'stmui-status-line' }),
                 h('label', { class: 'stmui-field', for: 'stmui_mode' }, [
-                    h('span', { class: 'stmui-field-label', text: 'Activation (this device only)' }),
+                    h('span', { class: 'stmui-field-label', text: 'Use it on this device' }),
                     modeSelect,
                 ]),
-                h('small', { class: 'stmui-note', text: 'Use "Always on" if your phone is not detected, for example when Chrome is set to Desktop site.' }),
+                h('small', { class: 'stmui-note', text: 'Pick "Always on" if your phone is not detected.' }),
                 h('hr'),
-                check('stmui_lorebook', 'Touch lorebook picker', 'Searchable bottom sheet for global, character, chat and persona lorebooks.'),
-                check('stmui_wand', 'Lorebooks shortcut in the wand menu', 'Adds a Lorebooks entry to the send-bar wand menu.'),
-                check('stmui_touch', 'Larger touch targets and safe-area spacing', 'Bigger buttons, 16px inputs, notch and keyboard aware spacing.'),
-                check('stmui_long', 'Searchable sheet for long dropdowns (experimental)', 'Applies the sheet to any single-choice dropdown with 14+ options.'),
-                h('small', { class: 'stmui-note', text: 'Changes apply immediately. Nothing here changes your lorebook data.' }),
+                check('stmui_shell', 'App navigation', 'Top bar with the current character, and tabs at the bottom.'),
+                check('stmui_chat', 'Modern chat look', 'Message cards, bigger text and a rounded message box.'),
+                check('stmui_touch', 'Touch-friendly panels', 'Bigger buttons and sliders, roomier settings, bottom-sheet menus.'),
+                check('stmui_back', 'Back gesture closes panels', 'Android back closes the open page, popup or sheet first.'),
+                check('stmui_lorebook', 'Easy lorebook picker', 'Searchable list for global, character, chat and persona lorebooks.'),
+                check('stmui_wand', 'Lorebooks shortcut in the ✨ menu', ''),
+                check('stmui_long', 'Searchable long dropdowns (experimental)', 'Use the same list for any dropdown with 14 or more choices.'),
+                h('small', { class: 'stmui-note', text: 'Changes apply right away. Nothing here changes your characters, chats or lorebooks.' }),
             ]),
         ]),
     ]);
@@ -966,9 +1508,12 @@ function buildSettings() {
         });
     };
     bind('stmui_enabled', 'enabled');
+    bind('stmui_shell', 'appShell');
+    bind('stmui_chat', 'chatStyle');
+    bind('stmui_touch', 'touchSizing');
+    bind('stmui_back', 'backGesture');
     bind('stmui_lorebook', 'lorebookPicker');
     bind('stmui_wand', 'wandShortcut');
-    bind('stmui_touch', 'touchSizing');
     bind('stmui_long', 'longSelects');
 
     modeSelect.value = readMode();
@@ -998,14 +1543,23 @@ function init() {
     window.addEventListener('resize', reevaluate);
     window.addEventListener('orientationchange', reevaluate);
     window.addEventListener('popstate', onPopState);
+    document.addEventListener('focusin', () => shell?.checkKeyboard());
+    document.addEventListener('focusout', () => setTimeout(() => shell?.checkKeyboard(), 50));
 
-    // The wand menu can be (re)built after extensions load.
     const { eventSource, event_types } = ctx();
+    const refreshShell = () => shell?.update();
     eventSource?.on?.(event_types.APP_READY, () => {
         buildSettings();
         applyState();
     });
-    eventSource?.on?.(event_types.CHAT_CHANGED, () => sheet?.refresh());
+    eventSource?.on?.(event_types.CHAT_CHANGED, () => {
+        sheet?.refresh();
+        shell?.onChatChanged();
+    });
+    for (const name of ['ONLINE_STATUS_CHANGED', 'CHARACTER_EDITED', 'CHARACTER_RENAMED', 'GROUP_UPDATED', 'SETTINGS_UPDATED']) {
+        if (event_types[name]) eventSource?.on?.(event_types[name], refreshShell);
+    }
+    // The wand menu can be (re)built after extensions load.
     setTimeout(syncWandShortcut, 1500);
     setTimeout(syncWandShortcut, 5000);
 }
