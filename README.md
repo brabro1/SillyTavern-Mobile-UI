@@ -34,6 +34,12 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 
 **A send button with a little launch.** Tap send and the paper plane shoots off with a ripple, then lands back in the button.
 
+**Back to your recent chats in one tap.** The 🏠 button at the top left of a chat (or **More → Recent chats**) takes you to the start screen with all your recent chats.
+
+**Full-screen pictures.** Tap an avatar in the chat to see the picture full screen and full size. Pinch or double-tap to zoom, drag to look around, rotate, open it in a new tab or save it. Pull down or use the back gesture to close.
+
+**Clear notifications.** Messages and errors show as cards with an icon and a color: green for done, blue for info, orange for warnings, red for errors. Swipe one sideways to dismiss it.
+
 **Recent chats that are easy to read.** On the start screen each chat is a card: the character, the chat's name, the date, the last message, and pin, rename and delete buttons.
 
 **Personas on two tabs.** **All personas** to pick who you are, **Edit** to change the current one, with its picture and name at the top. No more scrolling past the whole list to reach the description.
@@ -47,6 +53,7 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 - **Keep unsent messages:** what you type is kept for each chat, even if the browser reloads.
 - **Keep screen on while replying:** the screen doesn't turn off while a reply is being written.
 - **Chat text size:** Small, Normal, Large or Extra large.
+- **Picture viewer** and **Nicer notifications:** switch these off to get SillyTavern's originals back.
 - **Vibration:** a short buzz on send and tab taps.
 
 | Recent chats | Prompt editor | Personas |
@@ -119,7 +126,7 @@ Find them under **More → Mobile UI settings**. Each part can be switched on or
 | Enable Mobile UI | Turns everything on or off. Off gives you the normal SillyTavern back. |
 | Use it on this device | **Automatic** (phones only), **Always on** or **Off**. This is saved per device. |
 | Theme, Animations, Theme background, Modern font, New icons | Same choices as in **More → Themes**. |
-| Chat text size, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Send animation, Vibration | Same choices as in **More → Phone features**. |
+| Chat text size, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Picture viewer, Nicer notifications, Send animation, Vibration | Same choices as in **More → Phone features**. |
 | App navigation | The top bar and the bottom tabs. |
 | Modern chat look | Message cards, bigger text, rounded message box. |
 | Touch-friendly panels | Bigger buttons and sliders, roomier settings, menus from the bottom. |

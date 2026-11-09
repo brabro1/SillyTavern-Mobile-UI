@@ -1578,11 +1578,56 @@ html.stmui-chat #send_but::before {
     translate: -1px 1px;
 }
 
-html.stmui-chat #send_form .mes_stop {
+/* Stop: the same circle as Send, with a plain square inside (SillyTavern's icon
+   already has its own ring, which doubled up and sat off-center). */
+html.stmui-chat #send_form #rightSendForm > .mes_stop {
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
     width: 42px;
     height: 42px;
-    font-size: 26px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--stmui-accent);
+    color: var(--stmui-on-accent);
     opacity: 1;
+    place-self: auto;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html.stmui-chat #send_form .mes_stop > i {
+    display: none;
+}
+
+html.stmui-chat #send_form .mes_stop::before {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: currentColor;
+}
+
+/* A soft pulse while the reply is being written. */
+html.stmui-motion-full.stmui-chat #send_form .mes_stop::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--stmui-accent) 55%, transparent);
+    animation: stmui-stop-pulse 1.6s ease-out infinite;
+    pointer-events: none;
+}
+
+html.stmui-chat #send_form .mes_stop:active {
+    transform: scale(0.9);
+}
+
+@keyframes stmui-stop-pulse {
+    to {
+        box-shadow: 0 0 0 10px transparent;
+    }
 }
 
 /* ==========================================================================
@@ -3956,4 +4001,264 @@ html.stmui-touch #persona_connections_buttons .menu_button > div {
 
 html.stmui-touch #persona_description {
     min-height: 32dvh;
+}
+
+/* ==========================================================================
+   Home button (back to Recent chats)
+   ========================================================================== */
+
+.stmui-ab-home[hidden],
+.stmui-ab-page .stmui-ab-home {
+    display: none;
+}
+
+.stmui-ab-home {
+    margin-right: -6px;
+}
+
+/* ==========================================================================
+   Notifications
+   ========================================================================== */
+
+html.stmui-on body #toast-container {
+    margin-top: 0 !important;
+}
+
+html.stmui-toasts body #toast-container > div.toast {
+    --stmui-t-color: var(--stmui-accent);
+    position: relative;
+    box-sizing: border-box;
+    min-height: 56px;
+    padding: 12px 40px 12px 56px !important;
+    border: 1px solid color-mix(in srgb, var(--stmui-t-color) 35%, var(--stmui-line));
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--stmui-t-color) 10%, var(--stmui-solid)) !important;
+    background-image: none !important;
+    color: var(--stmui-text) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    font-size: 14.5px;
+    line-height: 1.4;
+    text-shadow: none;
+    opacity: 1;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+
+html.stmui-toasts body #toast-container > div.toast.toast-success { --stmui-t-color: #4fb37a; }
+html.stmui-toasts body #toast-container > div.toast.toast-info { --stmui-t-color: #56a3e0; }
+html.stmui-toasts body #toast-container > div.toast.toast-warning { --stmui-t-color: #e6a23c; }
+html.stmui-toasts body #toast-container > div.toast.toast-error { --stmui-t-color: #e5574f; }
+
+/* Icon in a soft tile on the left. */
+html.stmui-toasts body #toast-container > .toast::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--stmui-t-color) 22%, transparent);
+}
+
+html.stmui-toasts body #toast-container > .toast::after {
+    content: '';
+    position: absolute;
+    top: 19px;
+    left: 19px;
+    width: 18px;
+    height: 18px;
+    background: var(--stmui-t-color);
+    -webkit-mask: var(--stmui-t-icon) center / contain no-repeat;
+    mask: var(--stmui-t-icon) center / contain no-repeat;
+}
+
+html.stmui-toasts body #toast-container > .toast .toast-title {
+    margin-bottom: 2px;
+    color: var(--stmui-text);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+html.stmui-toasts body #toast-container > .toast .toast-message {
+    color: color-mix(in srgb, var(--stmui-text) 85%, transparent);
+    overflow-wrap: anywhere;
+}
+
+html.stmui-toasts body #toast-container > .toast .toast-message a {
+    color: var(--stmui-t-color);
+}
+
+html.stmui-toasts body #toast-container > .toast .toast-close-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    color: var(--stmui-muted);
+    font-size: 20px;
+    text-shadow: none;
+    opacity: 1;
+}
+
+html.stmui-toasts body #toast-container > .toast .toast-progress {
+    height: 3px;
+    background: var(--stmui-t-color);
+    opacity: 0.8;
+}
+
+/* ==========================================================================
+   Picture viewer
+   ========================================================================== */
+
+.stmui-viewer {
+    --stmui-viewer-fade: 1;
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.stmui-viewer::backdrop {
+    background: transparent;
+}
+
+.stmui-viewer.stmui-viewer-open {
+    opacity: 1;
+}
+
+.stmui-viewer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.94);
+    opacity: var(--stmui-viewer-fade);
+}
+
+.stmui-viewer-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.stmui-viewer-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transform-origin: center center;
+    will-change: transform;
+    -webkit-user-drag: none;
+    pointer-events: none;
+}
+
+.stmui-viewer-open .stmui-viewer-img {
+    animation: stmui-viewer-in 0.32s var(--stmui-ease);
+}
+
+@keyframes stmui-viewer-in {
+    from {
+        opacity: 0;
+        scale: 0.86;
+    }
+}
+
+.stmui-viewer-top,
+.stmui-viewer-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.stmui-viewer-top {
+    top: 0;
+    padding: calc(10px + var(--stmui-safe-top, 0px)) 10px 24px 18px;
+    background: linear-gradient(rgba(0, 0, 0, 0.6), transparent);
+}
+
+.stmui-viewer-bar {
+    bottom: 0;
+    justify-content: center;
+    padding: 24px 10px calc(14px + var(--stmui-safe-bottom, 0px));
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+}
+
+.stmui-viewer-bare .stmui-viewer-top {
+    opacity: 0;
+    transform: translateY(-12px);
+    pointer-events: none;
+}
+
+.stmui-viewer-bare .stmui-viewer-bar {
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+}
+
+.stmui-viewer-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 17px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.stmui-viewer-btn {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.stmui-viewer-btn:active {
+    background: rgba(255, 255, 255, 0.28);
+    transform: scale(0.92);
+}
+
+.stmui-viewer-bar .stmui-viewer-btn {
+    margin: 0 6px;
+}
+
+.stmui-viewer-btn .stmui-svg {
+    width: 22px;
+    height: 22px;
+}
+
+html.stmui-motion-off .stmui-viewer,
+html.stmui-motion-off .stmui-viewer-img {
+    transition: none !important;
+    animation: none !important;
 }

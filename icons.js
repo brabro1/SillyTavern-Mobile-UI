@@ -14,6 +14,12 @@ export const ICONS = {
     'x': '<path d="M18 6 6 18M6 6l12 12"/>',
     'circle-x': '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/>',
     'check': '<path d="M20 6 9 17l-5-5"/>',
+    'home': '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',
+    'circle-check': '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+    'zoom-in': '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/>',
+    'zoom-out': '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3M8 11h6"/>',
+    'rotate-cw': '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+    'external': '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
     'plus': '<path d="M5 12h14M12 5v14"/>',
     'chevron-down': '<path d="m6 9 6 6 6-6"/>',
     'chevron-up': '<path d="m18 15-6-6-6 6"/>',
@@ -123,7 +129,8 @@ export const FA_MAP = {
     'fa-bars': 'menu',
     'fa-xmark': 'x', 'fa-times': 'x', 'fa-close': 'x', 'fa-x': 'x',
     'fa-circle-xmark': 'circle-x', 'fa-times-circle': 'circle-x',
-    'fa-check': 'check',
+    'fa-check': 'check', 'fa-circle-check': 'circle-check', 'fa-check-circle': 'circle-check',
+    'fa-house': 'home', 'fa-home': 'home', 'fa-magnifying-glass-plus': 'zoom-in', 'fa-magnifying-glass-minus': 'zoom-out',
     'fa-plus': 'plus',
     'fa-chevron-down': 'chevron-down', 'fa-angle-down': 'chevron-down', 'fa-caret-down': 'chevron-down',
     'fa-chevron-up': 'chevron-up', 'fa-angle-up': 'chevron-up', 'fa-caret-up': 'chevron-up',
@@ -262,4 +269,10 @@ export function iconCss(scope) {
         css += `${classes.map(fa => `${scope} .${fa}`).join(', ')} { --stmui-icon: ${maskFor(name)}; }\n`;
     }
     return css;
+}
+
+/** A data-URI mask for one icon, for CSS `mask` (e.g. notification icons). */
+export function iconUrl(name) {
+    const svg = `${SVG_OPEN.replace('currentColor', '#000')}${ICONS[name] ?? ''}</svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
