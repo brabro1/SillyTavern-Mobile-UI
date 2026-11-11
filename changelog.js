@@ -1,6 +1,12 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.4.1',
+        items: [
+            'Start SillyTavern with one tap on Android: a one-time Termux setup adds a home-screen shortcut that starts SillyTavern and opens it. See the README.',
+        ],
+    },
+    {
         version: '2.4.0',
         items: [
             'Editing a message opens a full page with a big text box, and Save and Cancel at the bottom. Back saves your changes.',

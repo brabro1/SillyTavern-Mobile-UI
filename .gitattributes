@@ -1,2 +1,1 @@
-* text=auto eol=lf
-*.jpg binary
+*.sh text eol=lf

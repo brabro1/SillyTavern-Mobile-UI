@@ -104,6 +104,24 @@ git clone https://github.com/brabro1/SillyTavern-Mobile-UI
 
 Then reload SillyTavern in your browser. (Need git? Run `pkg install git` first.)
 
+## Start SillyTavern with one tap (Android)
+
+Tired of opening Termux and typing `cd SillyTavern` and `node server.js` every time? Set this up once and you get a SillyTavern icon on your home screen. Tap it and SillyTavern starts (if it isn't running yet) and opens in your browser as soon as it's ready.
+
+1. Install **Termux:Widget** from the same place you got Termux (for example F-Droid). Termux and Termux:Widget must come from the same store.
+2. In Termux, run this once:
+   ```bash
+   bash ~/SillyTavern/data/default-user/extensions/SillyTavern-Mobile-UI/termux/setup.sh
+   ```
+   It asks two questions:
+   - **Start SillyTavern whenever you open Termux?** Yes is a good choice.
+   - **Start it when the phone turns on?** This needs the Termux:Boot app.
+3. Long-press an empty spot on your home screen, pick **Widgets → Termux:Widget**, and choose **SillyTavern**. (Or long-press the Termux:Widget icon and drag the SillyTavern shortcut out.)
+
+There's also a **Stop SillyTavern** shortcut. In Android's settings, set Termux's battery use to **Unrestricted** so Android doesn't close it in the background.
+
+If you installed SillyTavern somewhere else, add `--dir` and the folder, for example `--dir ~/ST`. To undo everything, run the same command with `--remove` at the end.
+
 ## Update
 
 In SillyTavern: **More → Extensions → Manage extensions**, then tap update next to Mobile UI.
