@@ -54,16 +54,16 @@ jobs:
           done
           echo "SillyTavern did not start"; tail -50 ../st.log; exit 1
 
-      - name: Install the test browser
+      # GitHub's Ubuntu machines come with Google Chrome; use it instead of downloading a browser.
+      - name: Install the test tools
         working-directory: extension/tests
-        run: |
-          npm install --no-audit --no-fund
-          npx playwright install --with-deps chromium
+        run: npm install --no-audit --no-fund
 
       - name: Run the phone test
         working-directory: extension/tests
         env:
           ST_URL: http://127.0.0.1:8000
+          CHROME_CHANNEL: chrome
         run: node phone.mjs
 
       - name: Keep screenshots of failed steps
