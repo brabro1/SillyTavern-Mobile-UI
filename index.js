@@ -2098,6 +2098,67 @@ function messageActionLabel(button) {
     return 'Action';
 }
 
+/**
+ * In edit mode SillyTavern's ⧉ button duplicates the message, and the copy lands
+ * below a long message, off screen, so it looks like nothing happened. Ask which
+ * one you meant: copy the text, or duplicate the message.
+ */
+let passEditCopy = false;
+
+function onEditCopyClick(event) {
+    if (!active || !settings.messageMenu) return;
+    const button = event.target.closest?.('#chat .mes_edit_copy');
+    if (!button) return;
+    if (passEditCopy) {
+        passEditCopy = false;
+        return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    buzz(8);
+    const message = button.closest('.mes');
+    const textOf = () => message?.querySelector('.edit_textarea, #curEditTextarea')?.value ?? '';
+    showSheet(new MenuSheet({
+        title: 'Copy',
+        subtitle: 'What would you like to do?',
+        fill: body => body.append(h('div', { class: 'stmui-menu-list' }, [
+            h('button', {
+                type: 'button',
+                class: 'stmui-menu-row',
+                onclick: async () => {
+                    const text = textOf();
+                    closeSheet(true);
+                    const ok = await copyText(text);
+                    if (ok) globalThis.toastr?.success('Text copied.', '', { timeOut: 2000 });
+                    else globalThis.toastr?.error('Your browser blocked copying. Select the text and copy it instead.', 'Could not copy');
+                },
+            }, [ui('copy', 'stmui-menu-row-icon'), h('span', { class: 'stmui-row-text' }, [
+                h('span', { text: 'Copy text' }),
+                h('small', { text: 'Put the message text on the clipboard.' }),
+            ])]),
+            h('button', {
+                type: 'button',
+                class: 'stmui-menu-row',
+                onclick: () => {
+                    closeSheet(true);
+                    const count = ctx().chat?.length ?? 0;
+                    passEditCopy = true;
+                    button.click();
+                    // Say where the copy went once SillyTavern has added it.
+                    const check = (tries = 0) => {
+                        if ((ctx().chat?.length ?? 0) > count) globalThis.toastr?.success('A copy of the message was added right below it.', '', { timeOut: 3000 });
+                        else if (tries < 40) setTimeout(() => check(tries + 1), 250);
+                    };
+                    check();
+                },
+            }, [ui('file-plus', 'stmui-menu-row-icon'), h('span', { class: 'stmui-row-text' }, [
+                h('span', { text: 'Duplicate message' }),
+                h('small', { text: 'Add a second copy of this message to the chat, right below it.' }),
+            ])]),
+        ])),
+    }));
+}
+
 function onMessageMenuClick(event) {
     if (!active || !settings.messageMenu) return;
     const hint = event.target.closest?.('#chat .extraMesButtonsHint');
@@ -2633,6 +2694,7 @@ function syncExtras() {
     document.addEventListener('pointerdown', onSendPointerDown, true);
     document.addEventListener('click', onSendClick, true);
     document.addEventListener('click', onMessageMenuClick, true);
+    document.addEventListener('click', onEditCopyClick, true);
     document.addEventListener('click', onAvatarClick, true);
     document.addEventListener('touchstart', onToastTouchStart, { passive: true });
     document.addEventListener('touchmove', onToastTouchMove, { passive: true });

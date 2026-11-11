@@ -4262,3 +4262,21 @@ html.stmui-motion-off .stmui-viewer-img {
     transition: none !important;
     animation: none !important;
 }
+
+/* Menu rows with a short explanation under the label. */
+.stmui-menu-row .stmui-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 0;
+}
+
+.stmui-menu-row .stmui-row-text > span {
+    font-weight: 600;
+}
+
+.stmui-menu-row .stmui-row-text > small {
+    color: var(--stmui-muted);
+    font-size: 12.5px;
+    line-height: 1.35;
+}
