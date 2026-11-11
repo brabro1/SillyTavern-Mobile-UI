@@ -4280,3 +4280,346 @@ html.stmui-motion-off .stmui-viewer-img {
     font-size: 12.5px;
     line-height: 1.35;
 }
+
+/* ==========================================================================
+   Full-screen message editor
+   ========================================================================== */
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) {
+    position: fixed !important;
+    inset: var(--topBarBlockSize) 0 var(--stmui-bottom) 0;
+    z-index: 3300;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: auto;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 10px calc(12px + var(--stmui-safe-right)) 0 calc(12px + var(--stmui-safe-left));
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--stmui-solid) !important;
+    box-shadow: none !important;
+    content-visibility: visible;
+    animation: stmui-fade 0.18s ease-out;
+}
+
+/* Nothing else from the chat peeks around the editor. */
+html.stmui-chat.stmui-editing #form_sheld,
+html.stmui-chat.stmui-editing .stmui-jump {
+    visibility: hidden;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) :is(.mesAvatarWrapper, .swipe_left, .swipeRightBlock, .for_checkbox, .del_checkbox) {
+    display: none !important;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) > .mes_block {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* Lay the name, the text box and the buttons out top to bottom. */
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .ch_name {
+    display: contents;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .ch_name > .flex-container {
+    flex: 0 0 auto;
+    order: 0;
+    margin-bottom: 8px;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_text {
+    display: flex;
+    flex: 1 1 auto;
+    order: 2;
+    min-height: 0;
+    padding: 0;
+}
+
+html.stmui-chat.stmui-editing #chat #curEditTextarea {
+    flex: 1 1 auto;
+    box-sizing: border-box;
+    width: 100%;
+    height: auto !important;
+    min-height: 0;
+    max-height: none !important;
+    margin: 0;
+    padding: 14px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 16px;
+    background: var(--stmui-raised);
+    font-size: calc(var(--mainFontSize) * var(--stmui-text-scale, 1.07));
+    line-height: 1.6;
+    resize: none;
+    field-sizing: fixed;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_reasoning_details {
+    order: 1;
+    max-height: 30%;
+    overflow: auto;
+}
+
+/* Buttons sit at the bottom, above the keyboard: Cancel, tools, then a big Save. */
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons {
+    position: static;
+    order: 9;
+    display: flex !important;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 6px;
+    margin: 10px calc(-12px - var(--stmui-safe-right)) 0 calc(-12px - var(--stmui-safe-left));
+    padding: 10px calc(12px + var(--stmui-safe-right)) 10px calc(12px + var(--stmui-safe-left));
+    border-top: 1px solid var(--stmui-line);
+    background: var(--stmui-solid);
+}
+
+/* Tools share the first row; Cancel and Save share the second. */
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons .menu_button {
+    flex: 1 1 calc(20% - 6px);
+    /* SillyTavern dims these to half strength; on the editor page they are the main controls. */
+    opacity: 1;
+    filter: none;
+    width: auto;
+    height: 44px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border-radius: 14px;
+    font-size: 17px;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons .mes_edit_cancel {
+    order: 50;
+    flex: 1 1 40%;
+    height: 48px;
+    gap: 6px;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons .mes_edit_done {
+    order: 99;
+    flex: 1 1 40%;
+    height: 48px;
+    gap: 8px;
+    border-color: transparent !important;
+    background: var(--stmui-accent) !important;
+    color: var(--stmui-on-accent) !important;
+}
+
+html.stmui-chat.stmui-editing #chat .mes_edit_buttons .mes_edit_done::after,
+html.stmui-chat.stmui-editing #chat .mes_edit_buttons .mes_edit_cancel::after {
+    font-family: var(--mainFontFamily, system-ui, sans-serif);
+    font-size: 15px;
+    font-weight: 650;
+}
+
+html.stmui-chat.stmui-editing #chat .mes_edit_buttons .mes_edit_done::after {
+    content: var(--stmui-l-save, 'Save');
+}
+
+html.stmui-chat.stmui-editing #chat .mes_edit_buttons .mes_edit_cancel::after {
+    content: var(--stmui-l-cancel, 'Cancel');
+}
+
+html.stmui-chat.stmui-editing #chat .mes_edit_buttons .mes_edit_delete {
+    color: #ef6f6f;
+}
+
+/* ==========================================================================
+   Long chats: skip drawing messages that are far off screen
+   ========================================================================== */
+
+html.stmui-on.stmui-fast-chat #chat > .mes:not(.last_mes):not(:has(#curEditTextarea)) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 260px;
+}
+
+/* ==========================================================================
+   App bar extras: quick switch and find a setting
+   ========================================================================== */
+
+.stmui-ab-quick[hidden],
+.stmui-ab-search[hidden] {
+    display: none;
+}
+
+.stmui-ab-quick {
+    color: var(--stmui-accent);
+}
+
+/* ==========================================================================
+   Connection banner
+   ========================================================================== */
+
+.stmui-banner {
+    position: fixed;
+    top: calc(var(--topBarBlockSize, 56px) + 8px);
+    left: calc(10px + var(--stmui-safe-left, 0px));
+    right: calc(10px + var(--stmui-safe-right, 0px));
+    z-index: 4030;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px 12px 14px;
+    border: 1px solid color-mix(in srgb, #e5574f 45%, var(--stmui-line));
+    border-radius: 16px;
+    background: color-mix(in srgb, #e5574f 14%, var(--stmui-solid));
+    color: var(--stmui-text);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    animation: stmui-toast-in 0.3s var(--stmui-ease-pop);
+}
+
+.stmui-banner-ok {
+    border-color: color-mix(in srgb, #4fb37a 45%, var(--stmui-line));
+    background: color-mix(in srgb, #4fb37a 14%, var(--stmui-solid));
+}
+
+.stmui-banner-out {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.stmui-banner-icon {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    color: #ef7a72;
+}
+
+.stmui-banner-ok .stmui-banner-icon {
+    color: #4fb37a;
+}
+
+.stmui-banner-text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.stmui-banner-text small {
+    color: var(--stmui-muted);
+    font-size: 12.5px;
+}
+
+.stmui-banner-btn {
+    flex: 0 0 auto;
+    height: 38px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--stmui-text);
+    color: var(--stmui-surface);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Choice sheets, setting search, steps, what's new
+   ========================================================================== */
+
+.stmui-choice-search {
+    box-sizing: border-box;
+    width: calc(100% - 8px);
+    height: 46px;
+    margin: 0 4px 10px !important;
+    border-radius: 14px;
+    font-size: 16px;
+}
+
+.stmui-choice-img {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--stmui-raised-2);
+}
+
+.stmui-choice-on {
+    background: color-mix(in srgb, var(--stmui-accent) 12%, transparent);
+}
+
+.stmui-menu-row[hidden] {
+    display: none;
+}
+
+.stmui-flash {
+    border-radius: 12px;
+    animation: stmui-flash 1.8s ease-out;
+}
+
+@keyframes stmui-flash {
+    0%,
+    30% {
+        background-color: color-mix(in srgb, var(--stmui-accent) 30%, transparent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--stmui-accent) 60%, transparent);
+    }
+}
+
+.stmui-steps {
+    padding: 0 6px;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.stmui-steps p {
+    margin: 0 0 10px;
+}
+
+.stmui-news {
+    margin: 0 4px 6px;
+    padding-left: 22px;
+    font-size: 14.5px;
+    line-height: 1.5;
+}
+
+.stmui-news li {
+    margin-bottom: 6px;
+}
+
+/* ==========================================================================
+   Installed app and right-to-left languages
+   ========================================================================== */
+
+/* Opened from the home screen there is no browser bar; respect the status bar area. */
+html.stmui-standalone {
+    --stmui-safe-top: env(safe-area-inset-top, 0px);
+}
+
+html.stmui-rtl :is(.stmui-appbar, .stmui-tabbar, .stmui-panel, .stmui-banner, .stmui-viewer-top, .stmui-viewer-bar) {
+    direction: rtl;
+}
+
+html.stmui-rtl .stmui-tab-indicator {
+    left: auto;
+    right: var(--stmui-safe-right);
+    transform: translateX(calc(var(--stmui-tab-index, 0) * -100%));
+}
+
+html.stmui-rtl :is(.stmui-ab-back, .stmui-menu-row-go) .stmui-svg,
+html.stmui-rtl .stmui-ab-back .stmui-svg {
+    transform: scaleX(-1);
+}
+
+html.stmui-rtl .stmui-news {
+    padding-right: 22px;
+    padding-left: 0;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons .menu_button.disabled {
+    opacity: 0.35;
+}

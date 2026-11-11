@@ -1,0 +1,77 @@
+name: Checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  quick:
+    name: Files load and versions agree
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tests/check.mjs
+
+  phone:
+    name: Phone test in SillyTavern
+    needs: quick
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: extension
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Get SillyTavern (release)
+        run: git clone --depth 1 --branch release https://github.com/SillyTavern/SillyTavern.git st
+
+      - name: Install SillyTavern
+        working-directory: st
+        run: npm ci --no-audit --no-fund
+
+      - name: Add Mobile UI to SillyTavern
+        run: |
+          mkdir -p st/public/scripts/extensions/third-party/SillyTavern-Mobile-UI
+          rsync -a --exclude .git --exclude tests extension/ st/public/scripts/extensions/third-party/SillyTavern-Mobile-UI/
+
+      - name: Start SillyTavern
+        working-directory: st
+        run: |
+          nohup node server.js --port 8000 --browserLaunchEnabled false > ../st.log 2>&1 &
+          for i in $(seq 1 120); do
+            if curl -sf http://127.0.0.1:8000/ > /dev/null; then echo "SillyTavern is up"; exit 0; fi
+            sleep 2
+          done
+          echo "SillyTavern did not start"; tail -50 ../st.log; exit 1
+
+      - name: Install the test browser
+        working-directory: extension/tests
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Run the phone test
+        working-directory: extension/tests
+        env:
+          ST_URL: http://127.0.0.1:8000
+        run: node phone.mjs
+
+      - name: Keep screenshots of failed steps
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phone-test-screenshots
+          path: extension/tests/results
+          if-no-files-found: ignore
+
+      - name: SillyTavern log
+        if: failure()
+        run: tail -100 st.log

@@ -34,6 +34,16 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 
 **A send button with a little launch.** Tap send and the paper plane shoots off with a ripple, then lands back in the button.
 
+**Edit messages on a full page.** Tap ✎ and the message opens full screen with a big text box. The tools sit in one row, and Cancel and a big Save sit at the bottom, right above the keyboard. The back gesture saves your changes.
+
+**Switch things in two taps.** The ⚡ button at the top opens Quick switch, where you can change your persona, connection profile, model or preset without digging through pages. Hold the avatar in the top bar to switch persona straight away.
+
+**Find any setting.** On the Presets, API, Formatting, Settings and Extensions pages, the 🔍 at the top searches every option by name. Tap a result and it scrolls there and lights up.
+
+**Know when Termux stopped.** If SillyTavern stops answering, for example because Android closed Termux, a banner says so. It goes away by itself when the server is back.
+
+**Install it like an app.** **More → Install as an app** puts SillyTavern on your home screen with its own icon. It then opens full screen, without the browser bar.
+
 **Back to your recent chats in one tap.** The 🏠 button at the top left of a chat (or **More → Recent chats**) takes you to the start screen with all your recent chats.
 
 **Full-screen pictures.** Tap an avatar in the chat to see the picture full screen and full size. Pinch or double-tap to zoom, drag to look around, rotate, open it in a new tab or save it. Pull down or use the back gesture to close.
@@ -48,6 +58,9 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 
 **Phone features** (under **More → Phone features**):
 
+- **Long-press for message menu:** hold a message to open its menu. Turn it off if you'd rather long-press to select text.
+- **Connection check:** the banner when SillyTavern stops answering.
+- **Faster long chats:** messages far off screen aren't drawn until you scroll to them.
 - **Message menu:** tap ⋯ on a message for every action with its name: copy, edit, branch, translate, delete and more.
 - **Jump to latest:** a round button takes you back to the newest message when you scroll up.
 - **Keep unsent messages:** what you type is kept for each chat, even if the browser reloads.
@@ -56,9 +69,9 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 - **Picture viewer** and **Nicer notifications:** switch these off to get SillyTavern's originals back.
 - **Vibration:** a short buzz on send and tab taps.
 
-| Recent chats | Prompt editor | Personas |
-| :---: | :---: | :---: |
-| ![Recent chats on the start screen](docs/screenshots/recent.jpg) | ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) |
+| Message editor | Recent chats | Prompt editor | Personas |
+| :---: | :---: | :---: | :---: |
+| ![Message editor](docs/screenshots/editor.jpg) | ![Recent chats on the start screen](docs/screenshots/recent.jpg) | ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) |
 
 | Themes | Midnight | Paper |
 | :---: | :---: | :---: |
@@ -126,7 +139,7 @@ Find them under **More → Mobile UI settings**. Each part can be switched on or
 | Enable Mobile UI | Turns everything on or off. Off gives you the normal SillyTavern back. |
 | Use it on this device | **Automatic** (phones only), **Always on** or **Off**. This is saved per device. |
 | Theme, Animations, Theme background, Modern font, New icons | Same choices as in **More → Themes**. |
-| Chat text size, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Picture viewer, Nicer notifications, Send animation, Vibration | Same choices as in **More → Phone features**. |
+| Chat text size, Long-press for message menu, Connection check, Faster long chats, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Picture viewer, Nicer notifications, Send animation, Vibration | Same choices as in **More → Phone features**. |
 | App navigation | The top bar and the bottom tabs. |
 | Modern chat look | Message cards, bigger text, rounded message box. |
 | Touch-friendly panels | Bigger buttons and sliders, roomier settings, menus from the bottom. |
@@ -142,7 +155,8 @@ Find them under **More → Mobile UI settings**. Each part can be switched on or
 - Your characters, chats and lorebooks are never changed. Mobile UI only changes how things look and where buttons are.
 - It works alongside your other extensions. Extensions that add their own panels show up under **More**.
 - Made for SillyTavern 1.19. Use an up-to-date browser; it was built and checked with Chrome.
-- The menus and labels are in English.
+- Mobile UI's own menus follow SillyTavern's language: English, Spanish, Portuguese, Russian, Chinese, Japanese or Arabic (right to left). SillyTavern's own pages are translated by SillyTavern.
+- After an update, a short **What's new** list appears once. You can open it again from **More**. The full list of changes is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Uninstall
 

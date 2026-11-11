@@ -1,0 +1,13 @@
+{
+    "name": "mobile-ui-tests",
+    "private": true,
+    "type": "module",
+    "description": "Checks for the Mobile UI extension. Not needed to use the extension.",
+    "scripts": {
+        "check": "node check.mjs",
+        "phone": "node phone.mjs"
+    },
+    "devDependencies": {
+        "playwright": "1.65.0"
+    }
+}

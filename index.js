@@ -17,6 +17,9 @@
 
 import { svgIcon, iconCss, iconUrl } from './icons.js';
 import { THEMES, findTheme, themeCss } from './themes.js';
+import { t, setLocale, isRtl } from './i18n.js';
+import './locales.js';
+import { CHANGES, VERSION } from './changelog.js';
 
 const MODULE = 'mobileUI';
 const MODE_KEY = 'stmui_mode';
@@ -47,6 +50,10 @@ const DEFAULTS = Object.freeze({
     keepAwake: true,
     imageViewer: true,
     niceToasts: true,
+    longPress: true,
+    serverWatch: true,
+    fastChat: true,
+    lastSeenVersion: '',
 });
 
 const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extra large' };
@@ -54,6 +61,9 @@ const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extr
 /** Phone features shown as switches in More → Phone features and in the settings panel. */
 const EXTRAS = [
     { key: 'messageMenu', id: 'stmui_msgmenu', label: 'Message menu', hint: 'Tap ⋯ on a message for a full list of actions with names.' },
+    { key: 'longPress', id: 'stmui_longpress', label: 'Long-press for message menu', hint: 'Hold a message for its menu. Turn off if you prefer long-press to select text.' },
+    { key: 'serverWatch', id: 'stmui_server', label: 'Connection check', hint: 'Shows a banner when SillyTavern stops answering, for example when Termux was closed.' },
+    { key: 'fastChat', id: 'stmui_fastchat', label: 'Faster long chats', hint: 'Skips drawing messages far off screen, so long chats scroll smoothly.' },
     { key: 'jumpButton', id: 'stmui_jump', label: 'Jump to latest', hint: 'A button that takes you back to the newest message.' },
     { key: 'saveDrafts', id: 'stmui_drafts', label: 'Keep unsent messages', hint: 'What you type is kept for each chat, even if the browser reloads.' },
     { key: 'keepAwake', id: 'stmui_awake', label: 'Keep screen on while replying', hint: 'The screen stays on until the reply is finished.' },
@@ -190,13 +200,15 @@ function h(tag, attrs = {}, children = []) {
     for (const [key, value] of Object.entries(attrs)) {
         if (value === false || value === null || value === undefined) continue;
         if (key === 'class') el.className = value;
-        else if (key === 'text') el.textContent = value;
+        // Labels go through the translator; text without a translation stays as it is.
+        else if (key === 'text') el.textContent = typeof value === 'string' ? t(value) : value;
+        else if (key === 'title' || key === 'aria-label' || key === 'placeholder') el.setAttribute(key, t(String(value)));
         else if (key.startsWith('on')) el.addEventListener(key.slice(2), value);
         else el.setAttribute(key, value === true ? '' : value);
     }
     for (const child of children) {
         if (child === null || child === false || child === undefined) continue;
-        el.append(child);
+        el.append(typeof child === 'string' ? t(child) : child);
     }
     return el;
 }
@@ -853,6 +865,32 @@ function isShown(element) {
     return !!element && getComputedStyle(element).display !== 'none';
 }
 
+// ------------------------------------------------------- message editor
+
+/** SillyTavern edits a message in place; on a phone that edit gets its own full page. */
+function editingTextarea() {
+    return document.querySelector('#chat #curEditTextarea');
+}
+
+function editorOpen() {
+    return active && settings.chatStyle && !!editingTextarea();
+}
+
+function saveEditor() {
+    editingTextarea()?.closest('.mes')?.querySelector('.mes_edit_done')?.click();
+}
+
+function syncEditorState() {
+    const on = editorOpen();
+    document.documentElement.classList.toggle('stmui-editing', on);
+    if (on) {
+        const box = editingTextarea();
+        // SillyTavern sizes the box to its text; the page gives it the whole height instead.
+        box.style.removeProperty('height');
+    }
+    scheduleHistorySync();
+}
+
 // ------------------------------------------------------- prompt editor
 
 const PROMPT_EDITOR = '#completion_prompt_manager_popup';
@@ -958,6 +996,7 @@ function openLayerCount() {
     count += document.querySelectorAll('dialog.popup[open]').length;
     if (sheet) count += 1;
     if (viewer) count += 1;
+    if (editorOpen()) count += 1;
     return count;
 }
 
@@ -1017,6 +1056,11 @@ function closeTopLayer() {
     const popups = document.querySelectorAll('dialog.popup[open]');
     if (popups.length) {
         popups[popups.length - 1].dispatchEvent(new Event('cancel', { cancelable: true }));
+        return true;
+    }
+    if (editorOpen()) {
+        // Back keeps your changes, like a notes app. Cancel is still a tap away.
+        saveEditor();
         return true;
     }
     const overlays = openOverlays();
@@ -1149,6 +1193,23 @@ class Shell {
                 onclick: () => document.getElementById('option_start_new_chat')?.click(),
             }, [ui('chat-plus')]),
         ]);
+        this.quick = h('button', {
+            type: 'button',
+            class: 'stmui-ab-btn stmui-ab-quick',
+            'aria-label': t('Quick switch'),
+            title: t('Quick switch'),
+            onclick: () => {
+                buzz(6);
+                openQuickSwitch();
+            },
+        }, [ui('zap')]);
+        this.search = h('button', {
+            type: 'button',
+            class: 'stmui-ab-btn stmui-ab-search',
+            'aria-label': t('Find a setting'),
+            title: t('Find a setting'),
+            onclick: () => openSettingSearch(),
+        }, [ui('search')]);
         this.home = h('button', {
             type: 'button',
             class: 'stmui-ab-btn stmui-ab-home',
@@ -1156,7 +1217,7 @@ class Shell {
             title: 'Recent chats',
             onclick: () => goHome(),
         }, [ui('home')]);
-        this.appbar = h('header', { id: 'stmui-appbar', class: 'stmui-appbar', 'data-stmui': '1' }, [this.back, this.home, this.who, this.actions]);
+        this.appbar = h('header', { id: 'stmui-appbar', class: 'stmui-appbar', 'data-stmui': '1' }, [this.back, this.home, this.who, this.search, this.quick, this.actions]);
 
         // ---- bottom tab bar
         this.tabs = new Map();
@@ -1179,6 +1240,27 @@ class Shell {
         this.tabbar = h('nav', { id: 'stmui-tabbar', class: 'stmui-tabbar', 'aria-label': 'Main', 'data-stmui': '1' }, [this.indicator, ...tabButtons]);
 
         for (const el of [this.appbar, this.tabbar]) shieldFromDrawerAutoClose(el);
+
+        // Long-press the avatar in the bar to switch persona.
+        let holdTimer = 0;
+        let held = 0;
+        this.who.addEventListener('pointerdown', () => {
+            if (currentPageId()) return;
+            window.clearTimeout(holdTimer);
+            holdTimer = window.setTimeout(() => {
+                held = Date.now();
+                buzz(15);
+                openPersonaChooser();
+            }, 500);
+        });
+        for (const type of ['pointerup', 'pointercancel', 'pointerleave']) this.who.addEventListener(type, () => window.clearTimeout(holdTimer));
+        this.who.addEventListener('contextmenu', event => event.preventDefault());
+        this.who.addEventListener('click', event => {
+            if (Date.now() - held < 700) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            }
+        }, true);
         document.body.append(this.appbar, this.tabbar);
 
         // The Characters page switches between list, editor and group views without events.
@@ -1319,26 +1401,28 @@ class Shell {
             const drawer = drawerById(pageId);
             if (drawer && settings.touchSizing) requestAnimationFrame(() => fillRanges(drawer));
             const info = drawer ? pageInfo(drawer) : { title: '', icon: 'fa-gear' };
-            this.titleEl.textContent = info.title;
-            this.subEl.textContent = info.long ?? '';
+            this.titleEl.textContent = t(info.title);
+            this.subEl.textContent = t(info.long ?? '');
             this.subEl.classList.remove('stmui-ab-offline');
             // Switch back to "Presets" as soon as the editor starts sliding away.
             const editorMode = promptEditorOpen() ? promptEditorMode() : null;
             root.classList.toggle('stmui-prompt-editor', !!editorMode);
             if (editorMode === 'edit') {
                 const name = document.getElementById('completion_prompt_manager_popup_entry_form_name')?.value?.trim();
-                this.titleEl.textContent = 'Edit prompt';
-                this.subEl.textContent = name || 'New prompt';
+                this.titleEl.textContent = t('Edit prompt');
+                this.subEl.textContent = name || t('New prompt');
             } else if (editorMode === 'inspect') {
-                this.titleEl.textContent = 'Prompt list';
-                this.subEl.textContent = 'Prompts linked to this marker';
+                this.titleEl.textContent = t('Prompt list');
+                this.subEl.textContent = t('Prompts linked to this marker');
             }
             if (pageId === 'rightNavHolder') {
                 const editing = isShown(document.getElementById('rm_ch_create_block'));
                 const name = document.getElementById('character_name_pole')?.value?.trim();
-                if (editing) this.subEl.textContent = name ? `Editing ${name}` : 'New character';
-                else if (isShown(document.getElementById('rm_group_chats_block'))) this.subEl.textContent = 'Group chat';
+                if (editing) this.subEl.textContent = name ? t('Editing {name}', { name }) : t('New character');
+                else if (isShown(document.getElementById('rm_group_chats_block'))) this.subEl.textContent = t('Group chat');
             }
+            this.search.hidden = !SEARCH_PAGES.includes(pageId) || !!editorMode;
+            this.quick.hidden = true;
             this.avatar.replaceChildren(ui(info.icon));
             this.avatar.classList.add('stmui-ab-avatar-icon');
             this.who.disabled = true;
@@ -1348,6 +1432,8 @@ class Shell {
 
         this.appbar.classList.remove('stmui-ab-page');
         root.classList.remove('stmui-prompt-editor');
+        this.search.hidden = true;
+        this.quick.hidden = false;
         this.who.disabled = false;
         const context = ctx();
         let name = 'SillyTavern';
@@ -1355,7 +1441,7 @@ class Shell {
         let hasChat = false;
         if (context.groupId) {
             const group = context.groups?.find(g => String(g.id) === String(context.groupId));
-            name = group?.name ?? 'Group chat';
+            name = group?.name ?? t('Group chat');
             hasChat = true;
         } else if (context.characterId !== undefined && context.characters?.[context.characterId]) {
             const character = context.characters[context.characterId];
@@ -1369,7 +1455,7 @@ class Shell {
         const status = context.onlineStatus;
         const connected = status && status !== 'no_connection';
         // Some APIs report "Valid" (the key check) instead of a model name.
-        this.subEl.textContent = !connected ? 'Not connected' : (/^valid$/i.test(String(status)) ? 'Connected' : String(status));
+        this.subEl.textContent = !connected ? t('Not connected') : (/^valid$/i.test(String(status)) ? t('Connected') : t(String(status)));
         this.subEl.classList.toggle('stmui-ab-offline', !connected);
         this.avatar.classList.remove('stmui-ab-avatar-icon');
         if (image) this.avatar.replaceChildren(h('img', { src: image, alt: '' }));
@@ -1416,8 +1502,8 @@ function openMoreSheet() {
             const inChat = !!(context.groupId || context.characterId !== undefined);
             const row = (iconName, label, onclick, disabled = false) => h('button', {
                 type: 'button', class: 'stmui-menu-row', disabled, onclick,
-            }, [ui(iconName, 'stmui-menu-row-icon'), h('span', { text: label }), ui('chevron-right', 'stmui-menu-row-go')]);
-            const themeName = findTheme(settings.theme)?.name ?? 'Your theme';
+            }, [ui(iconName, 'stmui-menu-row-icon'), h('span', { text: t(label) }), ui('chevron-right', 'stmui-menu-row-go')]);
+            const themeName = findTheme(settings.theme)?.name ?? t('Your theme');
             body.append(h('div', { class: 'stmui-menu-list' }, [
                 h('button', {
                     type: 'button',
@@ -1437,6 +1523,9 @@ function openMoreSheet() {
                     document.getElementById('option_start_new_chat')?.click();
                 }, !inChat),
                 row('sparkles', 'Phone features', () => openExtrasSheet()),
+                row('zap', 'Quick switch', () => openQuickSwitch()),
+                isStandalone() ? null : row('download', 'Install as an app', () => installApp()),
+                row('star', "What's new", () => openWhatsNew()),
                 row('phone', 'Mobile UI settings', () => {
                     closeSheet(true);
                     openMobileSettings();
@@ -1783,9 +1872,18 @@ function startObserver() {
     domObserver = new MutationObserver(records => {
         let rescan = false;
         let layers = false;
+        let editorChanged = false;
         for (const record of records) {
             if (record.target === document.body) layers = true;
             if (rescan) continue;
+            if (!editorChanged) {
+                for (const node of [...record.addedNodes, ...record.removedNodes]) {
+                    if (node.nodeType === 1 && (node.id === 'curEditTextarea' || node.querySelector?.('#curEditTextarea'))) {
+                        editorChanged = true;
+                        break;
+                    }
+                }
+            }
             for (const node of record.addedNodes) {
                 if (node.nodeType !== 1 || node.closest?.('#chat')) continue;
                 if (node.matches?.(selector) || node.querySelector?.(selector)) {
@@ -1808,6 +1906,7 @@ function startObserver() {
         if (rescan) scheduleScan();
         // SillyTavern popups are <dialog>s appended to and removed from <body>.
         if (layers) scheduleHistorySync();
+        if (editorChanged) syncEditorState();
     });
     domObserver.observe(document.body, { childList: true, subtree: true });
 }
@@ -2129,8 +2228,8 @@ function onEditCopyClick(event) {
                     const text = textOf();
                     closeSheet(true);
                     const ok = await copyText(text);
-                    if (ok) globalThis.toastr?.success('Text copied.', '', { timeOut: 2000 });
-                    else globalThis.toastr?.error('Your browser blocked copying. Select the text and copy it instead.', 'Could not copy');
+                    if (ok) globalThis.toastr?.success(t('Text copied.'), '', { timeOut: 2000 });
+                    else globalThis.toastr?.error(t('Your browser blocked copying. Select the text and copy it instead.'), t('Could not copy'));
                 },
             }, [ui('copy', 'stmui-menu-row-icon'), h('span', { class: 'stmui-row-text' }, [
                 h('span', { text: 'Copy text' }),
@@ -2146,7 +2245,7 @@ function onEditCopyClick(event) {
                     button.click();
                     // Say where the copy went once SillyTavern has added it.
                     const check = (tries = 0) => {
-                        if ((ctx().chat?.length ?? 0) > count) globalThis.toastr?.success('A copy of the message was added right below it.', '', { timeOut: 3000 });
+                        if ((ctx().chat?.length ?? 0) > count) globalThis.toastr?.success(t('A copy of the message was added right below it.'), '', { timeOut: 3000 });
                         else if (tries < 40) setTimeout(() => check(tries + 1), 250);
                     };
                     check();
@@ -2211,8 +2310,8 @@ async function copyMessage(message) {
     const id = Number(message.getAttribute('mesid'));
     const text = ctx().chat?.[id]?.mes ?? message.querySelector('.mes_text')?.innerText ?? '';
     const ok = await copyText(text);
-    if (ok) globalThis.toastr?.success('Message copied.', '', { timeOut: 2000 });
-    else globalThis.toastr?.error('Your browser blocked copying. Long-press the text to copy it instead.', 'Could not copy');
+    if (ok) globalThis.toastr?.success(t('Message copied.'), '', { timeOut: 2000 });
+    else globalThis.toastr?.error(t('Your browser blocked copying. Long-press the text to copy it instead.'), t('Could not copy'));
 }
 
 /**
@@ -2339,7 +2438,7 @@ function updatePersonaTabs() {
         button.classList.toggle('stmui-seg-on', on);
         button.setAttribute('aria-selected', String(on));
         if (button.dataset.mode === 'edit') {
-            const label = name && name !== '[Persona Name]' ? `Edit ${name}` : 'Edit current';
+            const label = name && name !== '[Persona Name]' ? t('Edit {name}', { name }) : t('Edit current');
             const text = button.querySelector('.stmui-seg-text');
             if (text.textContent !== label) text.textContent = label;
         }
@@ -2660,6 +2759,506 @@ function closeViewer(immediate = false) {
     scheduleHistorySync();
 }
 
+// -- long-press a message for its menu
+
+const press = { timer: 0, x: 0, y: 0, fired: 0 };
+
+function onMessagePressStart(event) {
+    if (!active || !settings.messageMenu || !settings.longPress || event.pointerType === 'mouse') return;
+    const message = event.target.closest?.('#chat .mes');
+    if (!message || event.target.closest('textarea, input, a, button, .mes_button, .menu_button, .avatar, .swipe_left, .swipe_right, .mes_reasoning_summary, #curEditTextarea')) return;
+    if (message.querySelector('#curEditTextarea')) return;
+    window.clearTimeout(press.timer);
+    press.x = event.clientX;
+    press.y = event.clientY;
+    press.timer = window.setTimeout(() => {
+        press.timer = 0;
+        press.fired = Date.now();
+        window.getSelection?.()?.removeAllRanges();
+        buzz(15);
+        openMessageMenu(message);
+    }, 520);
+}
+
+function onMessagePressMove(event) {
+    if (press.timer && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) {
+        window.clearTimeout(press.timer);
+        press.timer = 0;
+    }
+}
+
+function onMessagePressEnd() {
+    window.clearTimeout(press.timer);
+    press.timer = 0;
+}
+
+/** After a long-press opened the menu, swallow the tap and the system menu that follow. */
+function onPressAfterEffects(event) {
+    if (press.fired && Date.now() - press.fired < 700) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }
+}
+
+// -- "can't reach SillyTavern" banner
+
+const server = { down: false, timer: 0, banner: null, busy: false };
+
+async function serverReachable() {
+    try {
+        // Any answer at all means the server is up; only a network failure counts.
+        await fetch('/api/ping', { method: 'POST', headers: ctx().getRequestHeaders?.() ?? {}, cache: 'no-store' });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function scheduleServerCheck(delay) {
+    window.clearTimeout(server.timer);
+    if (!active || !settings.serverWatch) return;
+    server.timer = window.setTimeout(checkServer, delay);
+}
+
+async function checkServer() {
+    if (!active || !settings.serverWatch || server.busy) return;
+    if (document.visibilityState !== 'visible') {
+        scheduleServerCheck(30000);
+        return;
+    }
+    server.busy = true;
+    const up = await serverReachable();
+    server.busy = false;
+    if (!up && !server.down) {
+        server.down = true;
+        showServerBanner();
+    } else if (up && server.down) {
+        server.down = false;
+        showServerBanner(true);
+    }
+    // Check often while it is down, rarely while all is well.
+    scheduleServerCheck(server.down ? 3000 : 30000);
+}
+
+function showServerBanner(back = false) {
+    server.banner?.remove();
+    server.banner = null;
+    if (!active) return;
+    const banner = h('div', { class: `stmui-banner ${back ? 'stmui-banner-ok' : ''}`, role: 'status', 'aria-live': 'polite' }, [
+        ui(back ? 'circle-check' : 'plug', 'stmui-banner-icon'),
+        h('span', { class: 'stmui-banner-text' }, back
+            ? [h('b', { text: t('Back online') })]
+            : [h('b', { text: t("Can't reach SillyTavern") }), h('small', { text: t('Is Termux still running? This reconnects by itself when the server is back.') })]),
+        back ? null : h('button', {
+            type: 'button',
+            class: 'stmui-banner-btn',
+            onclick: () => {
+                buzz(8);
+                checkServer();
+            },
+        }, [t('Retry')]),
+    ]);
+    shieldFromDrawerAutoClose(banner);
+    document.body.append(banner);
+    server.banner = banner;
+    if (back) {
+        setTimeout(() => {
+            if (server.banner === banner) {
+                banner.classList.add('stmui-banner-out');
+                setTimeout(() => banner.remove(), 250);
+                server.banner = null;
+            }
+        }, 2200);
+    }
+}
+
+function syncServerWatch() {
+    if (active && settings.serverWatch) scheduleServerCheck(server.down ? 1000 : 5000);
+    else {
+        window.clearTimeout(server.timer);
+        server.down = false;
+        server.banner?.remove();
+        server.banner = null;
+    }
+}
+
+// -- choice sheets (quick switcher)
+
+/**
+ * A sheet that lists choices with a search box when the list is long.
+ * @param {{ title: string, subtitle?: string, options: { value: string, label: string, note?: string, image?: string }[], current?: string, onPick: (value: string) => void }} config
+ */
+function openChoiceSheet({ title, subtitle = '', options, current, onPick }) {
+    showSheet(new MenuSheet({
+        title,
+        subtitle,
+        fill: body => {
+            const rows = options.map(option => {
+                const on = option.value === current;
+                return h('button', {
+                    type: 'button',
+                    class: `stmui-menu-row stmui-choice ${on ? 'stmui-choice-on' : ''}`,
+                    'data-search': normalizeText(`${option.label} ${option.note ?? ''}`),
+                    'aria-pressed': String(on),
+                    onclick: () => {
+                        closeSheet(true);
+                        if (option.value !== current) onPick(option.value);
+                    },
+                }, [
+                    option.image ? h('img', { class: 'stmui-choice-img', src: option.image, alt: '', loading: 'lazy' }) : null,
+                    h('span', { class: 'stmui-row-text' }, [
+                        h('span', { text: option.label }),
+                        option.note ? h('small', { text: option.note }) : null,
+                    ]),
+                    on ? ui('check', 'stmui-menu-row-icon') : null,
+                ]);
+            });
+            if (options.length > 8) {
+                const search = h('input', { type: 'search', class: 'text_pole stmui-choice-search', placeholder: t('Search'), 'aria-label': t('Search') });
+                search.addEventListener('input', () => {
+                    const words = normalizeText(search.value).split(/\s+/).filter(Boolean);
+                    for (const row of rows) row.hidden = !words.every(word => row.dataset.search.includes(word));
+                });
+                body.append(search);
+            }
+            if (!options.length) body.append(h('p', { class: 'stmui-menu-foot', text: t('Nothing to choose from here yet.') }));
+            body.append(h('div', { class: 'stmui-menu-list' }, rows));
+            requestAnimationFrame(() => body.querySelector('.stmui-choice-on')?.scrollIntoView({ block: 'center' }));
+        },
+    }));
+}
+
+/** Is this control on screen in its page, i.e. not inside a section SillyTavern has hidden? */
+function inActiveSection(element, root) {
+    for (let node = element; node && node !== root; node = node.parentElement) {
+        if (node.classList?.contains('displayNone') || node.style?.display === 'none') return false;
+    }
+    return true;
+}
+
+function optionsOf(select) {
+    return Array.from(select.options)
+        .filter(option => !option.disabled && !option.hidden && option.value !== '')
+        .map(option => ({ value: option.value, label: option.textContent.trim() || option.value, note: option.parentElement?.tagName === 'OPTGROUP' ? option.parentElement.label : '' }));
+}
+
+function pickFromSelect(select, value) {
+    select.value = value;
+    $j()(select).trigger('change');
+    select.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+const PRESET_SELECTS = {
+    openai: '#settings_preset_openai',
+    kobold: '#settings_preset',
+    koboldhorde: '#settings_preset',
+    novel: '#settings_preset_novel',
+    textgenerationwebui: '#settings_preset_textgenerationwebui',
+};
+
+function currentPresetSelect() {
+    const id = PRESET_SELECTS[ctx().mainApi];
+    return id ? document.querySelector(id) : null;
+}
+
+function currentModelSelect() {
+    const block = document.getElementById('rm_api_block');
+    if (!block) return null;
+    const candidates = Array.from(block.querySelectorAll('select[id^="model_"], select[id$="_model"], select[id*="model_select"]'))
+        .filter(select => !select.multiple && inActiveSection(select, block) && select.options.length > 1);
+    return candidates[0] ?? null;
+}
+
+function personaChoices() {
+    const power = ctx().powerUserSettings ?? {};
+    const names = power.personas ?? {};
+    const descriptions = power.persona_descriptions ?? {};
+    return Object.entries(names).map(([avatar, name]) => ({
+        value: avatar,
+        label: name || avatar,
+        note: (descriptions[avatar]?.description ?? '').replace(/\s+/g, ' ').slice(0, 70),
+        image: `/thumbnail?type=persona&file=${encodeURIComponent(avatar)}`,
+    })).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function currentPersona() {
+    const src = document.querySelector('#user_avatar_block .avatar-container.selected')?.dataset.avatarId;
+    return src ?? globalThis.user_avatar ?? '';
+}
+
+async function choosePersona(avatar) {
+    try {
+        const personas = await import('/scripts/personas.js');
+        await personas.setUserAvatar(avatar);
+    } catch (error) {
+        console.warn(LOG, 'Could not switch persona', error);
+        globalThis.toastr?.error(t('Open Personas to switch instead.'), t('Could not switch persona'));
+    }
+}
+
+function openPersonaChooser() {
+    openChoiceSheet({
+        title: t('Switch persona'),
+        subtitle: t('Who you are in the chat'),
+        options: personaChoices(),
+        current: currentPersona(),
+        onPick: choosePersona,
+    });
+}
+
+function openQuickSwitch() {
+    showSheet(new MenuSheet({
+        title: t('Quick switch'),
+        subtitle: t('Change who you are, the connection, the model or the preset.'),
+        fill: body => {
+            const rows = [];
+            const row = (iconName, label, value, onclick, disabled = false) => h('button', {
+                type: 'button', class: 'stmui-menu-row', disabled, onclick,
+            }, [
+                ui(iconName, 'stmui-menu-row-icon'),
+                h('span', { class: 'stmui-row-text' }, [h('span', { text: label }), h('small', { text: value || t('Not set') })]),
+                ui('chevron-right', 'stmui-menu-row-go'),
+            ]);
+            const personaName = document.getElementById('your_name')?.textContent?.trim();
+            rows.push(row('smile', t('Persona'), personaName, () => openPersonaChooser()));
+            const profiles = document.getElementById('connection_profiles');
+            if (profiles && optionsOf(profiles).length) {
+                rows.push(row('plug', t('Connection profile'), profiles.selectedOptions[0]?.textContent.trim(), () => openChoiceSheet({
+                    title: t('Connection profile'),
+                    options: optionsOf(profiles),
+                    current: profiles.value,
+                    onPick: value => pickFromSelect(profiles, value),
+                })));
+            }
+            const model = currentModelSelect();
+            if (model) {
+                rows.push(row('sparkles', t('Model'), model.selectedOptions[0]?.textContent.trim(), () => openChoiceSheet({
+                    title: t('Model'),
+                    options: optionsOf(model),
+                    current: model.value,
+                    onPick: value => {
+                        pickFromSelect(model, value);
+                        globalThis.toastr?.success(model.selectedOptions[0]?.textContent.trim() ?? value, t('Model'), { timeOut: 2000 });
+                    },
+                })));
+            }
+            const preset = currentPresetSelect();
+            if (preset) {
+                rows.push(row('sliders', t('Preset'), preset.selectedOptions[0]?.textContent.trim(), () => openChoiceSheet({
+                    title: t('Preset'),
+                    options: Array.from(preset.options).filter(option => !option.disabled).map(option => ({ value: option.value, label: option.textContent.trim() })),
+                    current: preset.value,
+                    onPick: value => pickFromSelect(preset, value),
+                })));
+            }
+            const status = ctx().onlineStatus;
+            rows.push(row('globe', t('API connection'), status && status !== 'no_connection' ? t('Connected') : t('Not connected'), () => {
+                closeSheet(true);
+                openPage('sys-settings-button');
+            }));
+            body.append(h('div', { class: 'stmui-menu-list' }, rows));
+        },
+    }));
+}
+
+// -- find a setting
+
+const SEARCH_PAGES = ['ai-config-button', 'sys-settings-button', 'advanced-formatting-button', 'user-settings-button', 'extensions-settings-button'];
+
+function ownText(element) {
+    let text = '';
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, {
+        acceptNode: node => (node.parentElement?.closest('select, option, textarea, script, style, .stmui-skip') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+    });
+    while (walker.nextNode() && text.length < 160) text += ` ${walker.currentNode.nodeValue}`;
+    return text.replace(/\s+/g, ' ').trim();
+}
+
+function settingSection(row, root) {
+    const parts = [];
+    const drawer = row.closest('.inline-drawer');
+    if (drawer && root.contains(drawer)) {
+        const header = drawer.querySelector(':scope > .inline-drawer-header, :scope > .inline-drawer-toggle');
+        const text = header ? ownText(header) : '';
+        if (text) parts.push(text);
+    }
+    let heading = null;
+    for (const candidate of root.querySelectorAll('h2, h3, h4, h5, .standoutHeader')) {
+        if (candidate.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING) heading = candidate;
+        else break;
+    }
+    const headingText = heading ? ownText(heading) : '';
+    if (headingText && !parts.includes(headingText)) parts.unshift(headingText);
+    return parts.join(' › ').slice(0, 80);
+}
+
+function settingItems(root) {
+    const items = [];
+    const seen = new Set();
+    const labels = new Set();
+    for (const control of root.querySelectorAll('input:not([type="hidden"]):not([type="file"]), select, textarea, .menu_button, .checkbox_label')) {
+        if (control.closest('.template_element, #stmui-sheet')) continue;
+        if (!inActiveSection(control, root)) continue;
+        let row = control;
+        let label = '';
+        for (let depth = 0; depth < 5 && row && row !== root; depth++, row = row.parentElement) {
+            label = ownText(row) || (row === control ? (control.getAttribute('title') || control.getAttribute('placeholder') || '') : '');
+            if (label.length >= 2) break;
+        }
+        if (!row || row === root || label.length < 2 || seen.has(row)) continue;
+        seen.add(row);
+        const section = settingSection(row, root);
+        const key = `${label}|${section}`;
+        if (labels.has(key)) continue;
+        labels.add(key);
+        items.push({ row, label: label.length > 90 ? `${label.slice(0, 90)}…` : label, section, search: normalizeText(`${label} ${section}`) });
+    }
+    return items;
+}
+
+function revealSetting(row) {
+    // Open any folded sections around it first.
+    for (let node = row.parentElement; node; node = node.parentElement) {
+        if (node.classList?.contains('inline-drawer-content') && getComputedStyle(node).display === 'none') {
+            node.closest('.inline-drawer')?.querySelector(':scope > .inline-drawer-toggle, :scope > .inline-drawer-header')?.click();
+        }
+    }
+    setTimeout(() => {
+        row.scrollIntoView({ block: 'center', behavior: motionAllowed() ? 'smooth' : 'auto' });
+        row.classList.remove('stmui-flash');
+        void row.offsetWidth;
+        row.classList.add('stmui-flash');
+        setTimeout(() => row.classList.remove('stmui-flash'), 2000);
+    }, 260);
+}
+
+function openSettingSearch() {
+    const pageId = currentPageId();
+    const root = pageId && document.querySelector(`#${pageId} > .drawer-content`);
+    if (!root) return;
+    const items = settingItems(root);
+    const title = pageInfo(drawerById(pageId)).title;
+    showSheet(new MenuSheet({
+        title: t('Find a setting'),
+        subtitle: t('In {page}', { page: t(title) }),
+        fill: body => {
+            const input = h('input', { type: 'search', class: 'text_pole stmui-choice-search', placeholder: t('Type a setting name…'), 'aria-label': t('Find a setting'), enterkeyhint: 'search' });
+            const list = h('div', { class: 'stmui-menu-list' });
+            const foot = h('p', { class: 'stmui-menu-foot' });
+            const render = () => {
+                const words = normalizeText(input.value).split(/\s+/).filter(Boolean);
+                const hits = words.length ? items.filter(item => words.every(word => item.search.includes(word))).slice(0, 60) : [];
+                list.replaceChildren(...hits.map(item => h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row',
+                    onclick: () => {
+                        closeSheet(true);
+                        revealSetting(item.row);
+                    },
+                }, [
+                    ui('search', 'stmui-menu-row-icon'),
+                    h('span', { class: 'stmui-row-text' }, [h('span', { text: item.label }), item.section ? h('small', { text: item.section }) : null]),
+                ])));
+                list.hidden = !hits.length;
+                foot.textContent = !words.length ? t('{count} settings on this page.', { count: items.length }) : (hits.length ? '' : t('No setting matches that.'));
+            };
+            input.addEventListener('input', render);
+            body.append(input, list, foot);
+            render();
+            setTimeout(() => input.focus(), 250);
+        },
+    }));
+}
+
+// -- install as an app
+
+const install = { prompt: null, originalManifest: undefined };
+
+function isStandalone() {
+    return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+}
+
+/** Points Chrome at a manifest with a proper home-screen icon while Mobile UI is on. */
+function syncManifest() {
+    const link = document.querySelector('link[rel="manifest"]');
+    if (!link) return;
+    if (install.originalManifest === undefined) install.originalManifest = link.getAttribute('href');
+    const ours = new URL('app.webmanifest', import.meta.url).href;
+    const want = active ? ours : install.originalManifest;
+    if (link.getAttribute('href') !== want) link.setAttribute('href', want);
+    document.documentElement.classList.toggle('stmui-standalone', active && isStandalone());
+}
+
+async function installApp() {
+    if (install.prompt) {
+        const event = install.prompt;
+        install.prompt = null;
+        event.prompt();
+        await event.userChoice.catch(() => null);
+        return;
+    }
+    showSheet(new MenuSheet({
+        title: t('Install as an app'),
+        subtitle: t('Open SillyTavern from your home screen, full screen, without the browser bar.'),
+        fill: body => body.append(h('div', { class: 'stmui-steps' }, [
+            h('p', { text: t('1. Tap Chrome\'s ⋮ menu (top right).') }),
+            h('p', { text: t('2. Tap "Add to Home screen" or "Install app".') }),
+            h('p', { text: t('3. Tap Install. SillyTavern now has its own icon.') }),
+            h('p', { class: 'stmui-menu-foot', text: t('Keep Termux running in the background as usual; the app opens the same SillyTavern.') }),
+        ])),
+    }));
+}
+
+// -- what's new
+
+function compareVersions(a, b) {
+    const pa = String(a).split('.').map(Number);
+    const pb = String(b).split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+        const diff = (pa[i] || 0) - (pb[i] || 0);
+        if (diff) return diff;
+    }
+    return 0;
+}
+
+function openWhatsNew(since) {
+    const entries = CHANGES.filter(entry => !since || compareVersions(entry.version, since) > 0);
+    showSheet(new MenuSheet({
+        title: t("What's new"),
+        subtitle: t('Mobile UI {version}', { version: VERSION }),
+        fill: body => {
+            for (const entry of (entries.length ? entries : CHANGES.slice(0, 1))) {
+                body.append(h('p', { class: 'stmui-menu-heading', text: entry.version }));
+                body.append(h('ul', { class: 'stmui-news' }, entry.items.map(item => h('li', { text: t(item) }))));
+            }
+        },
+    }));
+}
+
+function maybeShowWhatsNew() {
+    if (!active) return;
+    const seen = settings.lastSeenVersion;
+    settings.lastSeenVersion = VERSION;
+    saveSettings();
+    // Only after an update, never on a fresh install.
+    if (seen && compareVersions(VERSION, seen) > 0) setTimeout(() => openWhatsNew(seen), 1200);
+}
+
+// -- language
+
+function applyLanguage() {
+    setLocale(ctx().getCurrentLocale?.() ?? navigator.language);
+    const root = document.documentElement;
+    root.classList.toggle('stmui-rtl', active && isRtl());
+    if (active) {
+        root.style.setProperty('--stmui-l-save', JSON.stringify(t('Save')));
+        root.style.setProperty('--stmui-l-cancel', JSON.stringify(t('Cancel')));
+    } else {
+        root.style.removeProperty('--stmui-l-save');
+        root.style.removeProperty('--stmui-l-cancel');
+    }
+}
+
 function applyTextSize() {
     const root = document.documentElement;
     if (active && settings.textSize && settings.textSize !== 'normal') root.dataset.stmuiText = settings.textSize;
@@ -2668,6 +3267,11 @@ function applyTextSize() {
 
 function syncExtras() {
     applyTextSize();
+    applyLanguage();
+    syncEditorState();
+    syncServerWatch();
+    syncManifest();
+    document.documentElement.classList.toggle('stmui-fast-chat', active && settings.fastChat);
     syncJumpButton();
     syncPersonaTabs();
     syncPromptNameBox();
@@ -2702,6 +3306,24 @@ function syncExtras() {
     document.addEventListener('touchcancel', onToastTouchEnd);
     document.addEventListener('input', onDraftInput, true);
     document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('pointerdown', onMessagePressStart, true);
+    document.addEventListener('pointermove', onMessagePressMove, true);
+    for (const type of ['pointerup', 'pointercancel', 'scroll']) document.addEventListener(type, onMessagePressEnd, true);
+    document.addEventListener('click', onPressAfterEffects, true);
+    document.addEventListener('contextmenu', onPressAfterEffects, true);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') scheduleServerCheck(300);
+    });
+    window.addEventListener('online', () => scheduleServerCheck(300));
+    window.addEventListener('offline', () => scheduleServerCheck(300));
+    window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        install.prompt = event;
+    });
+    window.addEventListener('appinstalled', () => {
+        install.prompt = null;
+        globalThis.toastr?.success(t('SillyTavern is on your home screen now.'), t('Installed'));
+    });
 }
 
 function textSizeControl() {
@@ -2906,6 +3528,8 @@ function init() {
         return;
     }
     loadSettings();
+    // Pick the language before anything is drawn.
+    setLocale(ctx().getCurrentLocale?.() ?? navigator.language);
     buildSettings();
     applyState();
 
@@ -2927,6 +3551,8 @@ function init() {
         applyState();
         // SillyTavern puts back the last message box text on load; sort it into the right chat.
         restoreDraft();
+        applyLanguage();
+        maybeShowWhatsNew();
     });
     eventSource?.on?.(event_types.CHAT_CHANGED, () => {
         sheet?.refresh();
