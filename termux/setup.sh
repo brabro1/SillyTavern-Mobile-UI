@@ -181,10 +181,17 @@ EOF
 chmod 700 "$SHORTCUTS/SillyTavern" "$SHORTCUTS/Stop SillyTavern"
 ok "Added the 'SillyTavern' and 'Stop SillyTavern' shortcuts"
 
-if [ -f "$HERE/../assets/icon-192.png" ]; then
-    cp "$HERE/../assets/icon-192.png" "$SHORTCUTS/icons/SillyTavern.png"
-    ok "Added the SillyTavern icon for the shortcut"
+# The icon: next to this script, inside SillyTavern's extensions, or from GitHub.
+ICON=""
+for candidate in "$HERE/../assets/icon-192.png"     "$ST_DIR"/data/*/extensions/*Mobile-UI*/assets/icon-192.png     "$ST_DIR"/public/scripts/extensions/third-party/*Mobile-UI*/assets/icon-192.png; do
+    if [ -f "$candidate" ]; then ICON="$candidate"; break; fi
+done
+if [ -n "$ICON" ]; then
+    cp "$ICON" "$SHORTCUTS/icons/SillyTavern.png"
+elif ! curl -fsSL -m 20 -o "$SHORTCUTS/icons/SillyTavern.png" "https://raw.githubusercontent.com/brabro1/SillyTavern-Mobile-UI/main/assets/icon-192.png"; then
+    rm -f "$SHORTCUTS/icons/SillyTavern.png"
 fi
+[ -f "$SHORTCUTS/icons/SillyTavern.png" ] && ok "Added the SillyTavern icon for the shortcut"
 
 # ---- start when Termux opens -----------------------------------------------
 
@@ -224,4 +231,4 @@ say "     or long-press the Termux:Widget app icon and drag the 'SillyTavern' sh
 say "  3. Tap the SillyTavern shortcut: it starts SillyTavern and opens it."
 say ""
 say "Tip: in Android settings, set Termux's battery use to 'Unrestricted' so it isn't closed in the background."
-say "To undo all of this:  bash \"$HERE/setup.sh\" --remove"
+say "To undo all of this:  bash \"$HERE/$(basename "${BASH_SOURCE[0]}")\" --remove"

@@ -4623,3 +4623,36 @@ html.stmui-rtl .stmui-news {
 html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons .menu_button.disabled {
     opacity: 0.35;
 }
+
+/* ==========================================================================
+   Translate chat
+   ========================================================================== */
+
+.stmui-banner.stmui-banner-info {
+    border-color: color-mix(in srgb, #56a3e0 45%, var(--stmui-line));
+    background: color-mix(in srgb, #56a3e0 14%, var(--stmui-solid));
+}
+
+.stmui-banner-info .stmui-banner-icon {
+    color: #56a3e0;
+}
+
+.stmui-banner.stmui-banner-info.stmui-banner-ok {
+    border-color: color-mix(in srgb, #4fb37a 45%, var(--stmui-line));
+    background: color-mix(in srgb, #4fb37a 14%, var(--stmui-solid));
+}
+
+.stmui-banner-info.stmui-banner-ok .stmui-banner-icon {
+    color: #4fb37a;
+}
+
+.stmui-banner-text small[hidden],
+.stmui-banner-btn[hidden] {
+    display: none;
+}
+
+/* The translate button glows while the chat is shown in another language. */
+.stmui-ab-btn.stmui-ab-on {
+    background: var(--stmui-accent-soft);
+    color: var(--stmui-accent);
+}

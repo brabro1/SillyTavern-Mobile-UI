@@ -150,6 +150,29 @@ const STRINGS = {
     // Jump button
     'Jump to the latest message': ['Ir al último mensaje', 'Ir para a última mensagem', 'К последнему сообщению', '跳到最新消息', '最新のメッセージへ', 'الانتقال إلى أحدث رسالة'],
     'Latest message': ['Último mensaje', 'Última mensagem', 'Последнее сообщение', '最新消息', '最新のメッセージ', 'أحدث رسالة'],
+    // Translate chat
+    'Translate chat': ['Traducir chat', 'Traduzir chat', 'Перевести чат', '翻译聊天', 'チャットを翻訳', 'ترجمة الدردشة'],
+    'Stop': ['Detener', 'Parar', 'Стоп', '停止', '停止', 'إيقاف'],
+    'Translation is off': ['La traducción está desactivada', 'A tradução está desligada', 'Перевод выключен', '翻译已关闭', '翻訳がオフです', 'الترجمة متوقفة'],
+    'Turn on "Chat Translation" in Extensions → Manage extensions.': ['Activa "Chat Translation" en Extensiones → Administrar extensiones.', 'Ative "Chat Translation" em Extensões → Gerenciar extensões.', 'Включите «Chat Translation» в Расширения → Управление расширениями.', '请在 扩展 → 管理扩展 中启用 "Chat Translation"。', '拡張機能 → 拡張機能の管理 で「Chat Translation」をオンにしてください。', 'فعّل "Chat Translation" من الإضافات ← إدارة الإضافات.'],
+    'Already in {lang}': ['Ya está en {lang}', 'Já está em {lang}', 'Уже на языке: {lang}', '已是{lang}', 'すでに{lang}です', 'الدردشة بالفعل بـ{lang}'],
+    'Translating to {lang}… {done}/{total}': ['Traduciendo al {lang}… {done}/{total}', 'Traduzindo para {lang}… {done}/{total}', 'Перевод ({lang})… {done}/{total}', '正在翻译为{lang}… {done}/{total}', '{lang}に翻訳中… {done}/{total}', 'جارٍ الترجمة إلى {lang}… {done}/{total}'],
+    'Translation stopped': ['Traducción detenida', 'Tradução interrompida', 'Перевод остановлен', '翻译已停止', '翻訳を停止しました', 'توقفت الترجمة'],
+    'Could not reach the translator': ['No se pudo conectar con el traductor', 'Não foi possível acessar o tradutor', 'Переводчик недоступен', '无法连接翻译服务', '翻訳サービスに接続できません', 'تعذّر الوصول إلى المترجم'],
+    'Chat shown in {lang}': ['Chat mostrado en {lang}', 'Chat exibido em {lang}', 'Чат показан на языке: {lang}', '聊天已显示为{lang}', 'チャットを{lang}で表示中', 'الدردشة معروضة بـ{lang}'],
+    'Some messages could not be translated. Check your internet connection.': ['Algunos mensajes no se pudieron traducir. Revisa tu conexión a internet.', 'Algumas mensagens não puderam ser traduzidas. Verifique sua internet.', 'Некоторые сообщения не переведены. Проверьте подключение к интернету.', '部分消息无法翻译，请检查网络连接。', '一部のメッセージを翻訳できませんでした。ネット接続を確認してください。', 'تعذّرت ترجمة بعض الرسائل. تحقّق من اتصالك بالإنترنت.'],
+    'Showing the original text': ['Mostrando el texto original', 'Mostrando o texto original', 'Показан исходный текст', '正在显示原文', '原文を表示中', 'يُعرض النص الأصلي'],
+    'Showing {lang}. The original text is kept.': ['Mostrando {lang}. El texto original se conserva.', 'Mostrando {lang}. O texto original é mantido.', 'Показан язык: {lang}. Оригинал сохранён.', '正在显示{lang}，原文已保留。', '{lang}で表示中。原文は保持されます。', 'يُعرض بـ{lang}. النص الأصلي محفوظ.'],
+    'Pick a language. The original text is kept.': ['Elige un idioma. El texto original se conserva.', 'Escolha um idioma. O texto original é mantido.', 'Выберите язык. Оригинал сохранится.', '选择一种语言，原文会保留。', '言語を選んでください。原文は保持されます。', 'اختر لغة. سيبقى النص الأصلي محفوظًا.'],
+    'Open a chat first.': ['Abre un chat primero.', 'Abra um chat primeiro.', 'Сначала откройте чат.', '请先打开一个聊天。', '先にチャットを開いてください。', 'افتح دردشة أولًا.'],
+    'Show original': ['Ver original', 'Ver original', 'Показать оригинал', '显示原文', '原文を表示', 'عرض الأصل'],
+    'Translate new replies too': ['Traducir también las respuestas nuevas', 'Traduzir também as novas respostas', 'Переводить и новые ответы', '同时翻译新回复', '新しい返信も翻訳', 'ترجمة الردود الجديدة أيضًا'],
+    'Each new reply is shown in the chosen language.': ['Cada respuesta nueva se muestra en el idioma elegido.', 'Cada nova resposta aparece no idioma escolhido.', 'Каждый новый ответ показывается на выбранном языке.', '每条新回复都会以所选语言显示。', '新しい返信は選んだ言語で表示されます。', 'يُعرض كل رد جديد باللغة المختارة.'],
+    'Search languages': ['Buscar idiomas', 'Pesquisar idiomas', 'Поиск языка', '搜索语言', '言語を検索', 'البحث عن لغة'],
+    'Recent': ['Recientes', 'Recentes', 'Недавние', '最近使用', '最近使った言語', 'الأخيرة'],
+    'All languages': ['Todos los idiomas', 'Todos os idiomas', 'Все языки', '全部语言', 'すべての言語', 'كل اللغات'],
+    'Languages': ['Idiomas', 'Idiomas', 'Языки', '语言', '言語', 'اللغات'],
+    'Uses {provider} through your SillyTavern server. You can change it in Extensions → Chat Translation.': ['Usa {provider} a través de tu servidor de SillyTavern. Puedes cambiarlo en Extensiones → Chat Translation.', 'Usa {provider} pelo seu servidor do SillyTavern. Você pode trocar em Extensões → Chat Translation.', 'Использует {provider} через ваш сервер SillyTavern. Сменить можно в Расширения → Chat Translation.', '通过你的 SillyTavern 服务器使用 {provider}。可在 扩展 → Chat Translation 中更改。', 'SillyTavern サーバー経由で {provider} を使います。拡張機能 → Chat Translation で変更できます。', 'يستخدم {provider} عبر خادم SillyTavern لديك. يمكنك تغييره من الإضافات ← Chat Translation.'],
 };
 
 LANGS.forEach((code, column) => {

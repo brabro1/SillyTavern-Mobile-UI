@@ -54,6 +54,7 @@ const DEFAULTS = Object.freeze({
     serverWatch: true,
     fastChat: true,
     lastSeenVersion: '',
+    recentLanguages: [],
 });
 
 const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extra large' };
@@ -1177,7 +1178,18 @@ class Shell {
             this.avatar,
             h('span', { class: 'stmui-ab-text' }, [this.titleEl, this.subEl]),
         ]);
+        this.translateBtn = h('button', {
+            type: 'button',
+            class: 'stmui-ab-btn stmui-ab-translate',
+            'aria-label': 'Translate chat',
+            title: 'Translate chat',
+            onclick: () => {
+                buzz(6);
+                openTranslateSheet();
+            },
+        }, [ui('languages')]);
         this.actions = h('div', { class: 'stmui-ab-actions' }, [
+            this.translateBtn,
             h('button', {
                 type: 'button',
                 class: 'stmui-ab-btn stmui-ab-chats',
@@ -1461,6 +1473,7 @@ class Shell {
         if (image) this.avatar.replaceChildren(h('img', { src: image, alt: '' }));
         else this.avatar.replaceChildren(ui(context.groupId ? 'users' : (hasChat ? 'user' : 'chats')));
         this.actions.hidden = !hasChat;
+        this.translateBtn.classList.toggle('stmui-ab-on', hasChat && !!chatLanguage());
         this.home.hidden = !hasChat;
     }
 }
@@ -1524,6 +1537,7 @@ function openMoreSheet() {
                 }, !inChat),
                 row('sparkles', 'Phone features', () => openExtrasSheet()),
                 row('zap', 'Quick switch', () => openQuickSwitch()),
+                row('languages', 'Translate chat', () => openTranslateSheet(), !inChat),
                 isStandalone() ? null : row('download', 'Install as an app', () => installApp()),
                 row('star', "What's new", () => openWhatsNew()),
                 row('phone', 'Mobile UI settings', () => {
@@ -2757,6 +2771,248 @@ function closeViewer(immediate = false) {
         setTimeout(finish, 220);
     }
     scheduleHistorySync();
+}
+
+// -- translate the chat
+
+/**
+ * Uses SillyTavern's built-in Chat Translation (Google Translate through the
+ * SillyTavern server by default, no key needed). The original text is never
+ * changed: translations are shown on top, like SillyTavern's own feature, but
+ * several messages are translated at once, newest first, so it feels instant.
+ */
+const translation = { running: false, cancel: false, status: null };
+const TRANSLATE_WORKERS = 4;
+const FALLBACK_LANGUAGES = [
+    ['ar', 'Arabic'], ['zh-CN', 'Chinese (Simplified)'], ['nl', 'Dutch'], ['en', 'English'], ['fr', 'French'], ['de', 'German'],
+    ['hi', 'Hindi'], ['id', 'Indonesian'], ['it', 'Italian'], ['ja', 'Japanese'], ['ko', 'Korean'], ['pl', 'Polish'],
+    ['pt', 'Portuguese'], ['ru', 'Russian'], ['es', 'Spanish'], ['th', 'Thai'], ['tr', 'Turkish'], ['uk', 'Ukrainian'], ['vi', 'Vietnamese'],
+];
+
+async function translatorModule() {
+    if (ctx().extensionSettings?.disabledExtensions?.includes('translate')) return null;
+    try {
+        const module = await import('/scripts/extensions/translate/index.js');
+        return typeof module.translate === 'function' ? module : null;
+    } catch {
+        return null;
+    }
+}
+
+function translateSettings() {
+    return ctx().extensionSettings?.translate ?? null;
+}
+
+function languageOptions() {
+    const select = document.getElementById('translation_target_language');
+    if (select?.options.length) return Array.from(select.options).map(option => ({ value: option.value, label: option.textContent.trim() }));
+    return FALLBACK_LANGUAGES.map(([value, label]) => ({ value, label }));
+}
+
+function languageName(code) {
+    return languageOptions().find(language => language.value === code)?.label ?? code;
+}
+
+/** The language the chat is shown in right now, or null for the original. */
+function chatLanguage() {
+    const chat = ctx().chat ?? [];
+    const translated = chat.find(message => message?.extra?.display_text);
+    if (!translated) return null;
+    return translated.extra.stmui_lang ?? translateSettings()?.target_language ?? null;
+}
+
+function setTargetLanguage(code) {
+    const options = translateSettings();
+    if (options) {
+        options.target_language = code;
+        const select = document.getElementById('translation_target_language');
+        if (select) select.value = code;
+        ctx().saveSettingsDebounced?.();
+    }
+    settings.recentLanguages = [code, ...(settings.recentLanguages ?? []).filter(item => item !== code)].slice(0, 5);
+    saveSettings();
+}
+
+function translateStatus(text, { done = false, failed = false } = {}) {
+    let status = translation.status;
+    if (!status) {
+        status = h('div', { class: 'stmui-banner stmui-banner-info', role: 'status', 'aria-live': 'polite' }, [
+            ui('languages', 'stmui-banner-icon'),
+            h('span', { class: 'stmui-banner-text' }, [h('b'), h('small')]),
+            h('button', {
+                type: 'button',
+                class: 'stmui-banner-btn',
+                onclick: () => {
+                    translation.cancel = true;
+                },
+            }, [t('Stop')]),
+        ]);
+        shieldFromDrawerAutoClose(status);
+        document.body.append(status);
+        translation.status = status;
+    }
+    const [title, note] = status.querySelectorAll('.stmui-banner-text > *');
+    title.textContent = text;
+    note.textContent = failed ? t('Some messages could not be translated. Check your internet connection.') : '';
+    note.hidden = !failed;
+    status.querySelector('.stmui-banner-btn').hidden = done;
+    status.classList.toggle('stmui-banner-ok', done && !failed);
+    if (done) {
+        setTimeout(() => {
+            if (translation.status !== status || translation.running) return;
+            status.classList.add('stmui-banner-out');
+            setTimeout(() => status.remove(), 250);
+            translation.status = null;
+        }, failed ? 5000 : 1800);
+    }
+}
+
+async function translateChat(code) {
+    if (translation.running) return;
+    const module = await translatorModule();
+    if (!module) {
+        globalThis.toastr?.error(t('Turn on "Chat Translation" in Extensions → Manage extensions.'), t('Translation is off'));
+        return;
+    }
+    setTargetLanguage(code);
+    const context = ctx();
+    const chat = context.chat ?? [];
+    const chatId = context.getCurrentChatId?.();
+    const todo = [];
+    // Newest first: the messages on screen change right away.
+    for (let id = chat.length - 1; id >= 0; id--) {
+        const message = chat[id];
+        if (!message || message.is_system || !String(message.mes ?? '').trim()) continue;
+        if (message.extra?.display_text && message.extra?.stmui_lang === code) continue;
+        todo.push(id);
+    }
+    const name = languageName(code);
+    if (!todo.length) {
+        translateStatus(t('Already in {lang}', { lang: name }), { done: true });
+        return;
+    }
+    translation.running = true;
+    translation.cancel = false;
+    const total = todo.length;
+    let done = 0;
+    let failed = 0;
+    translateStatus(t('Translating to {lang}… {done}/{total}', { lang: name, done, total }));
+    const worker = async () => {
+        while (todo.length && !translation.cancel) {
+            if (ctx().getCurrentChatId?.() !== chatId) {
+                translation.cancel = true;
+                break;
+            }
+            const id = todo.shift();
+            const message = ctx().chat?.[id];
+            if (!message) continue;
+            try {
+                const source = context.substituteParams ? context.substituteParams(message.mes, { name2Override: message.name }) : message.mes;
+                const text = await module.translate(source, code);
+                if (typeof message.extra !== 'object' || !message.extra) message.extra = {};
+                message.extra.display_text = text;
+                message.extra.stmui_lang = code;
+                context.updateMessageBlock?.(Number(id), message);
+            } catch (error) {
+                failed++;
+                console.debug(LOG, 'Translation failed for message', id, error);
+            }
+            done++;
+            if (!translation.cancel) translateStatus(t('Translating to {lang}… {done}/{total}', { lang: name, done, total }));
+        }
+    };
+    await Promise.all(Array.from({ length: TRANSLATE_WORKERS }, worker));
+    translation.running = false;
+    if (ctx().getCurrentChatId?.() === chatId && done) await ctx().saveChat?.();
+    shell?.update();
+    if (translation.cancel) translateStatus(t('Translation stopped'), { done: true });
+    else translateStatus(failed === total ? t('Could not reach the translator') : t('Chat shown in {lang}', { lang: name }), { done: true, failed: failed > 0 });
+}
+
+async function showOriginal() {
+    translation.cancel = true;
+    const context = ctx();
+    let changed = false;
+    (context.chat ?? []).forEach((message, id) => {
+        if (!message?.extra?.display_text && !message?.extra?.reasoning_display_text) return;
+        delete message.extra.display_text;
+        delete message.extra.reasoning_display_text;
+        delete message.extra.stmui_lang;
+        context.updateMessageBlock?.(id, message);
+        changed = true;
+    });
+    if (changed) await context.saveChat?.();
+    shell?.update();
+    translateStatus(t('Showing the original text'), { done: true });
+}
+
+function setAutoTranslate(on) {
+    const options = translateSettings();
+    if (!options) return;
+    options.auto_mode = on ? 'responses' : 'none';
+    const select = document.getElementById('translation_auto_mode');
+    if (select) select.value = options.auto_mode;
+    ctx().saveSettingsDebounced?.();
+}
+
+function openTranslateSheet() {
+    const current = chatLanguage();
+    const inChat = !!(ctx().groupId || ctx().characterId !== undefined);
+    showSheet(new MenuSheet({
+        title: t('Translate chat'),
+        subtitle: current ? t('Showing {lang}. The original text is kept.', { lang: languageName(current) }) : t('Pick a language. The original text is kept.'),
+        fill: body => {
+            if (!inChat) {
+                body.append(h('p', { class: 'stmui-menu-foot', text: t('Open a chat first.') }));
+                return;
+            }
+            const top = [];
+            if (current) {
+                top.push(h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row',
+                    onclick: () => {
+                        closeSheet(true);
+                        showOriginal();
+                    },
+                }, [ui('reset', 'stmui-menu-row-icon'), h('span', { text: t('Show original') })]));
+            }
+            const auto = h('input', { type: 'checkbox', class: 'stmui-switch', role: 'switch' });
+            auto.checked = ['responses', 'both'].includes(translateSettings()?.auto_mode);
+            auto.addEventListener('change', () => setAutoTranslate(auto.checked));
+            top.push(h('label', { class: 'stmui-switch-row' }, [
+                h('span', { class: 'stmui-switch-text' }, [h('span', { text: t('Translate new replies too') }), h('small', { text: t('Each new reply is shown in the chosen language.') })]),
+                auto,
+            ]));
+            body.append(h('div', { class: 'stmui-menu-list' }, top));
+
+            const all = languageOptions();
+            const recent = (settings.recentLanguages ?? []).map(code => all.find(language => language.value === code)).filter(Boolean);
+            const languageRow = language => h('button', {
+                type: 'button',
+                class: `stmui-menu-row stmui-choice ${language.value === current ? 'stmui-choice-on' : ''}`,
+                'data-search': normalizeText(`${language.label} ${language.value}`),
+                onclick: () => {
+                    closeSheet(true);
+                    buzz(8);
+                    translateChat(language.value);
+                },
+            }, [h('span', { text: language.label }), language.value === current ? ui('check', 'stmui-menu-row-icon') : null]);
+            const search = h('input', { type: 'search', class: 'text_pole stmui-choice-search', placeholder: t('Search languages'), 'aria-label': t('Search languages') });
+            const recentBlock = recent.length ? [h('p', { class: 'stmui-menu-heading', text: t('Recent') }), h('div', { class: 'stmui-menu-list' }, recent.map(languageRow))] : [];
+            const allRows = all.map(languageRow);
+            const allHeading = h('p', { class: 'stmui-menu-heading', text: t('All languages') });
+            search.addEventListener('input', () => {
+                const words = normalizeText(search.value).split(/\s+/).filter(Boolean);
+                for (const row of allRows) row.hidden = !words.every(word => row.dataset.search.includes(word));
+                for (const element of recentBlock) element.hidden = words.length > 0;
+            });
+            body.append(h('p', { class: 'stmui-menu-heading', text: t('Languages') }), search, ...recentBlock, allHeading, h('div', { class: 'stmui-menu-list' }, allRows));
+            const provider = translateSettings()?.provider ?? 'google';
+            const providerName = { google: 'Google Translate', deepl: 'DeepL', bing: 'Bing', yandex: 'Yandex', libre: 'LibreTranslate', lingva: 'Lingva', deeplx: 'DeepLX', oneringtranslator: 'OneRingTranslator' }[provider] ?? provider;
+            body.append(h('p', { class: 'stmui-menu-foot', text: t('Uses {provider} through your SillyTavern server. You can change it in Extensions → Chat Translation.', { provider: providerName }) }));
+        },
+    }));
 }
 
 // -- long-press a message for its menu

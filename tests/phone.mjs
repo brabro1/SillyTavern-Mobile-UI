@@ -53,6 +53,8 @@ await step('Mobile UI turns on for a phone', async () => {
     await until(() => document.documentElement.classList.contains('stmui-on'), null, 60000);
     await page.waitForTimeout(2500);
     await dismissPopups();
+    // After an update, What's new opens once; close it so it does not cover the screen.
+    if (await page.locator('#stmui-sheet').count()) await closeSheet();
 });
 
 await step('top bar and five tabs are shown', async () => {
@@ -116,6 +118,15 @@ await step('quick switch shows persona and connection', async () => {
     await page.locator('.stmui-ab-quick').click();
     const rows = await page.locator('#stmui-sheet .stmui-menu-row').allInnerTexts();
     if (!rows.some(row => row.includes('Persona'))) throw new Error('no Persona row');
+    await closeSheet();
+});
+
+await step('Translate chat is offered (greyed out until a chat is open)', async () => {
+    await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="more"]').click());
+    const row = page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Translate chat' });
+    await row.waitFor();
+    const inChat = await page.evaluate(() => !!(SillyTavern.getContext().groupId || SillyTavern.getContext().characterId !== undefined));
+    if (inChat === (await row.isDisabled())) throw new Error('row enabled state does not match whether a chat is open');
     await closeSheet();
 });
 

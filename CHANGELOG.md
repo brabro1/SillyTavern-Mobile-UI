@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.0
+
+- Translate chat: a translate button in the chat's top bar (also under More) opens a language list with search and recent languages. The whole chat is translated with Google Translate through your SillyTavern server (no key needed), four messages at a time, newest first. Original text is kept; Show original brings it back. A switch translates new replies too.
+- The Termux setup script fetches its icon from GitHub when run on its own.
+
 ## 2.4.1
 
 - One-tap start on Android: `termux/setup.sh` adds a home-screen shortcut (Termux:Widget) that starts SillyTavern if needed and opens it, a Stop shortcut, and optional start when Termux opens or when the phone boots.

@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.5.0',
+        items: [
+            'Translate chat: tap the translate button at the top of a chat and pick any of over 100 languages. The whole chat is shown in that language within seconds, newest messages first. The original text is kept, and Show original brings it back.',
+            'Optionally translate every new reply as it arrives.',
+        ],
+    },
+    {
         version: '2.4.1',
         items: [
             'Start SillyTavern with one tap on Android: a one-time Termux setup adds a home-screen shortcut that starts SillyTavern and opens it. See the README.',

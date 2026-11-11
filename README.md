@@ -40,6 +40,8 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 
 **Find any setting.** On the Presets, API, Formatting, Settings and Extensions pages, the 🔍 at the top searches every option by name. Tap a result and it scrolls there and lights up.
 
+**Translate the chat.** Tap the translate button at the top of a chat (or **More → Translate chat**) and pick a language. There are over 100, with search and your recent picks at the top. The whole chat is shown in that language within seconds, newest messages first. It uses Google Translate through your own SillyTavern, so no account or key is needed. Your original messages are kept: **Show original** brings them back. Turn on **Translate new replies too** to get every new reply in that language. (It uses SillyTavern's built-in Chat Translation, so you can switch to DeepL or another service there.)
+
 **Know when Termux stopped.** If SillyTavern stops answering, for example because Android closed Termux, a banner says so. It goes away by itself when the server is back.
 
 **Install it like an app.** **More → Install as an app** puts SillyTavern on your home screen with its own icon. It then opens full screen, without the browser bar.
@@ -69,9 +71,9 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 - **Picture viewer** and **Nicer notifications:** switch these off to get SillyTavern's originals back.
 - **Vibration:** a short buzz on send and tab taps.
 
-| Message editor | Recent chats | Prompt editor | Personas |
-| :---: | :---: | :---: | :---: |
-| ![Message editor](docs/screenshots/editor.jpg) | ![Recent chats on the start screen](docs/screenshots/recent.jpg) | ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) |
+| Message editor | Translated chat | Recent chats | Prompt editor | Personas |
+| :---: | :---: | :---: | :---: | :---: |
+| ![Message editor](docs/screenshots/editor.jpg) | ![Chat translated to Spanish](docs/screenshots/translate.jpg) | ![Recent chats on the start screen](docs/screenshots/recent.jpg) | ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) |
 
 | Themes | Midnight | Paper |
 | :---: | :---: | :---: |
