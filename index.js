@@ -2110,12 +2110,80 @@ function onMessageMenuClick(event) {
     openMessageMenu(message);
 }
 
+/**
+ * Copies text even where the browser has no clipboard API: SillyTavern opened by a
+ * network address (http://192.168...) is not a "secure" page, so Chrome hides it.
+ */
+function copyWithFallback(text) {
+    const area = h('textarea', { readonly: '', 'aria-hidden': 'true' });
+    area.value = text;
+    // Off screen, 16px so Android does not zoom, inside any open dialog so it can be focused.
+    area.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0;font-size:16px;';
+    (document.querySelector('dialog[open]:last-of-type') ?? document.body).append(area);
+    area.focus({ preventScroll: true });
+    area.select();
+    area.setSelectionRange(0, text.length);
+    let ok = false;
+    try {
+        ok = document.execCommand('copy');
+    } catch {
+        ok = false;
+    }
+    area.remove();
+    return ok;
+}
+
+async function copyText(text) {
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch {
+            // Permission refused: try the old way below.
+        }
+    }
+    return copyWithFallback(text);
+}
+
+/** SillyTavern's own Copy reads the raw message text; do the same. */
+async function copyMessage(message) {
+    const id = Number(message.getAttribute('mesid'));
+    const text = ctx().chat?.[id]?.mes ?? message.querySelector('.mes_text')?.innerText ?? '';
+    const ok = await copyText(text);
+    if (ok) globalThis.toastr?.success('Message copied.', '', { timeOut: 2000 });
+    else globalThis.toastr?.error('Your browser blocked copying. Long-press the text to copy it instead.', 'Could not copy');
+}
+
+/**
+ * Without a secure page there is no navigator.clipboard at all, so every copy
+ * button in SillyTavern fails quietly. Give it one that uses the old method.
+ */
+function patchClipboard() {
+    if (navigator.clipboard || window.isSecureContext) return;
+    try {
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: {
+                stmui: true,
+                writeText: text => (copyWithFallback(String(text)) ? Promise.resolve() : Promise.reject(new Error('Copy failed'))),
+            },
+        });
+    } catch {
+        // Read-only in this browser; our own Copy still works.
+    }
+}
+
 function openMessageMenu(message) {
     const name = message.getAttribute('ch_name') || 'Message';
     const preview = (message.querySelector('.mes_text')?.textContent ?? '').replace(/\s+/g, ' ').trim();
     const run = button => {
         closeSheet(true);
-        // A real click so SillyTavern's own handlers (and other extensions') run.
+        if (button.classList.contains('mes_copy')) {
+            copyMessage(message);
+            return;
+        }
+        // Some SillyTavern buttons listen for pointerup rather than click; send both.
+        button.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true }));
         button.click();
     };
     showSheet(new MenuSheet({
@@ -2544,6 +2612,7 @@ function syncExtras() {
     syncPromptNameBox();
     if (!active || !settings.keepAwake) setAwake(false);
     if (!active || !settings.imageViewer) closeViewer(true);
+    if (active) patchClipboard();
     if (extras.wired) return;
     extras.wired = true;
     // The prompt editor slides over the Presets page: keep its name box and the bar title current.
