@@ -3,7 +3,7 @@ export const CHANGES = [
     {
         version: '2.7.0',
         items: [
-            'Sharp character pictures: lists, cards and chats show the full-quality picture (scaled for your screen) instead of SillyTavern's small blurry thumbnail.',
+            "Sharp character pictures: lists, cards and chats show the full-quality picture (scaled for your screen) instead of SillyTavern's small blurry thumbnail.",
             'Animated pictures: give a character a GIF or animated WebP (Animated on the character card). It plays in the list, the chat and the top bar.',
         ],
     },
