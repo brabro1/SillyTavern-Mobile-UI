@@ -68,7 +68,7 @@ const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extr
 const EXTRAS = [
     { key: 'messageMenu', id: 'stmui_msgmenu', label: 'Message menu', hint: 'Tap ⋯ on a message for a full list of actions with names.' },
     { key: 'sharpPictures', id: 'stmui_sharp', label: 'Sharp character pictures', hint: 'Shows the full-quality picture instead of the small thumbnail, sized for your screen.' },
-    { key: 'animatedPictures', id: 'stmui_gifs', label: 'Animated pictures', hint: 'Characters can have a GIF picture: Animated on the character card.' },
+    { key: 'animatedPictures', id: 'stmui_gifs', label: 'Animated pictures', hint: 'Pick a GIF or animated WebP as a character picture and it moves everywhere.' },
     { key: 'charPage', id: 'stmui_charpage', label: 'New character pages', hint: 'Big avatar, labeled tools and tabs on character cards; names under favorites; an A–Z strip on the list.' },
     { key: 'recentTools', id: 'stmui_recenttools', label: 'Chat list helpers', hint: 'Search and swipe in Recent chats; chat history grouped by date.' },
     { key: 'longPress', id: 'stmui_longpress', label: 'Long-press for message menu', hint: 'Hold a message for its menu. Turn off if you prefer long-press to select text.' },
@@ -3226,7 +3226,7 @@ function syncCharacterPage() {
     if (!want) {
         restoreCharToolbar();
         document.getElementById('rm_characters_block')?.classList.remove('stmui-one-page');
-        document.querySelectorAll('.stmui-btn-label, #stmui_card_tabs, .stmui-hero-name, .stmui-cap, #stmui_az, #stmui_az_bubble, .stmui-gif-button').forEach(node => node.remove());
+        document.querySelectorAll('.stmui-btn-label, #stmui_card_tabs, .stmui-hero-name, .stmui-cap, #stmui_az, #stmui_az_bubble').forEach(node => node.remove());
         form?.classList.remove('stmui-ctab-desc', 'stmui-ctab-greet', 'stmui-ctab-notes');
         chars.observer?.disconnect();
         chars.listObserver?.disconnect();
@@ -3244,22 +3244,6 @@ function syncCharacterPage() {
         if (button && !button.querySelector('.stmui-btn-label')) button.append(h('span', { class: 'stmui-btn-label', text: label }));
     }
 
-    // Animated picture: a tool of its own next to SillyTavern's.
-    const tools = form.querySelector('.form_create_bottom_buttons_block');
-    let gifButton = form.querySelector('.stmui-gif-button');
-    if (tools && !gifButton) {
-        gifButton = h('div', {
-            class: 'menu_button stmui-gif-button',
-            title: t('Animated picture'),
-            role: 'button',
-            tabindex: '0',
-            onclick: () => openAnimatedPictureSheet(),
-        }, [ui('film'), h('span', { class: 'stmui-btn-label', text: 'Animated' })]);
-        const deleteButton = tools.querySelector('#delete_button');
-        if (deleteButton) deleteButton.before(gifButton);
-        else tools.append(gifButton);
-    }
-    if (gifButton) gifButton.hidden = !settings.animatedPictures || isShown(document.getElementById('name_div'));
 
     // The name, big, under the avatar.
     const avatarLabel = document.getElementById('avatar_div_div');
@@ -4112,66 +4096,106 @@ async function setAnimatedPicture(characterId, url) {
     refreshPicturesFor(character.avatar);
 }
 
-function openAnimatedPictureSheet() {
+/** True for a GIF, an animated WebP or an animated PNG (looks at the file's own bytes). */
+async function isAnimatedImage(file) {
+    const head = new Uint8Array(await file.slice(0, 256 * 1024).arrayBuffer());
+    const text = (start, length) => String.fromCharCode(...head.subarray(start, start + length));
+    if (text(0, 4) === 'GIF8') return true;
+    // WebP: RIFF....WEBP with an animation chunk.
+    if (text(0, 4) === 'RIFF' && text(8, 4) === 'WEBP') {
+        for (let i = 12; i < head.length - 4; i++) {
+            if (head[i] === 0x41 && text(i, 4) === 'ANIM') return true;
+        }
+        return false;
+    }
+    // PNG: an "acTL" chunk before the image data means APNG.
+    if (head[0] === 0x89 && text(1, 3) === 'PNG') {
+        for (let i = 8; i < head.length - 4; i++) {
+            if (head[i] === 0x61 && text(i, 4) === 'acTL') return true;
+            if (head[i] === 0x49 && text(i, 4) === 'IDAT') return false;
+        }
+    }
+    return false;
+}
+
+async function uploadAnimatedFile(file, baseName) {
+    const extension = (file.type.split('/')[1] ?? 'gif').replace('apng', 'png').replace(/[^a-z0-9]/gi, '') || 'gif';
+    const safeName = `stmui-${String(baseName || 'character').replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '_')}-${Date.now()}.${extension}`;
+    const response = await fetch('/api/files/upload', {
+        method: 'POST',
+        headers: ctx().getRequestHeaders(),
+        body: JSON.stringify({ name: safeName, data: await fileToBase64(file) }),
+    });
+    if (!response.ok) throw new Error(String(response.status));
+    const { path } = await response.json();
+    return `/${String(path).replace(/^\/+/, '')}`;
+}
+
+/** A picture waiting for its new character to be created. */
+let pendingAnimated = null;
+
+/**
+ * SillyTavern's own picture picker (tap the character's picture). If the file
+ * is animated, Mobile UI keeps the moving version next to the still card
+ * picture SillyTavern saves; a still picture replaces any earlier animation.
+ */
+async function onAvatarPicked(event) {
+    if (!active || !settings.animatedPictures || event.target?.id !== 'add_avatar_button') return;
+    const file = event.target.files?.[0];
+    if (!file) return;
     const context = ctx();
-    const characterId = context.characterId;
-    const character = context.characters?.[characterId];
-    if (!character) {
-        globalThis.toastr?.info(t('Open a character first.'));
+    const creating = isShown(document.getElementById('name_div')) || context.characterId === undefined;
+    const character = creating ? null : context.characters?.[context.characterId];
+    let animated = false;
+    try {
+        animated = await isAnimatedImage(file);
+    } catch {
+        animated = false;
+    }
+    if (!animated) {
+        pendingAnimated = null;
+        // A still picture replaces the old animation (once SillyTavern has saved the new one).
+        if (character && animatedPictureFor(character.avatar)) {
+            const id = context.characterId;
+            setTimeout(() => setAnimatedPicture(id, ''), 2500);
+        }
         return;
     }
-    const current = animatedPictureFor(character.avatar);
-    const picker = h('input', { type: 'file', accept: 'image/gif,image/webp,image/apng,image/png', hidden: true });
-    picker.addEventListener('change', async () => {
-        const file = picker.files?.[0];
-        if (!file) return;
-        if (file.size > 15 * 1024 * 1024) {
-            globalThis.toastr?.error(t('That picture is too big (over 15 MB).'));
-            return;
+    if (file.size > 15 * 1024 * 1024) {
+        globalThis.toastr?.warning(t('That picture is too big to animate (over 15 MB); the still picture is used.'));
+        return;
+    }
+    try {
+        const url = await uploadAnimatedFile(file, character?.avatar ?? document.getElementById('character_name_pole')?.value);
+        if (character) {
+            const id = context.characterId;
+            // Let SillyTavern finish saving the still picture first, so the two saves don't collide.
+            setTimeout(async () => {
+                await setAnimatedPicture(id, url);
+                globalThis.toastr?.success(t('Animated picture set for {name}.', { name: character.name }));
+            }, 2500);
+        } else {
+            pendingAnimated = { url, avatars: new Set((context.characters ?? []).map(item => item.avatar)), at: Date.now() };
         }
-        closeSheet(true);
-        try {
-            const extension = (file.name.match(/\.(gif|webp|png|apng)$/i)?.[1] ?? 'gif').toLowerCase();
-            const safeName = `stmui-${String(character.avatar).replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '_')}-${Date.now()}.${extension}`;
-            const response = await fetch('/api/files/upload', {
-                method: 'POST',
-                headers: context.getRequestHeaders(),
-                body: JSON.stringify({ name: safeName, data: await fileToBase64(file) }),
-            });
-            if (!response.ok) throw new Error(String(response.status));
-            const { path } = await response.json();
-            await setAnimatedPicture(characterId, `/${String(path).replace(/^\/+/, '')}`);
-            globalThis.toastr?.success(t('Animated picture set for {name}.', { name: character.name }));
-        } catch (error) {
-            console.warn(LOG, 'Animated picture upload failed', error);
-            globalThis.toastr?.error(t('Could not save the picture.'));
-        }
-    });
-    showSheet(new MenuSheet({
-        title: t('Animated picture'),
-        subtitle: t('A GIF or animated WebP shown instead of {name}\'s picture in Mobile UI. The character card itself is not changed.', { name: character.name }),
-        fill: body => {
-            if (current) body.append(h('div', { class: 'stmui-gif-preview' }, [h('img', { src: current, alt: '' })]));
-            const rows = [
-                h('button', { type: 'button', class: 'stmui-menu-row', onclick: () => picker.click() }, [
-                    ui('image', 'stmui-menu-row-icon'),
-                    h('span', { text: current ? t('Choose a different GIF') : t('Choose a GIF from your phone') }),
-                ]),
-            ];
-            if (current) {
-                rows.push(h('button', {
-                    type: 'button',
-                    class: 'stmui-menu-row stmui-menu-row-danger',
-                    onclick: async () => {
-                        closeSheet(true);
-                        await setAnimatedPicture(characterId, '');
-                        globalThis.toastr?.success(t('Back to the normal picture.'));
-                    },
-                }, [ui('trash', 'stmui-menu-row-icon'), h('span', { text: t('Use the normal picture again') })]));
-            }
-            body.append(h('div', { class: 'stmui-menu-list' }, rows), picker);
-        },
-    }));
+    } catch (error) {
+        console.warn(LOG, 'Animated picture upload failed', error);
+        globalThis.toastr?.error(t('Could not save the animated picture; the still picture is used.'));
+    }
+}
+
+/** After a new character is created, give it the animated picture it was created with. */
+function applyPendingAnimated() {
+    if (!pendingAnimated) return;
+    if (Date.now() - pendingAnimated.at > 10 * 60 * 1000) {
+        pendingAnimated = null;
+        return;
+    }
+    const characters = ctx().characters ?? [];
+    const id = characters.findIndex(item => !pendingAnimated.avatars.has(item.avatar));
+    if (id === -1) return;
+    const { url } = pendingAnimated;
+    pendingAnimated = null;
+    setTimeout(() => setAnimatedPicture(id, url), 1500);
 }
 
 // -- long-press a message for its menu
@@ -4719,6 +4743,7 @@ function syncExtras() {
     document.addEventListener('click', onMessageMenuClick, true);
     document.addEventListener('click', onEditCopyClick, true);
     document.addEventListener('click', onAvatarClick, true);
+    document.addEventListener('change', onAvatarPicked, true);
     document.addEventListener('touchstart', onToastTouchStart, { passive: true });
     document.addEventListener('touchmove', onToastTouchMove, { passive: true });
     document.addEventListener('touchend', onToastTouchEnd);
@@ -4973,7 +4998,11 @@ function init() {
         applyLanguage();
         maybeShowWhatsNew();
     });
+    for (const name of ['CHARACTER_EDITED', 'CHARACTER_PAGE_LOADED']) {
+        if (event_types[name]) eventSource?.on?.(event_types[name], () => applyPendingAnimated());
+    }
     eventSource?.on?.(event_types.CHAT_CHANGED, () => {
+        applyPendingAnimated();
         sheet?.refresh();
         shell?.onChatChanged();
         restoreDraft();

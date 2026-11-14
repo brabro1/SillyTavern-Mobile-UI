@@ -1,6 +1,12 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.7.1',
+        items: [
+            "Animated pictures need no extra button: pick a GIF or animated WebP the usual way (tap the character's picture) and it moves everywhere. Pick a normal picture to go back.",
+        ],
+    },
+    {
         version: '2.7.0',
         items: [
             "Sharp character pictures: lists, cards and chats show the full-quality picture (scaled for your screen) instead of SillyTavern's small blurry thumbnail.",
