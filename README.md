@@ -32,7 +32,9 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 - An A–Z strip on the right jumps straight to a letter (slide your finger along it).
 - Grid view shows everyone as full picture cards with the name on the picture; list view is a calm list like your contacts.
 
-**Character cards that are easy to edit.** Opening a character shows a big picture with the name under it. Below are labeled buttons (Favorite, Advanced, Lore, Chat lore, Personas, Export, Duplicate, Delete) and three tabs: **Description**, **First message**, and **Notes & tags**. Each tab gives its text the whole page, so you don't have to scroll past everything else.
+**Sharp pictures, even animated ones.** Character pictures show in full quality instead of SillyTavern's small blurry thumbnails. Only the pictures on your screen load, scaled to fit, so long lists stay fast. Want a moving picture? Open a character, tap **Animated** and pick a GIF (or animated WebP) from your phone. It plays in the list, in the chat and in the top bar. The character card file itself isn't changed, and **Use the normal picture again** undoes it.
+
+**Character cards that are easy to edit.** Opening a character shows a big picture with the name under it. Below are labeled buttons (Favorite, Advanced, Lore, Chat lore, Personas, Export, Duplicate, Animated, Delete) and three tabs: **Description**, **First message**, and **Notes & tags**. Each tab gives its text the whole page, so you don't have to scroll past everything else.
 
 **Search everything.** The 🔍 on the start screen (or the search bar at the top of **More**) finds characters, chats (by name or last message), lorebooks and settings in one place.
 
@@ -171,7 +173,7 @@ Find them under **More → Mobile UI settings**. Each part can be switched on or
 | Enable Mobile UI | Turns everything on or off. Off gives you the normal SillyTavern back. |
 | Use it on this device | **Automatic** (phones only), **Always on** or **Off**. This is saved per device. |
 | Theme, Animations, Theme background, Modern font, New icons | Same choices as in **More → Themes**. |
-| Chat text size, New character pages, Chat list helpers, Long-press for message menu, Connection check, Faster long chats, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Picture viewer, Nicer notifications, Send animation, Vibration | Same choices as in **More → Phone features**. |
+| Chat text size, Sharp character pictures, Animated pictures, New character pages, Chat list helpers, Long-press for message menu, Connection check, Faster long chats, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Picture viewer, Nicer notifications, Send animation, Vibration | Same choices as in **More → Phone features**. |
 | App navigation | The top bar and the bottom tabs. |
 | Modern chat look | Message cards, bigger text, rounded message box. |
 | Touch-friendly panels | Bigger buttons and sliders, roomier settings, menus from the bottom. |

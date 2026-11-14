@@ -218,6 +218,19 @@ const STRINGS = {
     'Import from a link': ['Importar desde un enlace', 'Importar de um link', 'Импорт по ссылке', '从链接导入', 'リンクから読み込む', 'استيراد من رابط'],
     'New group chat': ['Chat de grupo nuevo', 'Novo chat em grupo', 'Новый групповой чат', '新群聊', '新しいグループチャット', 'دردشة جماعية جديدة'],
     'Select several': ['Seleccionar varios', 'Selecionar vários', 'Выбрать несколько', '多选', '複数選択', 'تحديد عدة'],
+    'Sharp character pictures': ['Imágenes nítidas', 'Imagens nítidas', 'Чёткие изображения', '清晰的角色图片', 'くっきりした画像', 'صور شخصيات واضحة'],
+    'Animated pictures': ['Imágenes animadas', 'Imagens animadas', 'Анимированные изображения', '动态图片', 'アニメーション画像', 'صور متحركة'],
+    'Animated': ['Animada', 'Animada', 'Анимация', '动态', 'アニメ', 'متحركة'],
+    'Animated picture': ['Imagen animada', 'Imagem animada', 'Анимированное изображение', '动态图片', 'アニメーション画像', 'صورة متحركة'],
+    'Open a character first.': ['Abre un personaje primero.', 'Abra um personagem primeiro.', 'Сначала откройте персонажа.', '请先打开一个角色。', '先にキャラクターを開いてください。', 'افتح شخصية أولًا.'],
+    'That picture is too big (over 15 MB).': ['La imagen es demasiado grande (más de 15 MB).', 'A imagem é grande demais (mais de 15 MB).', 'Изображение слишком большое (больше 15 МБ).', '图片太大（超过 15 MB）。', '画像が大きすぎます（15 MB 超）。', 'الصورة كبيرة جدًا (أكثر من 15 ميغابايت).'],
+    'Animated picture set for {name}.': ['Imagen animada puesta para {name}.', 'Imagem animada definida para {name}.', 'Анимированное изображение для {name} установлено.', '已为 {name} 设置动态图片。', '{name} のアニメーション画像を設定しました。', 'تم تعيين صورة متحركة لـ{name}.'],
+    'Could not save the picture.': ['No se pudo guardar la imagen.', 'Não foi possível salvar a imagem.', 'Не удалось сохранить изображение.', '无法保存图片。', '画像を保存できませんでした。', 'تعذّر حفظ الصورة.'],
+    "A GIF or animated WebP shown instead of {name}'s picture in Mobile UI. The character card itself is not changed.": ['Un GIF o WebP animado que se muestra en lugar de la imagen de {name} en Mobile UI. La tarjeta del personaje no cambia.', 'Um GIF ou WebP animado exibido no lugar da imagem de {name} no Mobile UI. O cartão do personagem não muda.', 'GIF или анимированный WebP вместо изображения {name} в Mobile UI. Сама карточка не меняется.', '在 Mobile UI 中代替 {name} 图片显示的 GIF 或动态 WebP。角色卡本身不变。', 'Mobile UI で {name} の画像の代わりに表示する GIF／アニメ WebP。キャラクターカード自体は変わりません。', 'صورة GIF أو WebP متحركة تُعرض بدل صورة {name} في Mobile UI. بطاقة الشخصية نفسها لا تتغير.'],
+    'Choose a different GIF': ['Elegir otro GIF', 'Escolher outro GIF', 'Выбрать другой GIF', '选择其他 GIF', '別の GIF を選ぶ', 'اختيار GIF آخر'],
+    'Choose a GIF from your phone': ['Elegir un GIF del móvil', 'Escolher um GIF do celular', 'Выбрать GIF с телефона', '从手机选择 GIF', 'スマホから GIF を選ぶ', 'اختيار GIF من هاتفك'],
+    'Use the normal picture again': ['Volver a la imagen normal', 'Voltar à imagem normal', 'Вернуть обычное изображение', '恢复普通图片', '通常の画像に戻す', 'العودة إلى الصورة العادية'],
+    'Back to the normal picture.': ['De vuelta a la imagen normal.', 'Voltou à imagem normal.', 'Обычное изображение возвращено.', '已恢复普通图片。', '通常の画像に戻しました。', 'تمت العودة إلى الصورة العادية.'],
 };
 
 LANGS.forEach((code, column) => {

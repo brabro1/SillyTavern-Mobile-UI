@@ -57,6 +57,8 @@ const DEFAULTS = Object.freeze({
     recentLanguages: [],
     autoTranslate: false,
     charPage: true,
+    sharpPictures: true,
+    animatedPictures: true,
     recentTools: true,
 });
 
@@ -65,6 +67,8 @@ const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extr
 /** Phone features shown as switches in More → Phone features and in the settings panel. */
 const EXTRAS = [
     { key: 'messageMenu', id: 'stmui_msgmenu', label: 'Message menu', hint: 'Tap ⋯ on a message for a full list of actions with names.' },
+    { key: 'sharpPictures', id: 'stmui_sharp', label: 'Sharp character pictures', hint: 'Shows the full-quality picture instead of the small thumbnail, sized for your screen.' },
+    { key: 'animatedPictures', id: 'stmui_gifs', label: 'Animated pictures', hint: 'Characters can have a GIF picture: Animated on the character card.' },
     { key: 'charPage', id: 'stmui_charpage', label: 'New character pages', hint: 'Big avatar, labeled tools and tabs on character cards; names under favorites; an A–Z strip on the list.' },
     { key: 'recentTools', id: 'stmui_recenttools', label: 'Chat list helpers', hint: 'Search and swipe in Recent chats; chat history grouped by date.' },
     { key: 'longPress', id: 'stmui_longpress', label: 'Long-press for message menu', hint: 'Hold a message for its menu. Turn off if you prefer long-press to select text.' },
@@ -3222,7 +3226,7 @@ function syncCharacterPage() {
     if (!want) {
         restoreCharToolbar();
         document.getElementById('rm_characters_block')?.classList.remove('stmui-one-page');
-        document.querySelectorAll('.stmui-btn-label, #stmui_card_tabs, .stmui-hero-name, .stmui-cap, #stmui_az, #stmui_az_bubble').forEach(node => node.remove());
+        document.querySelectorAll('.stmui-btn-label, #stmui_card_tabs, .stmui-hero-name, .stmui-cap, #stmui_az, #stmui_az_bubble, .stmui-gif-button').forEach(node => node.remove());
         form?.classList.remove('stmui-ctab-desc', 'stmui-ctab-greet', 'stmui-ctab-notes');
         chars.observer?.disconnect();
         chars.listObserver?.disconnect();
@@ -3239,6 +3243,23 @@ function syncCharacterPage() {
         const button = form.querySelector(selector);
         if (button && !button.querySelector('.stmui-btn-label')) button.append(h('span', { class: 'stmui-btn-label', text: label }));
     }
+
+    // Animated picture: a tool of its own next to SillyTavern's.
+    const tools = form.querySelector('.form_create_bottom_buttons_block');
+    let gifButton = form.querySelector('.stmui-gif-button');
+    if (tools && !gifButton) {
+        gifButton = h('div', {
+            class: 'menu_button stmui-gif-button',
+            title: t('Animated picture'),
+            role: 'button',
+            tabindex: '0',
+            onclick: () => openAnimatedPictureSheet(),
+        }, [ui('film'), h('span', { class: 'stmui-btn-label', text: 'Animated' })]);
+        const deleteButton = tools.querySelector('#delete_button');
+        if (deleteButton) deleteButton.before(gifButton);
+        else tools.append(gifButton);
+    }
+    if (gifButton) gifButton.hidden = !settings.animatedPictures || isShown(document.getElementById('name_div'));
 
     // The name, big, under the avatar.
     const avatarLabel = document.getElementById('avatar_div_div');
@@ -3854,6 +3875,305 @@ function openGlobalSearch() {
     }));
 }
 
+// -- sharp pictures and animated (GIF) character pictures
+
+/**
+ * SillyTavern shows 96×144 thumbnails everywhere; on a phone a grid card needs
+ * about four times that. Pictures on screen are replaced by the original image,
+ * scaled down in the browser to exactly the size the screen needs (so memory
+ * stays low), and characters can have an animated GIF/WebP picture.
+ */
+const GIF_KEY = 'stmui_animated_avatar';
+const pictures = {
+    observer: null,
+    seen: null,
+    cache: new Map(),
+    pending: new Map(),
+    queue: [],
+    running: 0,
+    timer: 0,
+};
+
+function thumbInfo(src) {
+    try {
+        const url = new URL(src, location.href);
+        if (!url.pathname.endsWith('/thumbnail')) return null;
+        const type = url.searchParams.get('type');
+        const file = url.searchParams.get('file');
+        if (!file || !['avatar', 'persona'].includes(type)) return null;
+        return { type, file };
+    } catch {
+        return null;
+    }
+}
+
+function animatedPictureFor(file) {
+    const character = (ctx().characters ?? []).find(item => item.avatar === file);
+    const url = character?.data?.extensions?.[GIF_KEY];
+    return typeof url === 'string' && url ? url : null;
+}
+
+function fullPictureUrl({ type, file }) {
+    return type === 'persona' ? `/User Avatars/${encodeURIComponent(file)}` : `/characters/${encodeURIComponent(file)}`;
+}
+
+/** The original picture scaled to `width` pixels, as an object URL (made once per size). */
+function sharpPicture(info, width) {
+    const key = `${info.type}|${info.file}|${width}`;
+    if (pictures.cache.has(key)) return Promise.resolve(pictures.cache.get(key));
+    if (pictures.pending.has(key)) return pictures.pending.get(key);
+    const job = new Promise((resolve, reject) => {
+        pictures.queue.push(async () => {
+            try {
+                const response = await fetch(fullPictureUrl(info));
+                if (!response.ok) throw new Error(String(response.status));
+                const blob = await response.blob();
+                const bitmap = await createImageBitmap(blob);
+                const scale = Math.min(1, width / bitmap.width);
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(bitmap.width * scale);
+                canvas.height = Math.round(bitmap.height * scale);
+                const context = canvas.getContext('2d');
+                context.imageSmoothingQuality = 'high';
+                context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                bitmap.close?.();
+                const out = await new Promise(done => canvas.toBlob(done, 'image/webp', 0.92));
+                const url = URL.createObjectURL(out ?? blob);
+                pictures.cache.set(key, url);
+                resolve(url);
+            } catch (error) {
+                reject(error);
+            } finally {
+                pictures.pending.delete(key);
+            }
+        });
+        pumpPictures();
+    });
+    pictures.pending.set(key, job);
+    return job;
+}
+
+function pumpPictures() {
+    while (pictures.running < 3 && pictures.queue.length) {
+        const task = pictures.queue.shift();
+        pictures.running++;
+        task().finally(() => {
+            pictures.running--;
+            pumpPictures();
+        });
+    }
+}
+
+/** Picks the best picture for one <img>. */
+function upgradePicture(img) {
+    if (!active) return;
+    const current = img.getAttribute('src') ?? '';
+    // SillyTavern sometimes sets the thumbnail again; remember what it asked for.
+    const info = thumbInfo(current) ?? (img.dataset.stmuiThumb ? thumbInfo(img.dataset.stmuiThumb) : null);
+    if (!info) return;
+    if (thumbInfo(current)) img.dataset.stmuiThumb = current;
+    const animated = info.type === 'avatar' && settings.animatedPictures ? animatedPictureFor(info.file) : null;
+    if (animated) {
+        if (current !== animated) img.setAttribute('src', animated);
+        return;
+    }
+    if (!settings.sharpPictures) {
+        if (img.dataset.stmuiThumb && current !== img.dataset.stmuiThumb) img.setAttribute('src', img.dataset.stmuiThumb);
+        return;
+    }
+    const shown = img.getBoundingClientRect().width || img.clientWidth;
+    const needed = shown * (window.devicePixelRatio || 1);
+    // The thumbnail is 96 pixels wide; only bigger pictures need the original.
+    if (needed <= 100) return;
+    const width = needed <= 200 ? 200 : needed <= 400 ? 400 : 640;
+    sharpPicture(info, width).then(url => {
+        if (img.isConnected && (img.getAttribute('src') === img.dataset.stmuiThumb || thumbInfo(img.getAttribute('src') ?? ''))) img.setAttribute('src', url);
+    }).catch(() => {});
+}
+
+function watchPicture(img) {
+    if (!img.dataset.stmuiWatched) {
+        img.dataset.stmuiWatched = '1';
+        pictures.seen?.observe(img);
+    }
+    scheduleVisibleCheck();
+}
+
+/** Backup for the on-screen watcher: after scrolling stops, upgrade what is on screen. */
+function scheduleVisibleCheck() {
+    window.clearTimeout(pictures.timer);
+    pictures.timer = window.setTimeout(() => {
+        if (!active || !(settings.sharpPictures || settings.animatedPictures)) return;
+        const margin = 300;
+        for (const img of document.querySelectorAll('img[data-stmui-watched]')) {
+            if (!thumbInfo(img.getAttribute('src') ?? '') && !(img.dataset.stmuiThumb && img.getAttribute('src') === img.dataset.stmuiThumb)) continue;
+            const rect = img.getBoundingClientRect();
+            if (!rect.width || rect.bottom < -margin || rect.top > innerHeight + margin) continue;
+            upgradePicture(img);
+        }
+    }, 150);
+}
+
+function scanPictures(root = document) {
+    if (!active) return;
+    const images = root.matches?.('img') ? [root] : root.querySelectorAll?.('img') ?? [];
+    for (const img of images) {
+        const src = img.getAttribute('src') ?? '';
+        if (thumbInfo(src) || img.dataset.stmuiThumb) watchPicture(img);
+    }
+}
+
+function syncPictures() {
+    const want = active && (settings.sharpPictures || settings.animatedPictures);
+    if (!want) {
+        pictures.observer?.disconnect();
+        pictures.seen?.disconnect();
+        document.removeEventListener('scroll', scheduleVisibleCheck, { capture: true });
+        pictures.observer = null;
+        pictures.seen = null;
+        // Put SillyTavern's own thumbnails back.
+        for (const img of document.querySelectorAll('img[data-stmui-thumb]')) {
+            img.setAttribute('src', img.dataset.stmuiThumb);
+            delete img.dataset.stmuiThumb;
+            delete img.dataset.stmuiWatched;
+        }
+        document.querySelectorAll('img[data-stmui-watched]').forEach(img => delete img.dataset.stmuiWatched);
+        for (const url of pictures.cache.values()) URL.revokeObjectURL(url);
+        pictures.cache.clear();
+        return;
+    }
+    if (!pictures.seen) {
+        // Only pictures that are (nearly) on screen are upgraded, so long lists stay light.
+        pictures.seen = new IntersectionObserver(entries => {
+            for (const entry of entries) {
+                if (entry.isIntersecting) upgradePicture(entry.target);
+            }
+        }, { rootMargin: '300px' });
+    }
+    if (!pictures.observer) {
+        pictures.observer = new MutationObserver(records => {
+            for (const record of records) {
+                if (record.type === 'attributes') {
+                    const img = record.target;
+                    // SillyTavern put a thumbnail back (re-render): upgrade again.
+                    if (thumbInfo(img.getAttribute('src') ?? '')) {
+                        img.dataset.stmuiThumb = img.getAttribute('src');
+                        if (img.dataset.stmuiWatched) {
+                            pictures.seen?.unobserve(img);
+                            pictures.seen?.observe(img);
+                        } else watchPicture(img);
+                    }
+                    continue;
+                }
+                for (const node of record.addedNodes) {
+                    if (node.nodeType === 1) scanPictures(node);
+                }
+            }
+        });
+        pictures.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+        document.addEventListener('scroll', scheduleVisibleCheck, { capture: true, passive: true });
+    }
+    // Pictures already on the page, and a refresh after the animated picture changed.
+    for (const img of document.querySelectorAll('img[data-stmui-watched]')) {
+        pictures.seen.unobserve(img);
+        pictures.seen.observe(img);
+    }
+    scanPictures();
+}
+
+/** Re-check every picture of one character (after its animated picture changed). */
+function refreshPicturesFor(file) {
+    for (const img of document.querySelectorAll('img')) {
+        const info = thumbInfo(img.getAttribute('src') ?? '') ?? (img.dataset.stmuiThumb ? thumbInfo(img.dataset.stmuiThumb) : null);
+        if (info?.file !== file) continue;
+        if (!animatedPictureFor(file) && img.dataset.stmuiThumb) img.setAttribute('src', img.dataset.stmuiThumb);
+        upgradePicture(img);
+    }
+    shell?.update();
+}
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+    });
+}
+
+async function setAnimatedPicture(characterId, url) {
+    const context = ctx();
+    const character = context.characters?.[characterId];
+    if (!character) return;
+    await context.writeExtensionField?.(characterId, GIF_KEY, url ?? '');
+    character.data = character.data ?? {};
+    character.data.extensions = character.data.extensions ?? {};
+    character.data.extensions[GIF_KEY] = url ?? '';
+    refreshPicturesFor(character.avatar);
+}
+
+function openAnimatedPictureSheet() {
+    const context = ctx();
+    const characterId = context.characterId;
+    const character = context.characters?.[characterId];
+    if (!character) {
+        globalThis.toastr?.info(t('Open a character first.'));
+        return;
+    }
+    const current = animatedPictureFor(character.avatar);
+    const picker = h('input', { type: 'file', accept: 'image/gif,image/webp,image/apng,image/png', hidden: true });
+    picker.addEventListener('change', async () => {
+        const file = picker.files?.[0];
+        if (!file) return;
+        if (file.size > 15 * 1024 * 1024) {
+            globalThis.toastr?.error(t('That picture is too big (over 15 MB).'));
+            return;
+        }
+        closeSheet(true);
+        try {
+            const extension = (file.name.match(/\.(gif|webp|png|apng)$/i)?.[1] ?? 'gif').toLowerCase();
+            const safeName = `stmui-${String(character.avatar).replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '_')}-${Date.now()}.${extension}`;
+            const response = await fetch('/api/files/upload', {
+                method: 'POST',
+                headers: context.getRequestHeaders(),
+                body: JSON.stringify({ name: safeName, data: await fileToBase64(file) }),
+            });
+            if (!response.ok) throw new Error(String(response.status));
+            const { path } = await response.json();
+            await setAnimatedPicture(characterId, `/${String(path).replace(/^\/+/, '')}`);
+            globalThis.toastr?.success(t('Animated picture set for {name}.', { name: character.name }));
+        } catch (error) {
+            console.warn(LOG, 'Animated picture upload failed', error);
+            globalThis.toastr?.error(t('Could not save the picture.'));
+        }
+    });
+    showSheet(new MenuSheet({
+        title: t('Animated picture'),
+        subtitle: t('A GIF or animated WebP shown instead of {name}\'s picture in Mobile UI. The character card itself is not changed.', { name: character.name }),
+        fill: body => {
+            if (current) body.append(h('div', { class: 'stmui-gif-preview' }, [h('img', { src: current, alt: '' })]));
+            const rows = [
+                h('button', { type: 'button', class: 'stmui-menu-row', onclick: () => picker.click() }, [
+                    ui('image', 'stmui-menu-row-icon'),
+                    h('span', { text: current ? t('Choose a different GIF') : t('Choose a GIF from your phone') }),
+                ]),
+            ];
+            if (current) {
+                rows.push(h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row stmui-menu-row-danger',
+                    onclick: async () => {
+                        closeSheet(true);
+                        await setAnimatedPicture(characterId, '');
+                        globalThis.toastr?.success(t('Back to the normal picture.'));
+                    },
+                }, [ui('trash', 'stmui-menu-row-icon'), h('span', { text: t('Use the normal picture again') })]));
+            }
+            body.append(h('div', { class: 'stmui-menu-list' }, rows), picker);
+        },
+    }));
+}
+
 // -- long-press a message for its menu
 
 const press = { timer: 0, x: 0, y: 0, fired: 0 };
@@ -4362,6 +4682,7 @@ function applyTextSize() {
 
 function syncExtras() {
     applyTextSize();
+    syncPictures();
     syncCharacterPage();
     syncWelcome();
     syncChatHistory();

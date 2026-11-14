@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.7.0',
+        items: [
+            'Sharp character pictures: lists, cards and chats show the full-quality picture (scaled for your screen) instead of SillyTavern's small blurry thumbnail.',
+            'Animated pictures: give a character a GIF or animated WebP (Animated on the character card). It plays in the list, the chat and the top bar.',
+        ],
+    },
+    {
         version: '2.6.1',
         items: [
             'A cleaner Characters page: one row with search, Sort, Grid/List and a ＋ button (new character, import, new group, select several). The page controls only show when you have more than one page.',
