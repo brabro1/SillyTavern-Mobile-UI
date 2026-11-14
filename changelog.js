@@ -1,6 +1,14 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.5.1',
+        items: [
+            'Translate chat is much faster: messages go straight from your phone to Google Translate in large batches, so a long chat takes about a second instead of one second per message.',
+            'More accurate translations: bold, italics, paragraphs and line breaks are kept, code is left untranslated, and spacing around quotes stays right.',
+            'New, edited and swiped messages are translated the same fast way when "Translate new replies too" is on.',
+        ],
+    },
+    {
         version: '2.5.0',
         items: [
             'Translate chat: tap the translate button at the top of a chat and pick any of over 100 languages. The whole chat is shown in that language within seconds, newest messages first. The original text is kept, and Show original brings it back.',

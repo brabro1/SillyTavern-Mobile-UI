@@ -55,6 +55,7 @@ const DEFAULTS = Object.freeze({
     fastChat: true,
     lastSeenVersion: '',
     recentLanguages: [],
+    autoTranslate: false,
 });
 
 const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extra large' };
@@ -2867,10 +2868,163 @@ function translateStatus(text, { done = false, failed = false } = {}) {
     }
 }
 
+// Google Translate straight from the browser: no detour through the SillyTavern
+// server, and many messages in one request. A whole long chat is usually one or
+// two requests, each well under a second.
+const GOOGLE_URL = 'https://translate.googleapis.com/translate_a/t?client=gtx&sl=auto&format=html&tl=';
+// The first batch is small so the messages on screen change almost at once.
+const FIRST_BATCH_CHARS = 2500;
+const BATCH_CHARS = 8000;
+const BATCH_PARALLEL = 4;
+
+const ENTITIES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&#x27;': "'", '&nbsp;': ' ' };
+
+/**
+ * Markdown and line breaks become HTML tags that Google keeps in place, so the
+ * translation keeps its bold, italics, paragraphs and code. Code is not translated.
+ */
+function toTranslatable(text) {
+    const kept = [];
+    const html = String(text)
+        // Code blocks and inline code stay exactly as written.
+        .replace(/```[\s\S]*?```|`[^`\n]+`/g, match => {
+            kept.push(match);
+            return `<code translate="no">${kept.length - 1}</code>`;
+        })
+        // A stray & or < that is not part of an entity or a tag.
+        .replace(/&(?![a-zA-Z]+;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;')
+        .replace(/<(?![a-zA-Z/!])/g, '&lt;')
+        .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+        .replace(/\*([^*\n]+)\*/g, '<i>$1</i>')
+        .replace(/\n/g, '<br>');
+    return { html, kept };
+}
+
+function fromTranslated(html, kept) {
+    let text = String(html)
+        .replace(/<code translate="no">\s*(\d+)\s*<\/code>/gi, (match, index) => kept[Number(index)] ?? match)
+        // Google sometimes moves spaces inside the tags; move them back out.
+        .replace(/<(b|i)>\s+/gi, ' <$1>')
+        .replace(/\s+<\/(b|i)>/gi, '</$1> ')
+        // …but no space between a closing tag and punctuation.
+        .replace(/<\/(b|i)>\s+([.,!?;:)\]»”’。、！？])/gi, '</$1>$2')
+        // A quote right after is a closing quote only when punctuation, a line break or the end follows.
+        .replace(/<\/(b|i)>\s+(&quot;|&#39;|["'])(?=[.,!?;:]|\s*<br|\s*$)/gi, '</$1>$2')
+        .replace(/<\/?b>/gi, '**')
+        .replace(/<\/?i>/gi, '*')
+        .replace(/[ \t]*<br\s*\/?>[ \t]?/gi, '\n')
+        .replace(/&(amp|lt|gt|quot|#39|#x27|nbsp);/g, entity => ENTITIES[entity] ?? entity);
+    // Tidy doubled spaces the moves above can leave, without touching line breaks.
+    text = text.replace(/[ \t]{2,}/g, ' ').replace(/ +\n/g, '\n').replace(/\n +/g, '\n');
+    return text.trim();
+}
+
+async function googleTranslateBatch(texts, code) {
+    const body = new URLSearchParams();
+    for (const text of texts) body.append('q', text);
+    const response = await fetch(GOOGLE_URL + encodeURIComponent(code), { method: 'POST', body });
+    if (!response.ok) throw new Error(`Google answered ${response.status}`);
+    const data = await response.json();
+    // One text may come back as ["…", "en"]; several as [["…", "en"], …].
+    const list = texts.length === 1 && !Array.isArray(data[0]) ? [data] : data;
+    return list.map(item => (Array.isArray(item) ? item[0] : item));
+}
+
+function messageSource(message) {
+    const context = ctx();
+    return context.substituteParams ? context.substituteParams(message.mes, { name2Override: message.name }) : message.mes;
+}
+
+function applyTranslation(id, message, code, text) {
+    if (typeof message.extra !== 'object' || !message.extra) message.extra = {};
+    message.extra.display_text = text;
+    message.extra.stmui_lang = code;
+    ctx().updateMessageBlock?.(Number(id), message);
+}
+
+/**
+ * Translates the messages `ids` (newest first) into `code`.
+ * Calls onProgress(done) as batches land and returns how many failed.
+ */
+async function translateMessages(ids, code, { onProgress = () => {}, isCancelled = () => false } = {}) {
+    const provider = translateSettings()?.provider ?? 'google';
+    let done = 0;
+    let failed = 0;
+    // Providers other than Google, or Google when the direct route fails: SillyTavern's own route.
+    const slowRoute = async list => {
+        const module = await translatorModule();
+        if (!module) {
+            failed += list.length;
+            done += list.length;
+            onProgress(done);
+            return;
+        }
+        let next = 0;
+        const worker = async () => {
+            while (next < list.length && !isCancelled()) {
+                const id = list[next++];
+                const message = ctx().chat?.[id];
+                if (!message) continue;
+                try {
+                    applyTranslation(id, message, code, await module.translate(messageSource(message), code));
+                } catch {
+                    failed++;
+                }
+                done++;
+                onProgress(done);
+            }
+        };
+        await Promise.all(Array.from({ length: TRANSLATE_WORKERS }, worker));
+    };
+    if (provider !== 'google') {
+        await slowRoute(ids);
+        return failed;
+    }
+    // Pack messages into batches of about BATCH_CHARS, newest first.
+    const batches = [];
+    let current = [];
+    let size = 0;
+    for (const id of ids) {
+        const message = ctx().chat?.[id];
+        if (!message) continue;
+        const prepared = toTranslatable(messageSource(message));
+        const limit = batches.length ? BATCH_CHARS : FIRST_BATCH_CHARS;
+        if (current.length && size + prepared.html.length > limit) {
+            batches.push(current);
+            current = [];
+            size = 0;
+        }
+        current.push({ id, prepared });
+        size += prepared.html.length;
+    }
+    if (current.length) batches.push(current);
+    let next = 0;
+    const worker = async () => {
+        while (next < batches.length && !isCancelled()) {
+            const batch = batches[next++];
+            try {
+                const out = await googleTranslateBatch(batch.map(item => item.prepared.html), code);
+                batch.forEach((item, index) => {
+                    const message = ctx().chat?.[item.id];
+                    if (message && typeof out[index] === 'string') applyTranslation(item.id, message, code, fromTranslated(out[index], item.prepared.kept));
+                    else failed++;
+                });
+                done += batch.length;
+                onProgress(done);
+            } catch (error) {
+                console.debug(LOG, 'Direct Google Translate failed; using SillyTavern instead', error);
+                await slowRoute(batch.map(item => item.id));
+            }
+        }
+    };
+    await Promise.all(Array.from({ length: BATCH_PARALLEL }, worker));
+    return failed;
+}
+
 async function translateChat(code) {
     if (translation.running) return;
-    const module = await translatorModule();
-    if (!module) {
+    const provider = translateSettings()?.provider ?? 'google';
+    if (provider !== 'google' && !(await translatorModule())) {
         globalThis.toastr?.error(t('Turn on "Chat Translation" in Extensions → Manage extensions.'), t('Translation is off'));
         return;
     }
@@ -2894,39 +3048,48 @@ async function translateChat(code) {
     translation.running = true;
     translation.cancel = false;
     const total = todo.length;
-    let done = 0;
-    let failed = 0;
-    translateStatus(t('Translating to {lang}… {done}/{total}', { lang: name, done, total }));
-    const worker = async () => {
-        while (todo.length && !translation.cancel) {
-            if (ctx().getCurrentChatId?.() !== chatId) {
-                translation.cancel = true;
-                break;
-            }
-            const id = todo.shift();
-            const message = ctx().chat?.[id];
-            if (!message) continue;
-            try {
-                const source = context.substituteParams ? context.substituteParams(message.mes, { name2Override: message.name }) : message.mes;
-                const text = await module.translate(source, code);
-                if (typeof message.extra !== 'object' || !message.extra) message.extra = {};
-                message.extra.display_text = text;
-                message.extra.stmui_lang = code;
-                context.updateMessageBlock?.(Number(id), message);
-            } catch (error) {
-                failed++;
-                console.debug(LOG, 'Translation failed for message', id, error);
-            }
-            done++;
+    translateStatus(t('Translating to {lang}… {done}/{total}', { lang: name, done: 0, total }));
+    const failed = await translateMessages(todo, code, {
+        isCancelled: () => translation.cancel || ctx().getCurrentChatId?.() !== chatId,
+        onProgress: done => {
             if (!translation.cancel) translateStatus(t('Translating to {lang}… {done}/{total}', { lang: name, done, total }));
-        }
-    };
-    await Promise.all(Array.from({ length: TRANSLATE_WORKERS }, worker));
+        },
+    });
     translation.running = false;
-    if (ctx().getCurrentChatId?.() === chatId && done) await ctx().saveChat?.();
+    if (ctx().getCurrentChatId?.() === chatId) await ctx().saveChat?.();
     shell?.update();
     if (translation.cancel) translateStatus(t('Translation stopped'), { done: true });
     else translateStatus(failed === total ? t('Could not reach the translator') : t('Chat shown in {lang}', { lang: name }), { done: true, failed: failed > 0 });
+}
+
+/** New, edited and swiped messages follow the chat's language while "Translate new messages too" is on. */
+const autoQueue = new Set();
+let autoTimer = 0;
+
+function queueAutoTranslate(id) {
+    if (!active || !settings.autoTranslate) return;
+    const code = chatLanguage();
+    if (!code) return;
+    autoQueue.add(Number(id));
+    window.clearTimeout(autoTimer);
+    autoTimer = window.setTimeout(async () => {
+        const ids = [...autoQueue].filter(item => {
+            const message = ctx().chat?.[item];
+            return message && !message.is_system && String(message.mes ?? '').trim();
+        }).sort((a, b) => b - a);
+        autoQueue.clear();
+        if (!ids.length) return;
+        await translateMessages(ids, code);
+        await ctx().saveChat?.();
+    }, 150);
+}
+
+/** An edited or swiped message must not keep showing its old translation. */
+function dropTranslation(id) {
+    const message = ctx().chat?.[Number(id)];
+    if (!message?.extra?.stmui_lang) return;
+    delete message.extra.display_text;
+    delete message.extra.stmui_lang;
 }
 
 async function showOriginal() {
@@ -2947,12 +3110,16 @@ async function showOriginal() {
 }
 
 function setAutoTranslate(on) {
+    settings.autoTranslate = on;
+    saveSettings();
+    // Mobile UI translates new messages itself (faster); keep SillyTavern's own auto mode off so it is not done twice.
     const options = translateSettings();
-    if (!options) return;
-    options.auto_mode = on ? 'responses' : 'none';
-    const select = document.getElementById('translation_auto_mode');
-    if (select) select.value = options.auto_mode;
-    ctx().saveSettingsDebounced?.();
+    if (options && options.auto_mode !== 'none') {
+        options.auto_mode = 'none';
+        const select = document.getElementById('translation_auto_mode');
+        if (select) select.value = 'none';
+        ctx().saveSettingsDebounced?.();
+    }
 }
 
 function openTranslateSheet() {
@@ -2978,7 +3145,7 @@ function openTranslateSheet() {
                 }, [ui('reset', 'stmui-menu-row-icon'), h('span', { text: t('Show original') })]));
             }
             const auto = h('input', { type: 'checkbox', class: 'stmui-switch', role: 'switch' });
-            auto.checked = ['responses', 'both'].includes(translateSettings()?.auto_mode);
+            auto.checked = !!settings.autoTranslate;
             auto.addEventListener('change', () => setAutoTranslate(auto.checked));
             top.push(h('label', { class: 'stmui-switch-row' }, [
                 h('span', { class: 'stmui-switch-text' }, [h('span', { text: t('Translate new replies too') }), h('small', { text: t('Each new reply is shown in the chosen language.') })]),
@@ -3818,6 +3985,18 @@ function init() {
         setTimeout(onChatScroll, 300);
     });
     if (event_types.MESSAGE_SENT) eventSource?.on?.(event_types.MESSAGE_SENT, clearDraft);
+    // Keep new, edited and swiped messages in the chat's translated language.
+    for (const name of ['CHARACTER_MESSAGE_RENDERED', 'USER_MESSAGE_RENDERED']) {
+        if (event_types[name]) eventSource?.on?.(event_types[name], id => queueAutoTranslate(id));
+    }
+    for (const name of ['MESSAGE_EDITED', 'MESSAGE_SWIPED']) {
+        if (event_types[name]) {
+            eventSource?.on?.(event_types[name], id => {
+                dropTranslation(id);
+                queueAutoTranslate(id);
+            });
+        }
+    }
     if (event_types.GENERATION_STARTED) eventSource?.on?.(event_types.GENERATION_STARTED, () => onGenerating(true));
     for (const name of ['GENERATION_ENDED', 'GENERATION_STOPPED']) {
         if (event_types[name]) eventSource?.on?.(event_types[name], () => onGenerating(false));

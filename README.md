@@ -40,7 +40,7 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 
 **Find any setting.** On the Presets, API, Formatting, Settings and Extensions pages, the 🔍 at the top searches every option by name. Tap a result and it scrolls there and lights up.
 
-**Translate the chat.** Tap the translate button at the top of a chat (or **More → Translate chat**) and pick a language. There are over 100, with search and your recent picks at the top. The whole chat is shown in that language within seconds, newest messages first. It uses Google Translate through your own SillyTavern, so no account or key is needed. Your original messages are kept: **Show original** brings them back. Turn on **Translate new replies too** to get every new reply in that language. (It uses SillyTavern's built-in Chat Translation, so you can switch to DeepL or another service there.)
+**Translate the chat.** Tap the translate button at the top of a chat (or **More → Translate chat**) and pick a language. There are over 100, with search and your recent picks at the top. Even a long chat changes in about a second, starting with the messages on screen, and bold, italics and line breaks are kept. It sends the text straight from your phone to Google Translate, so no account or key is needed. Your original messages are kept: **Show original** brings them back. Turn on **Translate new replies too** to get every new reply in that language. (It uses SillyTavern's built-in Chat Translation, so you can switch to DeepL or another service there.)
 
 **Know when Termux stopped.** If SillyTavern stops answering, for example because Android closed Termux, a banner says so. It goes away by itself when the server is back.
 
