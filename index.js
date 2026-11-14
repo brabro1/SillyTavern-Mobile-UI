@@ -3220,6 +3220,8 @@ function syncCharacterPage() {
     const want = active && settings.touchSizing && settings.charPage;
     document.documentElement.classList.toggle('stmui-charpage', !!want);
     if (!want) {
+        restoreCharToolbar();
+        document.getElementById('rm_characters_block')?.classList.remove('stmui-one-page');
         document.querySelectorAll('.stmui-btn-label, #stmui_card_tabs, .stmui-hero-name, .stmui-cap, #stmui_az, #stmui_az_bubble').forEach(node => node.remove());
         form?.classList.remove('stmui-ctab-desc', 'stmui-ctab-greet', 'stmui-ctab-notes');
         chars.observer?.disconnect();
@@ -3228,6 +3230,8 @@ function syncCharacterPage() {
         chars.listObserver = null;
         return;
     }
+    buildCharToolbar();
+    updateCharPaging();
     if (!form) return;
 
     // Each card tool gets a short label under its icon.
@@ -3276,13 +3280,142 @@ function syncCharacterPage() {
         if (list) {
             chars.listObserver = new MutationObserver(() => {
                 window.clearTimeout(chars.azTimer);
-                chars.azTimer = window.setTimeout(buildAzStrip, 150);
+                chars.azTimer = window.setTimeout(() => {
+                    buildAzStrip();
+                    updateCharPaging();
+                    updateCharToolbar();
+                }, 150);
             });
             chars.listObserver.observe(list, { childList: true });
             document.getElementById('character_sort_order')?.addEventListener('change', () => setTimeout(buildAzStrip, 300));
         }
     }
     buildAzStrip();
+}
+
+/**
+ * One tidy row above the character list: search, sort, grid/list and a ＋ menu
+ * with everything SillyTavern spreads over several rows of small buttons.
+ * SillyTavern's own buttons stay in the page (hidden) and do the actual work.
+ */
+function buildCharToolbar() {
+    const top = document.getElementById('charListFixedTop');
+    const search = document.getElementById('character_search_bar');
+    if (!top || !search) return;
+    let bar = document.getElementById('stmui_char_toolbar');
+    if (!bar) {
+        const button = (iconName, label, onclick, extra = '') => h('button', {
+            type: 'button', class: `stmui-ctool ${extra}`, 'aria-label': label, title: label, onclick,
+        }, [ui(iconName)]);
+        bar = h('div', { id: 'stmui_char_toolbar', class: 'stmui-char-toolbar' }, [
+            h('div', { class: 'stmui-ctool-search' }),
+            button('sort', 'Sort', () => openSortSheet(), 'stmui-ctool-sort'),
+            button('grid', 'Grid or list', () => {
+                buzz(6);
+                document.getElementById('charListGridToggle')?.click();
+                setTimeout(updateCharToolbar, 50);
+            }, 'stmui-ctool-view'),
+            button('plus', 'Add and more', () => openCharActions(), 'stmui-ctool-add'),
+        ]);
+        shieldFromDrawerAutoClose(bar);
+        top.prepend(bar);
+    }
+    // SillyTavern's search box moves into the row (it goes back when Mobile UI is turned off).
+    const slot = bar.querySelector('.stmui-ctool-search');
+    if (search.parentElement !== slot) slot.append(search);
+    updateCharToolbar();
+}
+
+function updateCharToolbar() {
+    const bar = document.getElementById('stmui_char_toolbar');
+    if (!bar) return;
+    const grid = document.body.classList.contains('charListGrid');
+    const view = bar.querySelector('.stmui-ctool-view');
+    const icon = grid ? 'list' : 'grid';
+    if (view && view.dataset.icon !== icon) {
+        view.dataset.icon = icon;
+        view.replaceChildren(ui(icon));
+        view.setAttribute('aria-label', t(grid ? 'Show as list' : 'Show as grid'));
+    }
+    const sort = document.getElementById('character_sort_order');
+    const sortButton = bar.querySelector('.stmui-ctool-sort');
+    if (sort && sortButton) sortButton.title = `${t('Sort')}: ${sort.selectedOptions[0]?.textContent.trim() ?? ''}`;
+}
+
+function restoreCharToolbar() {
+    const search = document.getElementById('character_search_bar');
+    const form = document.getElementById('form_character_search_form');
+    if (search && form && search.parentElement !== form) form.append(search);
+    document.getElementById('stmui_char_toolbar')?.remove();
+}
+
+function openSortSheet() {
+    const select = document.getElementById('character_sort_order');
+    if (!select) return;
+    openChoiceSheet({
+        title: t('Sort characters'),
+        options: Array.from(select.options).filter(option => !option.hidden && option.value !== 'Search').map(option => ({ value: option.value, label: option.textContent.trim() })),
+        current: select.value,
+        onPick: value => {
+            pickFromSelect(select, value);
+            setTimeout(() => {
+                updateCharToolbar();
+                buildAzStrip();
+            }, 300);
+        },
+    });
+}
+
+/** Every button from SillyTavern's toolbar (and extensions that add one), with its name. */
+function openCharActions() {
+    const buttons = Array.from(document.querySelectorAll('#rm_button_bar > .menu_button, #rm_buttons_container > .menu_button'))
+        .filter(button => button.style.display !== 'none' && !button.classList.contains('displayNone'));
+    const nameOf = button => {
+        const known = {
+            rm_button_create: 'New character',
+            character_import_button: 'Import from a file',
+            external_import_button: 'Import from a link',
+            rm_button_group_chats: 'New group chat',
+        }[button.id];
+        return known ? t(known) : (button.getAttribute('title') || '').split('\n')[0].trim() || t('Action');
+    };
+    showSheet(new MenuSheet({
+        title: t('Characters'),
+        subtitle: t('Add characters, groups and more'),
+        fill: body => {
+            const rows = buttons.map(button => {
+                const faClass = Array.from(button.classList).find(name => name.startsWith('fa-') && !['fa-solid', 'fa-regular', 'fa-fw'].includes(name));
+                return h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row',
+                    onclick: () => {
+                        closeSheet(true);
+                        button.click();
+                    },
+                }, [faClass ? ui(faClass, 'stmui-menu-row-icon') : ui('plus', 'stmui-menu-row-icon'), h('span', { text: nameOf(button) })]);
+            });
+            const bulk = document.getElementById('bulkEditButton');
+            if (bulk) {
+                rows.push(h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row',
+                    onclick: () => {
+                        closeSheet(true);
+                        bulk.click();
+                    },
+                }, [ui('check', 'stmui-menu-row-icon'), h('span', { text: t('Select several') })]));
+            }
+            body.append(h('div', { class: 'stmui-menu-list' }, rows));
+        },
+    }));
+}
+
+/** Paging controls only matter when there is more than one page. */
+function updateCharPaging() {
+    const holder = document.getElementById('rm_characters_block');
+    if (!holder) return;
+    const pages = document.querySelectorAll('#rm_print_characters_pagination .paginationjs-pages li.paginationjs-page').length;
+    holder.classList.toggle('stmui-one-page', pages <= 1);
 }
 
 function setCardTab(key, scroll = true) {
@@ -3367,6 +3500,9 @@ function buildAzStrip() {
     for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) strip.addEventListener(type, end);
     shieldFromDrawerAutoClose(strip);
     holder.append(strip);
+    // Sit exactly beside the list, below the controls.
+    strip.style.top = `${list.offsetTop + 6}px`;
+    strip.style.height = `${Math.max(120, Math.min(list.clientHeight - 12, letters.length * 26))}px`;
 }
 
 // -- recent chats: search, pinned section, swipe to pin or delete

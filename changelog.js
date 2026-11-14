@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.6.1',
+        items: [
+            'A cleaner Characters page: one row with search, Sort, Grid/List and a ＋ button (new character, import, new group, select several). The page controls only show when you have more than one page.',
+            'Grid view shows full picture cards with the name on a soft fade and a star on favorites. List view is a calm contacts-style list.',
+        ],
+    },
+    {
         version: '2.6.0',
         items: [
             'Characters: the search box is always there, favorites show their names, and an A–Z strip on the right jumps through the list. Grid view shows big picture cards.',

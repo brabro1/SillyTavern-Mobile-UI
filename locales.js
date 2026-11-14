@@ -207,6 +207,17 @@ const STRINGS = {
     'Search characters, chats, lorebooks, settings': ['Buscar personajes, chats, lorebooks, ajustes', 'Pesquisar personagens, chats, lorebooks, configurações', 'Поиск: персонажи, чаты, лорбуки, настройки', '搜索角色、聊天、世界书、设置', 'キャラクター・チャット・ロアブック・設定を検索', 'ابحث في الشخصيات والدردشات وكتب المعرفة والإعدادات'],
     'New character pages': ['Nuevas páginas de personajes', 'Novas páginas de personagens', 'Новые страницы персонажей', '新角色页面', '新しいキャラクター画面', 'صفحات شخصيات جديدة'],
     'Chat list helpers': ['Ayudas para la lista de chats', 'Ajudas da lista de chats', 'Помощники списка чатов', '聊天列表辅助', 'チャット一覧の便利機能', 'أدوات قائمة الدردشات'],
+    'Sort': ['Ordenar', 'Ordenar', 'Сортировка', '排序', '並べ替え', 'ترتيب'],
+    'Grid or list': ['Cuadrícula o lista', 'Grade ou lista', 'Сетка или список', '网格或列表', 'グリッド/リスト', 'شبكة أو قائمة'],
+    'Show as grid': ['Ver como cuadrícula', 'Ver em grade', 'Показать сеткой', '网格显示', 'グリッド表示', 'عرض كشبكة'],
+    'Show as list': ['Ver como lista', 'Ver em lista', 'Показать списком', '列表显示', 'リスト表示', 'عرض كقائمة'],
+    'Add and more': ['Añadir y más', 'Adicionar e mais', 'Добавить и другое', '添加及更多', '追加など', 'إضافة والمزيد'],
+    'Sort characters': ['Ordenar personajes', 'Ordenar personagens', 'Сортировка персонажей', '角色排序', 'キャラクターを並べ替え', 'ترتيب الشخصيات'],
+    'Add characters, groups and more': ['Añade personajes, grupos y más', 'Adicione personagens, grupos e mais', 'Персонажи, группы и другое', '添加角色、群组等', 'キャラクターやグループの追加など', 'أضف شخصيات ومجموعات والمزيد'],
+    'Import from a file': ['Importar desde un archivo', 'Importar de um arquivo', 'Импорт из файла', '从文件导入', 'ファイルから読み込む', 'استيراد من ملف'],
+    'Import from a link': ['Importar desde un enlace', 'Importar de um link', 'Импорт по ссылке', '从链接导入', 'リンクから読み込む', 'استيراد من رابط'],
+    'New group chat': ['Chat de grupo nuevo', 'Novo chat em grupo', 'Новый групповой чат', '新群聊', '新しいグループチャット', 'دردشة جماعية جديدة'],
+    'Select several': ['Seleccionar varios', 'Selecionar vários', 'Выбрать несколько', '多选', '複数選択', 'تحديد عدة'],
 };
 
 LANGS.forEach((code, column) => {

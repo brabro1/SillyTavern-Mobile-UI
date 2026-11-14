@@ -27,10 +27,10 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 **Picking a character opens their chat.** Tap someone in the Characters list and you're in the conversation.
 
 **A Characters page made for your thumb.**
-- The search box is always there.
-- Your favorites sit in a row at the top, with their names.
+- One tidy row at the top: search, **Sort**, **Grid/List**, and a **＋** button for new characters, imports, groups and selecting several.
+- Your favorites sit in a row above it, with their names.
 - An A–Z strip on the right jumps straight to a letter (slide your finger along it).
-- The grid button shows everyone as big picture cards.
+- Grid view shows everyone as full picture cards with the name on the picture; list view is a calm list like your contacts.
 
 **Character cards that are easy to edit.** Opening a character shows a big picture with the name under it. Below are labeled buttons (Favorite, Advanced, Lore, Chat lore, Personas, Export, Duplicate, Delete) and three tabs: **Description**, **First message**, and **Notes & tags**. Each tab gives its text the whole page, so you don't have to scroll past everything else.
 
