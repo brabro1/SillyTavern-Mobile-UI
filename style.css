@@ -2078,14 +2078,14 @@ html.stmui-touch #rm_print_characters_block .group_select:active {
     background: var(--stmui-raised-2);
 }
 
-html.stmui-touch #rm_print_characters_block:not(.charListGrid) .avatar,
-html.stmui-touch #rm_print_characters_block:not(.charListGrid) .avatar img {
+html.stmui-touch body:not(.charListGrid) #rm_print_characters_block .avatar,
+html.stmui-touch body:not(.charListGrid) #rm_print_characters_block .avatar img {
     width: 52px;
     height: 52px;
     border-radius: 50%;
 }
 
-html.stmui-touch #rm_print_characters_block:not(.charListGrid) .avatar img {
+html.stmui-touch body:not(.charListGrid) #rm_print_characters_block .avatar img {
     object-fit: cover;
 }
 
@@ -4655,4 +4655,502 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons
 .stmui-ab-btn.stmui-ab-on {
     background: var(--stmui-accent-soft);
     color: var(--stmui-accent);
+}
+
+/* ==========================================================================
+   Characters list (html.stmui-charpage)
+   ========================================================================== */
+
+/* The search box is always there, not behind a toggle. */
+html.stmui-charpage #form_character_search_form {
+    display: block !important;
+    position: relative;
+}
+
+html.stmui-charpage #rm_button_search {
+    display: none !important;
+}
+
+html.stmui-charpage #character_search_bar {
+    box-sizing: border-box;
+    width: 100%;
+    height: 46px;
+    padding-left: 42px;
+    background-image: var(--stmui-search-icon);
+    background-repeat: no-repeat;
+    background-position: 14px center;
+    background-size: 18px 18px;
+    font-size: 16px;
+}
+
+/* Favorites: round avatars with names, in one row that scrolls sideways. */
+html.stmui-charpage #HotSwapWrapper,
+html.stmui-charpage #CharListButtonAndHotSwaps {
+    height: auto !important;
+    max-height: none !important;
+}
+
+html.stmui-charpage #HotSwapWrapper .hotswap {
+    justify-content: flex-start !important;
+    height: auto !important;
+    max-height: none !important;
+    flex-wrap: nowrap;
+    gap: 12px;
+    padding: 2px 2px 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+html.stmui-charpage #HotSwapWrapper .hotswap::-webkit-scrollbar {
+    display: none;
+}
+
+html.stmui-charpage #HotSwapWrapper .hotswap .avatar {
+    position: relative;
+    flex: 0 0 auto;
+    flex-direction: column;
+    width: 58px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin-bottom: 0;
+    overflow: visible;
+    background: none;
+}
+
+html.stmui-charpage #HotSwapWrapper .hotswap .avatar img {
+    width: 52px;
+    height: 52px;
+    border: 2px solid var(--stmui-accent);
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+html.stmui-charpage .stmui-cap {
+    display: block;
+    flex: 0 0 auto;
+    max-width: 58px;
+    margin-top: 4px;
+    overflow: hidden;
+    color: var(--stmui-muted);
+    font-size: 11.5px;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* One row for the tool buttons and the sort menu. */
+html.stmui-charpage #rm_button_bar {
+    flex-wrap: nowrap;
+}
+
+html.stmui-charpage #rm_button_bar > .menu_button,
+html.stmui-charpage #rm_buttons_container > .menu_button {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 42px;
+}
+
+html.stmui-charpage #character_sort_order {
+    flex: 1 1 auto;
+    min-width: 76px;
+    height: 42px;
+}
+
+/* Grid view (SillyTavern's grid button): three big cards per row. */
+html.stmui-charpage body.charListGrid #rm_print_characters_block {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-content: start;
+    gap: 10px;
+    padding-right: 22px;
+}
+
+html.stmui-charpage body.charListGrid #rm_print_characters_block > :is(.character_select, .group_select, .bogus_folder_select) {
+    flex-direction: column;
+    align-items: center;
+    width: auto !important;
+    max-width: none;
+    min-height: 0;
+    margin: 0;
+    padding: 8px 6px 10px;
+    border-radius: 16px;
+    text-align: center;
+}
+
+html.stmui-charpage body.charListGrid #rm_print_characters_block .avatar {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1;
+    margin: 0;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+html.stmui-charpage body.charListGrid #rm_print_characters_block .avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    object-fit: cover;
+}
+
+html.stmui-charpage body.charListGrid #rm_print_characters_block .character_select_container,
+html.stmui-charpage body.charListGrid #rm_print_characters_block .group_select_container {
+    align-self: stretch;
+    width: 100%;
+    margin-top: 6px;
+}
+
+html.stmui-charpage body.charListGrid #rm_print_characters_block .ch_name {
+    display: block;
+    overflow: hidden;
+    font-size: 13.5px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+html.stmui-charpage body.charListGrid #rm_print_characters_block :is(.ch_description, .tags, .ch_additional_info) {
+    display: none !important;
+}
+
+/* A–Z strip on the right edge of the list. */
+html.stmui-charpage #rm_characters_block {
+    position: relative;
+}
+
+html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block {
+    padding-right: 20px;
+}
+
+.stmui-az {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    max-height: 62%;
+    padding: 6px 2px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--stmui-surface) 70%, transparent);
+    transform: translateY(-40%);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.stmui-az span {
+    display: block;
+    min-width: 16px;
+    padding: 1px 2px;
+    color: var(--stmui-accent);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+}
+
+.stmui-az-bubble {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: var(--stmui-accent);
+    color: var(--stmui-on-accent);
+    font-size: 34px;
+    font-weight: 800;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+    transition: opacity 0.15s ease, transform 0.2s var(--stmui-ease-pop);
+    pointer-events: none;
+}
+
+.stmui-az-bubble.stmui-az-bubble-on {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* ==========================================================================
+   Character card: big avatar, labeled tools, tabs
+   ========================================================================== */
+
+html.stmui-charpage #avatar-and-name-block {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+html.stmui-charpage #avatar_div {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+html.stmui-charpage #avatar_div_div,
+html.stmui-charpage #avatar_div_div img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+}
+
+html.stmui-charpage #avatar_div_div {
+    margin: 4px auto 0;
+    box-shadow: 0 0 0 3px var(--stmui-accent-soft), 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+html.stmui-charpage #avatar_div .stmui-hero-name {
+    align-self: stretch;
+    max-width: 100%;
+    color: var(--stmui-text);
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.2;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+html.stmui-charpage .stmui-hero-name[hidden] {
+    display: none;
+}
+
+/* SillyTavern's own small name tab is not needed while the card is open. */
+html.stmui-charpage #right-nav-panel:has(#rm_ch_create_block:not([style*="none"])) #rm_PinAndTabs {
+    display: none;
+}
+
+html.stmui-charpage #avatar_controls {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+}
+
+html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+}
+
+html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > .menu_button {
+    flex-direction: column;
+    gap: 4px;
+    width: auto;
+    height: 60px;
+    margin: 0;
+    border-radius: 14px;
+    font-size: 18px;
+}
+
+html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > .menu_button[style*="none"],
+html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > .displayNone {
+    display: none !important;
+}
+
+html.stmui-charpage .stmui-btn-label {
+    font-family: var(--mainFontFamily, system-ui, sans-serif);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+html.stmui-charpage #avatar_controls > label {
+    width: 100%;
+}
+
+html.stmui-charpage .stmui-card-tabs {
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 12px 0 8px;
+}
+
+html.stmui-charpage .stmui-card-tabs .stmui-seg {
+    min-width: 0;
+    padding: 0 6px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+/* Only the chosen tab's section is shown, and its text box gets the room. */
+html.stmui-charpage #form_create.stmui-ctab-desc :is(#firstMessageWrapper, #spoiler_free_desc, #creators_note_desc_hidden, #tags_div),
+html.stmui-charpage #form_create.stmui-ctab-greet :is(#descriptionWrapper, #spoiler_free_desc, #creators_note_desc_hidden, #tags_div),
+html.stmui-charpage #form_create.stmui-ctab-notes :is(#descriptionWrapper, #firstMessageWrapper) {
+    display: none !important;
+}
+
+html.stmui-charpage #form_create :is(#description_textarea, #firstmessage_textarea) {
+    min-height: 46dvh;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+html.stmui-charpage #form_create.stmui-ctab-notes #spoiler_free_desc .inline-drawer-content {
+    display: block !important;
+}
+
+/* ==========================================================================
+   Recent chats: search, headings, swipe hints
+   ========================================================================== */
+
+html.stmui-chat .stmui-recent-search {
+    box-sizing: border-box;
+    width: 100%;
+    height: 44px;
+    margin: 0 0 8px;
+    padding-left: 42px;
+    border-radius: 14px;
+    background-image: var(--stmui-search-icon);
+    background-repeat: no-repeat;
+    background-position: 14px center;
+    background-size: 18px 18px;
+    font-size: 16px;
+}
+
+html.stmui-chat .stmui-recent-heading {
+    margin: 6px 4px 0;
+    color: var(--stmui-muted);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+html.stmui-chat .welcomeRecent .recentChatList.stmui-searching .stmui-recent-heading,
+html.stmui-chat .welcomeRecent .recentChatList.stmui-searching .showMoreChats {
+    display: none;
+}
+
+/* While searching, every chat counts, including the ones folded under "show more". */
+html.stmui-chat .welcomeRecent .recentChatList .recentChat.hidden.stmui-match {
+    display: grid;
+}
+
+html.stmui-chat .welcomeRecent .recentChatList .recentChat.stmui-nomatch {
+    display: none;
+}
+
+html.stmui-chat .stmui-recent-empty {
+    margin: 10px 4px;
+    color: var(--stmui-muted);
+    text-align: center;
+}
+
+html.stmui-chat .stmui-recent-empty[hidden] {
+    display: none;
+}
+
+html.stmui-chat .welcomeRecent .recentChatList {
+    position: relative;
+}
+
+html.stmui-chat .welcomeRecent .recentChatList .recentChat {
+    z-index: 1;
+}
+
+.stmui-swipe-hint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    padding: 0 22px;
+    border-radius: 18px;
+    color: #fff;
+    font-weight: 700;
+    opacity: 0.55;
+    transition: opacity 0.15s ease;
+}
+
+.stmui-swipe-hint.stmui-swipe-ready {
+    opacity: 1;
+}
+
+.stmui-swipe-pin {
+    justify-content: flex-start;
+    background: var(--stmui-accent);
+}
+
+.stmui-swipe-delete {
+    justify-content: flex-end;
+    background: #d9534f;
+}
+
+.stmui-swipe-hint .stmui-svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* ==========================================================================
+   Chat history: date headings
+   ========================================================================== */
+
+html.stmui-touch #select_chat_div .stmui-date-heading {
+    margin: 10px 4px 4px;
+    color: var(--stmui-muted);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+html.stmui-touch #select_chat_div .stmui-date-heading:first-child {
+    margin-top: 2px;
+}
+
+html.stmui-touch #select_chat_search {
+    height: 44px;
+    border-radius: 14px;
+    font-size: 16px;
+}
+
+/* ==========================================================================
+   Search everything
+   ========================================================================== */
+
+.stmui-search-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    width: calc(100% - 8px);
+    height: 48px;
+    margin: 0 4px 12px;
+    padding: 0 16px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 16px;
+    background: var(--stmui-raised);
+    color: var(--stmui-muted);
+    font: inherit;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.stmui-search-field .stmui-svg {
+    flex: 0 0 auto;
+    width: 19px;
+    height: 19px;
+}
+
+.stmui-search-field span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.stmui-search-results .stmui-menu-heading:first-child {
+    margin-top: 2px;
 }

@@ -56,6 +56,8 @@ const DEFAULTS = Object.freeze({
     lastSeenVersion: '',
     recentLanguages: [],
     autoTranslate: false,
+    charPage: true,
+    recentTools: true,
 });
 
 const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extra large' };
@@ -63,6 +65,8 @@ const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extr
 /** Phone features shown as switches in More → Phone features and in the settings panel. */
 const EXTRAS = [
     { key: 'messageMenu', id: 'stmui_msgmenu', label: 'Message menu', hint: 'Tap ⋯ on a message for a full list of actions with names.' },
+    { key: 'charPage', id: 'stmui_charpage', label: 'New character pages', hint: 'Big avatar, labeled tools and tabs on character cards; names under favorites; an A–Z strip on the list.' },
+    { key: 'recentTools', id: 'stmui_recenttools', label: 'Chat list helpers', hint: 'Search and swipe in Recent chats; chat history grouped by date.' },
     { key: 'longPress', id: 'stmui_longpress', label: 'Long-press for message menu', hint: 'Hold a message for its menu. Turn off if you prefer long-press to select text.' },
     { key: 'serverWatch', id: 'stmui_server', label: 'Connection check', hint: 'Shows a banner when SillyTavern stops answering, for example when Termux was closed.' },
     { key: 'fastChat', id: 'stmui_fastchat', label: 'Faster long chats', hint: 'Skips drawing messages far off screen, so long chats scroll smoothly.' },
@@ -1221,7 +1225,7 @@ class Shell {
             class: 'stmui-ab-btn stmui-ab-search',
             'aria-label': t('Find a setting'),
             title: t('Find a setting'),
-            onclick: () => openSettingSearch(),
+            onclick: () => (currentPageId() ? openSettingSearch() : openGlobalSearch()),
         }, [ui('search')]);
         this.home = h('button', {
             type: 'button',
@@ -1429,6 +1433,7 @@ class Shell {
                 this.subEl.textContent = t('Prompts linked to this marker');
             }
             if (pageId === 'rightNavHolder') {
+                syncCharacterPage();
                 const editing = isShown(document.getElementById('rm_ch_create_block'));
                 const name = document.getElementById('character_name_pole')?.value?.trim();
                 if (editing) this.subEl.textContent = name ? t('Editing {name}', { name }) : t('New character');
@@ -1474,6 +1479,7 @@ class Shell {
         if (image) this.avatar.replaceChildren(h('img', { src: image, alt: '' }));
         else this.avatar.replaceChildren(ui(context.groupId ? 'users' : (hasChat ? 'user' : 'chats')));
         this.actions.hidden = !hasChat;
+        this.search.hidden = hasChat;
         this.translateBtn.classList.toggle('stmui-ab-on', hasChat && !!chatLanguage());
         this.home.hidden = !hasChat;
     }
@@ -1510,6 +1516,11 @@ function openMoreSheet() {
                     note ? h('span', { class: 'stmui-tile-note', text: note }) : null,
                 ]);
             });
+            body.append(h('button', {
+                type: 'button',
+                class: 'stmui-search-field',
+                onclick: () => openGlobalSearch(),
+            }, [ui('search'), h('span', { text: 'Search characters, chats, lorebooks, settings' })]));
             body.append(h('div', { class: 'stmui-tiles' }, tiles));
 
             const context = ctx();
@@ -1635,7 +1646,9 @@ const TOAST_ICONS = { success: 'circle-check', info: 'info', warning: 'alert-tri
 function toastIconCss() {
     return Object.entries(TOAST_ICONS)
         .map(([type, name]) => `html.stmui-toasts #toast-container > .toast-${type} { --stmui-t-icon: ${iconUrl(name)}; }`)
-        .join(' ');
+        .join(' ')
+        // A grey magnifier drawn inside search boxes.
+        + ` html.stmui-on { --stmui-search-icon: ${iconUrl('search').replace('%23000', '%23909090')}; }`;
 }
 
 function applyAppearance() {
@@ -3182,6 +3195,529 @@ function openTranslateSheet() {
     }));
 }
 
+// -- characters page: labeled card tools, tabs, favorites captions, A–Z strip
+
+const CARD_TOOLS = [
+    ['#favorite_button', 'Favorite'],
+    ['#advanced_div', 'Advanced'],
+    ['#world_button', 'Lore'],
+    ['.chat_lorebook_button', 'Chat lore'],
+    ['#char_connections_button', 'Personas'],
+    ['#export_button', 'Export'],
+    ['#dupe_button', 'Duplicate'],
+    ['#delete_button', 'Delete'],
+    ['#create_button_label', 'Create'],
+];
+const CARD_TABS = [['desc', 'Description'], ['greet', 'First message'], ['notes', 'Notes & tags']];
+const chars = { observer: null, listObserver: null, azTimer: 0, tab: 'desc' };
+
+function displayName(title) {
+    return String(title ?? '').split('\n')[0].replace(/^\[[^\]]+\]\s*/, '').trim();
+}
+
+function syncCharacterPage() {
+    const form = document.getElementById('form_create');
+    const want = active && settings.touchSizing && settings.charPage;
+    document.documentElement.classList.toggle('stmui-charpage', !!want);
+    if (!want) {
+        document.querySelectorAll('.stmui-btn-label, #stmui_card_tabs, .stmui-hero-name, .stmui-cap, #stmui_az, #stmui_az_bubble').forEach(node => node.remove());
+        form?.classList.remove('stmui-ctab-desc', 'stmui-ctab-greet', 'stmui-ctab-notes');
+        chars.observer?.disconnect();
+        chars.listObserver?.disconnect();
+        chars.observer = null;
+        chars.listObserver = null;
+        return;
+    }
+    if (!form) return;
+
+    // Each card tool gets a short label under its icon.
+    for (const [selector, label] of CARD_TOOLS) {
+        const button = form.querySelector(selector);
+        if (button && !button.querySelector('.stmui-btn-label')) button.append(h('span', { class: 'stmui-btn-label', text: label }));
+    }
+
+    // The name, big, under the avatar.
+    const avatarLabel = document.getElementById('avatar_div_div');
+    let heroName = form.querySelector('.stmui-hero-name');
+    if (avatarLabel && !heroName) {
+        heroName = h('div', { class: 'stmui-hero-name' });
+        avatarLabel.after(heroName);
+    }
+    if (heroName) {
+        const creating = isShown(document.getElementById('name_div'));
+        heroName.hidden = creating;
+        heroName.textContent = document.getElementById('character_name_pole')?.value?.trim() || '';
+    }
+
+    // Description, first message and notes on tabs instead of one long scroll.
+    if (!document.getElementById('stmui_card_tabs')) {
+        const bar = h('div', { id: 'stmui_card_tabs', class: 'stmui-segmented stmui-card-tabs', role: 'tablist' },
+            CARD_TABS.map(([key, label]) => h('button', {
+                type: 'button',
+                class: 'stmui-seg',
+                'data-tab': key,
+                onclick: () => setCardTab(key),
+            }, [label])));
+        const anchor = document.getElementById('spoiler_free_desc') ?? document.getElementById('descriptionWrapper');
+        anchor?.before(bar);
+    }
+    setCardTab(chars.tab, false);
+
+    // Favorites strip: names under the round avatars.
+    captionFavorites();
+    if (!chars.observer) {
+        chars.observer = new MutationObserver(() => captionFavorites());
+        const wrapper = document.getElementById('HotSwapWrapper');
+        if (wrapper) chars.observer.observe(wrapper, { childList: true, subtree: true });
+    }
+    // The list re-renders on search, sort and paging: rebuild the A–Z strip each time.
+    if (!chars.listObserver) {
+        const list = document.getElementById('rm_print_characters_block');
+        if (list) {
+            chars.listObserver = new MutationObserver(() => {
+                window.clearTimeout(chars.azTimer);
+                chars.azTimer = window.setTimeout(buildAzStrip, 150);
+            });
+            chars.listObserver.observe(list, { childList: true });
+            document.getElementById('character_sort_order')?.addEventListener('change', () => setTimeout(buildAzStrip, 300));
+        }
+    }
+    buildAzStrip();
+}
+
+function setCardTab(key, scroll = true) {
+    chars.tab = key;
+    const form = document.getElementById('form_create');
+    if (!form) return;
+    for (const [name] of CARD_TABS) form.classList.toggle(`stmui-ctab-${name}`, name === key);
+    for (const button of document.querySelectorAll('#stmui_card_tabs .stmui-seg')) {
+        const on = button.dataset.tab === key;
+        button.classList.toggle('stmui-seg-on', on);
+        button.setAttribute('aria-selected', String(on));
+    }
+    if (scroll) document.getElementById('stmui_card_tabs')?.scrollIntoView({ block: 'nearest' });
+}
+
+function captionFavorites() {
+    for (const avatar of document.querySelectorAll('#HotSwapWrapper .hotswap .avatar')) {
+        if (avatar.querySelector('.stmui-cap')) continue;
+        const name = displayName(avatar.getAttribute('title'));
+        if (name) avatar.append(h('span', { class: 'stmui-cap', text: name }));
+    }
+}
+
+function letterOf(name) {
+    const first = normalizeText(String(name ?? '').trim()).charAt(0).toUpperCase();
+    return /[A-Z]/.test(first) ? first : '#';
+}
+
+/** A strip of letters on the right of the list; tap or slide to jump. Only for A–Z / Z–A order. */
+function buildAzStrip() {
+    const holder = document.getElementById('rm_characters_block');
+    const list = document.getElementById('rm_print_characters_block');
+    document.getElementById('stmui_az')?.remove();
+    if (!active || !settings.touchSizing || !settings.charPage || !holder || !list) return;
+    const sort = document.getElementById('character_sort_order')?.selectedOptions[0];
+    if (sort?.dataset.field !== 'name' || sort?.dataset.order === 'random') return;
+    const entries = Array.from(list.querySelectorAll(':scope > .character_select, :scope > .group_select, :scope > .bogus_folder_select'));
+    if (entries.length < 10) return;
+    const firstOf = new Map();
+    for (const entry of entries) {
+        const letter = letterOf(entry.querySelector('.ch_name')?.textContent);
+        if (!firstOf.has(letter)) firstOf.set(letter, entry);
+    }
+    if (firstOf.size < 3) return;
+    const letters = Array.from(firstOf.keys());
+    const strip = h('div', { id: 'stmui_az', class: 'stmui-az', 'aria-label': 'Jump to letter' }, letters.map(letter => h('span', { text: letter, 'data-letter': letter })));
+    let bubble = document.getElementById('stmui_az_bubble');
+    if (!bubble) {
+        bubble = h('div', { id: 'stmui_az_bubble', class: 'stmui-az-bubble', 'aria-hidden': 'true' });
+        holder.append(bubble);
+    }
+    let last = '';
+    const jump = event => {
+        const rect = strip.getBoundingClientRect();
+        const index = Math.max(0, Math.min(letters.length - 1, Math.floor(((event.clientY - rect.top) / rect.height) * letters.length)));
+        const letter = letters[index];
+        if (letter === last) return;
+        last = letter;
+        const target = firstOf.get(letter);
+        if (target) list.scrollTop += target.getBoundingClientRect().top - list.getBoundingClientRect().top - 2;
+        bubble.textContent = letter;
+        bubble.classList.add('stmui-az-bubble-on');
+        buzz(4);
+    };
+    strip.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        try {
+            strip.setPointerCapture?.(event.pointerId);
+        } catch {
+            // The pointer is already gone.
+        }
+        last = '';
+        jump(event);
+    });
+    strip.addEventListener('pointermove', event => {
+        if (event.buttons || event.pointerType === 'touch') jump(event);
+    });
+    const end = () => {
+        last = '';
+        bubble.classList.remove('stmui-az-bubble-on');
+    };
+    for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) strip.addEventListener(type, end);
+    shieldFromDrawerAutoClose(strip);
+    holder.append(strip);
+}
+
+// -- recent chats: search, pinned section, swipe to pin or delete
+
+const welcome = { observer: null };
+
+function syncWelcome() {
+    const chat = document.getElementById('chat');
+    const want = active && settings.chatStyle && settings.recentTools;
+    if (!want) {
+        welcome.observer?.disconnect();
+        welcome.observer = null;
+        document.querySelectorAll('.stmui-recent-search, .stmui-recent-heading, .stmui-recent-empty, .stmui-swipe-hint').forEach(node => node.remove());
+        document.querySelectorAll('.recentChat.stmui-match, .recentChat.stmui-nomatch').forEach(node => node.classList.remove('stmui-match', 'stmui-nomatch'));
+        document.querySelectorAll('.welcomePanel[data-stmui]').forEach(node => delete node.dataset.stmui);
+        return;
+    }
+    if (chat && !welcome.observer) {
+        welcome.observer = new MutationObserver(() => enhanceWelcome());
+        welcome.observer.observe(chat, { childList: true, subtree: false });
+    }
+    enhanceWelcome();
+}
+
+function enhanceWelcome() {
+    const panel = document.querySelector('#chat .welcomePanel');
+    if (!panel || panel.dataset.stmui === '1') return;
+    const list = panel.querySelector('.recentChatList');
+    if (!list) return;
+    panel.dataset.stmui = '1';
+    const cards = Array.from(list.querySelectorAll('.recentChat'));
+
+    // Pinned chats first under their own heading, then the rest.
+    const pinned = cards.filter(card => card.querySelector('.recentChatPinned'));
+    if (pinned.length && pinned.length < cards.length) {
+        pinned[0].before(h('p', { class: 'stmui-recent-heading', text: 'Pinned' }));
+        cards.find(card => !card.querySelector('.recentChatPinned'))?.before(h('p', { class: 'stmui-recent-heading', text: 'Recent' }));
+    }
+
+    if (cards.length > 3) {
+        const empty = h('p', { class: 'stmui-recent-empty', text: 'No chat matches that.', hidden: true });
+        const search = h('input', { type: 'search', class: 'text_pole stmui-recent-search', placeholder: 'Search recent chats', 'aria-label': 'Search recent chats', enterkeyhint: 'search' });
+        search.addEventListener('input', () => {
+            const words = normalizeText(search.value).split(/\s+/).filter(Boolean);
+            let shown = 0;
+            for (const card of cards) {
+                const text = normalizeText(card.textContent);
+                const match = !words.length || words.every(word => text.includes(word));
+                card.classList.toggle('stmui-match', words.length > 0 && match);
+                card.classList.toggle('stmui-nomatch', !match);
+                if (match) shown++;
+            }
+            list.classList.toggle('stmui-searching', words.length > 0);
+            empty.hidden = shown > 0;
+        });
+        list.before(search);
+        list.append(empty);
+    }
+
+    for (const card of cards) wireSwipe(card, list);
+}
+
+/** Swipe a recent chat right to pin or unpin it, left to delete it (SillyTavern asks first). */
+function wireSwipe(card, list) {
+    if (card.dataset.stmuiSwipe) return;
+    card.dataset.stmuiSwipe = '1';
+    let startX = 0;
+    let startY = 0;
+    let dx = 0;
+    let tracking = false;
+    let swiping = false;
+    let hint = null;
+    const reset = () => {
+        card.style.transition = 'transform 0.22s var(--stmui-ease)';
+        card.style.transform = '';
+        hint?.remove();
+        hint = null;
+        setTimeout(() => {
+            card.style.transition = '';
+        }, 240);
+    };
+    card.addEventListener('touchstart', event => {
+        if (!active || !settings.chatStyle || !settings.recentTools) return;
+        if (event.touches.length !== 1 || event.target.closest('button')) return;
+        startX = event.touches[0].clientX;
+        startY = event.touches[0].clientY;
+        dx = 0;
+        tracking = true;
+        swiping = false;
+    }, { passive: true });
+    card.addEventListener('touchmove', event => {
+        if (!tracking) return;
+        const x = event.touches[0].clientX - startX;
+        const y = event.touches[0].clientY - startY;
+        if (!swiping) {
+            if (Math.abs(y) > 12 && Math.abs(y) > Math.abs(x)) {
+                tracking = false;
+                return;
+            }
+            if (Math.abs(x) < 14) return;
+            swiping = true;
+        }
+        dx = Math.max(-140, Math.min(140, x));
+        card.style.transition = 'none';
+        card.style.transform = `translateX(${dx}px)`;
+        const pinnedNow = !!card.querySelector('.pinChat.active, .recentChatPinned');
+        const kind = dx > 0 ? 'pin' : 'delete';
+        if (!hint || hint.dataset.kind !== kind) {
+            hint?.remove();
+            hint = h('div', { class: `stmui-swipe-hint stmui-swipe-${kind}`, 'data-kind': kind }, [
+                ui(kind === 'pin' ? 'bookmark' : 'trash'),
+                h('span', { text: kind === 'pin' ? (pinnedNow ? 'Unpin' : 'Pin') : 'Delete' }),
+            ]);
+            list.append(hint);
+        }
+        hint.style.top = `${card.offsetTop}px`;
+        hint.style.height = `${card.offsetHeight}px`;
+        hint.classList.toggle('stmui-swipe-ready', Math.abs(dx) > 90);
+    }, { passive: true });
+    const end = () => {
+        if (!tracking) return;
+        tracking = false;
+        if (!swiping) return;
+        const action = Math.abs(dx) > 90 ? (dx > 0 ? 'pin' : 'delete') : null;
+        reset();
+        if (action) {
+            buzz(12);
+            card.querySelector(action === 'pin' ? '.pinChat' : '.deleteChat')?.click();
+        }
+        // Then swallow the tap the browser sends after the swipe, so the chat does not open.
+        const swallow = event => {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        };
+        card.addEventListener('click', swallow, { capture: true, once: true });
+        setTimeout(() => card.removeEventListener('click', swallow, { capture: true }), 400);
+    };
+    card.addEventListener('touchend', end);
+    card.addEventListener('touchcancel', end);
+}
+
+// -- chat history: grouped by date
+
+const chatList = { observer: null, timer: 0 };
+
+function chatDateOf(block) {
+    const text = block.querySelector('.chat_messages_date')?.textContent?.trim();
+    let time = text ? Date.parse(text) : NaN;
+    if (Number.isNaN(time)) {
+        const match = (block.getAttribute('file_name') ?? '').match(/(\d{4})-(\d{1,2})-(\d{1,2})\s*@?(\d{1,2})?h?\s*(\d{1,2})?m?/);
+        if (match) time = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4] ?? 0), Number(match[5] ?? 0)).getTime();
+    }
+    return Number.isNaN(time) ? null : new Date(time);
+}
+
+function dateGroup(date) {
+    if (!date) return t('Older');
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const day = 86400000;
+    if (date.getTime() >= startOfDay) return t('Today');
+    if (date.getTime() >= startOfDay - day) return t('Yesterday');
+    if (date.getTime() >= startOfDay - 6 * day) return t('This week');
+    if (date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()) return t('This month');
+    return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+
+function groupChatHistory() {
+    const list = document.getElementById('select_chat_div');
+    if (!list) return;
+    list.querySelectorAll('.stmui-date-heading').forEach(node => node.remove());
+    if (!active || !settings.touchSizing || !settings.recentTools) return;
+    let lastGroup = null;
+    for (const wrapper of list.querySelectorAll(':scope > .select_chat_block_wrapper')) {
+        if (getComputedStyle(wrapper).display === 'none') continue;
+        const block = wrapper.querySelector('.select_chat_block');
+        const group = dateGroup(block ? chatDateOf(block) : null);
+        if (group !== lastGroup) {
+            wrapper.before(h('p', { class: 'stmui-date-heading', text: group }));
+            lastGroup = group;
+        }
+    }
+}
+
+function syncChatHistory() {
+    const list = document.getElementById('select_chat_div');
+    if (!active || !settings.touchSizing || !settings.recentTools) {
+        chatList.observer?.disconnect();
+        chatList.observer = null;
+        list?.querySelectorAll('.stmui-date-heading').forEach(node => node.remove());
+        return;
+    }
+    if (list && !chatList.observer) {
+        chatList.observer = new MutationObserver(records => {
+            // Ignore our own headings.
+            if (records.every(record => [...record.addedNodes, ...record.removedNodes].every(node => node.classList?.contains('stmui-date-heading')))) return;
+            window.clearTimeout(chatList.timer);
+            chatList.timer = window.setTimeout(groupChatHistory, 80);
+        });
+        chatList.observer.observe(list, { childList: true, subtree: false, attributes: true, attributeFilter: ['style'], attributeOldValue: false });
+        document.getElementById('select_chat_search')?.addEventListener('input', () => {
+            window.clearTimeout(chatList.timer);
+            chatList.timer = window.setTimeout(groupChatHistory, 350);
+        });
+    }
+}
+
+// -- search everything
+
+async function recentChatList() {
+    try {
+        const response = await fetch('/api/chats/recent', {
+            method: 'POST',
+            headers: ctx().getRequestHeaders?.() ?? { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ max: 200 }),
+            cache: 'no-cache',
+        });
+        return response.ok ? await response.json() : [];
+    } catch {
+        return [];
+    }
+}
+
+async function lorebookNames() {
+    try {
+        const module = await import('/scripts/world-info.js');
+        return Array.isArray(module.world_names) ? module.world_names : [];
+    } catch {
+        return Array.from(document.querySelectorAll('#world_editor_select option')).map(option => option.textContent.trim()).filter(Boolean);
+    }
+}
+
+function allSettingItems() {
+    const items = [];
+    for (const pageId of SEARCH_PAGES) {
+        const root = document.querySelector(`#${pageId} > .drawer-content`);
+        if (!root) continue;
+        const page = t(pageInfo(drawerById(pageId)).title);
+        for (const item of settingItems(root)) items.push({ ...item, pageId, page });
+    }
+    return items;
+}
+
+async function openChatFile(chat) {
+    const context = ctx();
+    const file = String(chat.file_name ?? '').replace(/\.jsonl$/, '');
+    closePages();
+    if (chat.group) {
+        await context.openGroupChat?.(chat.group, file);
+        return;
+    }
+    const id = context.characters.findIndex(character => character.avatar === chat.avatar);
+    if (id === -1) return;
+    await context.selectCharacterById(id);
+    if (context.getCurrentChatId?.() !== file) await ctx().openCharacterChat?.(file);
+}
+
+function openLorebook(name) {
+    openPage('WI-SP-button');
+    setTimeout(() => {
+        const select = document.getElementById('world_editor_select');
+        const option = Array.from(select?.options ?? []).find(item => item.textContent.trim() === name);
+        if (select && option) {
+            select.value = option.value;
+            $j()(select).trigger('change');
+        }
+    }, 300);
+}
+
+function openGlobalSearch() {
+    const context = ctx();
+    const characters = (context.characters ?? []).map((character, id) => ({ kind: 'character', id, name: character.name, note: (character.description ?? '').replace(/\s+/g, ' ').slice(0, 80), avatar: character.avatar }));
+    const groups = (context.groups ?? []).map(group => ({ kind: 'group', id: group.id, name: group.name, note: t('Group chat') }));
+    let chats = null;
+    let lorebooks = null;
+    let settingsIndex = null;
+    const load = Promise.all([
+        recentChatList().then(list => {
+            chats = list;
+        }),
+        lorebookNames().then(list => {
+            lorebooks = list;
+        }),
+    ]);
+    showSheet(new MenuSheet({
+        title: t('Search everything'),
+        subtitle: t('Characters, chats, lorebooks and settings'),
+        fill: body => {
+            const input = h('input', { type: 'search', class: 'text_pole stmui-choice-search', placeholder: t('Type to search…'), 'aria-label': t('Search everything'), enterkeyhint: 'search' });
+            const results = h('div', { class: 'stmui-search-results' });
+            const section = (title, rows) => (rows.length ? [h('p', { class: 'stmui-menu-heading', text: title }), h('div', { class: 'stmui-menu-list' }, rows)] : []);
+            const row = (iconOrImage, label, note, onclick) => h('button', { type: 'button', class: 'stmui-menu-row', onclick }, [
+                iconOrImage.startsWith('/') ? h('img', { class: 'stmui-choice-img', src: iconOrImage, alt: '', loading: 'lazy' }) : ui(iconOrImage, 'stmui-menu-row-icon'),
+                h('span', { class: 'stmui-row-text' }, [h('span', { text: label }), note ? h('small', { text: note }) : null]),
+            ]);
+            const render = () => {
+                const words = normalizeText(input.value).split(/\s+/).filter(Boolean);
+                if (!words.length) {
+                    results.replaceChildren(h('p', { class: 'stmui-menu-foot', text: t('Find a character, a chat by its name or last message, a lorebook or a setting.') }));
+                    return;
+                }
+                const hit = text => words.every(word => normalizeText(text).includes(word));
+                const go = action => () => {
+                    closeSheet(true);
+                    action();
+                };
+                const characterRows = [...characters, ...groups].filter(item => hit(`${item.name} ${item.note}`)).slice(0, 12).map(item => item.kind === 'character'
+                    ? row(`/thumbnail?type=avatar&file=${encodeURIComponent(item.avatar)}`, item.name, item.note, go(async () => {
+                        closePages();
+                        await ctx().selectCharacterById(item.id);
+                    }))
+                    : row('users', item.name, item.note, go(async () => {
+                        closePages();
+                        await ctx().openGroupChat?.(item.id);
+                    })));
+                // Recent chats only carry the avatar file or group id; look the name up.
+                const ownerName = chat => (chat.group
+                    ? (context.groups ?? []).find(group => String(group.id) === String(chat.group))?.name
+                    : characters.find(character => character.avatar === chat.avatar)?.name) ?? '';
+                const chatRows = (chats ?? []).filter(chat => hit(`${ownerName(chat)} ${chat.file_name ?? ''} ${chat.mes ?? ''}`)).slice(0, 12).map(chat => row(
+                    chat.avatar ? `/thumbnail?type=avatar&file=${encodeURIComponent(chat.avatar)}` : 'chats',
+                    ownerName(chat) || String(chat.file_name ?? '').replace(/\.jsonl$/, ''),
+                    `${String(chat.mes ?? '').replace(/\s+/g, ' ').slice(0, 80)}`,
+                    go(() => openChatFile(chat)),
+                ));
+                const loreRows = (lorebooks ?? []).filter(name => hit(name)).slice(0, 8).map(name => row('book', name, t('Lorebook'), go(() => openLorebook(name))));
+                if (!settingsIndex) settingsIndex = allSettingItems();
+                const settingRows = settingsIndex.filter(item => hit(`${item.label} ${item.section} ${item.page}`)).slice(0, 12).map(item => row('settings', item.label, [item.page, item.section].filter(Boolean).join(' › '), go(() => {
+                    openPage(item.pageId);
+                    setTimeout(() => revealSetting(item.row), 350);
+                })));
+                const blocks = [
+                    ...section(t('Characters'), characterRows),
+                    ...section(t('Chats'), chatRows),
+                    ...section(t('Lorebooks'), loreRows),
+                    ...section(t('Settings'), settingRows),
+                ];
+                if (chats === null) blocks.push(h('p', { class: 'stmui-menu-foot', text: t('Loading chats…') }));
+                results.replaceChildren(...(blocks.length ? blocks : [h('p', { class: 'stmui-menu-foot', text: t('Nothing matches that.') })]));
+            };
+            input.addEventListener('input', render);
+            load.then(() => {
+                if (input.isConnected) render();
+            });
+            body.append(input, results);
+            render();
+            setTimeout(() => input.focus(), 250);
+        },
+    }));
+}
+
 // -- long-press a message for its menu
 
 const press = { timer: 0, x: 0, y: 0, fired: 0 };
@@ -3690,6 +4226,9 @@ function applyTextSize() {
 
 function syncExtras() {
     applyTextSize();
+    syncCharacterPage();
+    syncWelcome();
+    syncChatHistory();
     applyLanguage();
     syncEditorState();
     syncServerWatch();

@@ -1,6 +1,16 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.6.0',
+        items: [
+            'Characters: the search box is always there, favorites show their names, and an A–Z strip on the right jumps through the list. Grid view shows big picture cards.',
+            'Character cards: a big picture and name, labeled tools (Favorite, Lore, Export…) and tabs for Description, First message and Notes & tags.',
+            'Recent chats: search them, pinned chats get their own section, swipe a chat right to pin it or left to delete it.',
+            'Chat history is grouped by date: Today, Yesterday, This week and by month.',
+            'Search everything: one search for characters, chats, lorebooks and settings (🔍 on the start screen, or the search bar at the top of More).',
+        ],
+    },
+    {
         version: '2.5.1',
         items: [
             'Translate chat is much faster: messages go straight from your phone to Google Translate in large batches, so a long chat takes about a second instead of one second per message.',

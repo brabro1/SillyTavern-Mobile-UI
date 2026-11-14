@@ -141,6 +141,24 @@ await step('find a setting searches the Settings page', async () => {
     await until(() => !document.documentElement.dataset.stmuiPage);
 });
 
+await step('search everything finds settings', async () => {
+    await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="more"]').click());
+    await page.locator('#stmui-sheet .stmui-search-field').click();
+    await page.locator('#stmui-sheet .stmui-choice-search').fill('font');
+    await until(() => [...document.querySelectorAll('#stmui-sheet .stmui-menu-heading')].some(el => el.textContent === 'Settings'));
+    await closeSheet();
+});
+
+await step('characters page has search, labeled card tools and tabs', async () => {
+    await page.locator('.stmui-tab[data-tab="rightNavHolder"]').click();
+    await until(() => document.documentElement.dataset.stmuiPage === 'rightNavHolder');
+    await page.locator('#character_search_bar').waitFor({ state: 'visible' });
+    const ready = await page.evaluate(() => !!document.getElementById('stmui_card_tabs') && document.querySelectorAll('.stmui-btn-label').length >= 6);
+    if (!ready) throw new Error('card tabs or tool labels missing');
+    await page.locator('.stmui-tab[data-tab="chat"]').click();
+    await until(() => !document.documentElement.dataset.stmuiPage);
+});
+
 await step('banner shows when the server stops answering', async () => {
     await page.route('**/api/ping*', route => route.abort());
     await page.evaluate(() => window.dispatchEvent(new Event('offline')));
