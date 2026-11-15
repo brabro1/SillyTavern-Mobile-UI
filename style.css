@@ -4665,6 +4665,32 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons
     color: var(--stmui-accent);
 }
 
+/* The language one tap translates to, as a small tag on the button. */
+.stmui-ab-translate {
+    position: relative;
+}
+
+.stmui-ab-badge {
+    position: absolute;
+    right: 1px;
+    bottom: 3px;
+    min-width: 16px;
+    padding: 0 3px;
+    border-radius: 6px;
+    background: var(--stmui-solid);
+    border: 1px solid var(--stmui-line);
+    color: inherit;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 13px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.stmui-ab-badge[hidden] {
+    display: none;
+}
+
 /* ==========================================================================
    Characters list (html.stmui-charpage)
    ========================================================================== */

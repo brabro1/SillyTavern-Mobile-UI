@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.9.0',
+        items: [
+            "One-tap translate: tap the translate button to show the chat in your language, tap again for the original. Hold it to pick another language. A small tag on the button shows which language.",
+            "SillyTavern's own Translate Chat in the ✨ menu now does the same fast one-tap translate.",
+        ],
+    },
+    {
         version: '2.8.1',
         items: [
             "Opened lorebook entries are fixed: the text box is full width again, nothing overlaps, and the checkboxes sit neatly in two columns.",

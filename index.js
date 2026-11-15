@@ -1208,16 +1208,31 @@ class Shell {
             this.avatar,
             h('span', { class: 'stmui-ab-text' }, [this.titleEl, this.subEl]),
         ]);
+        this.translateBadge = h('span', { class: 'stmui-ab-badge', 'aria-hidden': 'true' });
         this.translateBtn = h('button', {
             type: 'button',
             class: 'stmui-ab-btn stmui-ab-translate',
             'aria-label': 'Translate chat',
-            title: 'Translate chat',
-            onclick: () => {
-                buzz(6);
+            title: 'Tap to translate, hold to pick the language',
+        }, [ui('languages'), this.translateBadge]);
+        // Tap: translate the chat (or back to the original). Hold: pick the language.
+        let translateHold = 0;
+        let translateHeld = 0;
+        this.translateBtn.addEventListener('pointerdown', () => {
+            window.clearTimeout(translateHold);
+            translateHold = window.setTimeout(() => {
+                translateHeld = Date.now();
+                buzz(15);
                 openTranslateSheet();
-            },
-        }, [ui('languages')]);
+            }, 450);
+        });
+        for (const type of ['pointerup', 'pointercancel', 'pointerleave']) this.translateBtn.addEventListener(type, () => window.clearTimeout(translateHold));
+        this.translateBtn.addEventListener('contextmenu', event => event.preventDefault());
+        this.translateBtn.addEventListener('click', () => {
+            if (Date.now() - translateHeld < 700) return;
+            buzz(6);
+            quickTranslate();
+        });
         this.actions = h('div', { class: 'stmui-ab-actions' }, [
             this.translateBtn,
             h('button', {
@@ -1508,7 +1523,12 @@ class Shell {
         else this.avatar.replaceChildren(ui(context.groupId ? 'users' : (hasChat ? 'user' : 'chats')));
         this.actions.hidden = !hasChat;
         this.search.hidden = hasChat;
-        this.translateBtn.classList.toggle('stmui-ab-on', hasChat && !!chatLanguage());
+        const shownIn = hasChat ? chatLanguage() : null;
+        this.translateBtn.classList.toggle('stmui-ab-on', !!shownIn);
+        const next = shownIn ?? quickLanguage();
+        this.translateBadge.textContent = next ? next.split('-')[0].toUpperCase() : '';
+        this.translateBadge.hidden = !next;
+        this.translateBtn.setAttribute('aria-label', shownIn ? t('Show original') : (next ? t('Translate to {lang}', { lang: languageName(next) }) : t('Translate chat')));
         this.home.hidden = !hasChat;
     }
 }
@@ -3176,6 +3196,46 @@ function setAutoTranslate(on) {
     }
 }
 
+/** The language one tap translates to: the last one picked in the sheet. */
+function quickLanguage() {
+    return settings.recentLanguages?.[0] ?? null;
+}
+
+/** One tap: translate the chat, show the original again, or stop a running translation. */
+function quickTranslate() {
+    const inChat = !!(ctx().groupId || ctx().characterId !== undefined);
+    if (!inChat) {
+        globalThis.toastr?.info(t('Open a chat first.'));
+        return;
+    }
+    if (translation.running) {
+        translation.cancel = true;
+        return;
+    }
+    if (chatLanguage()) {
+        showOriginal();
+        return;
+    }
+    const code = quickLanguage();
+    if (code) translateChat(code);
+    else openTranslateSheet();
+}
+
+/**
+ * SillyTavern's own "Translate Chat" in the ✨ menu translates one message at a
+ * time. While Mobile UI is on, that item does the same one-tap translate as the
+ * button in the top bar.
+ */
+function onWandTranslateClick(event) {
+    if (!active || !(event.target instanceof Element) || !event.target.closest('#translate_chat')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    // Stopping the click also stops SillyTavern from closing the menu; close it the same way it would.
+    const menu = document.getElementById('extensionsMenu');
+    if (menu && getComputedStyle(menu).display !== 'none') document.getElementById('extensionsMenuButton')?.click();
+    quickTranslate();
+}
+
 function openTranslateSheet() {
     const current = chatLanguage();
     const inChat = !!(ctx().groupId || ctx().characterId !== undefined);
@@ -3231,6 +3291,7 @@ function openTranslateSheet() {
             body.append(h('p', { class: 'stmui-menu-heading', text: t('Languages') }), search, ...recentBlock, allHeading, h('div', { class: 'stmui-menu-list' }, allRows));
             const provider = translateSettings()?.provider ?? 'google';
             const providerName = { google: 'Google Translate', deepl: 'DeepL', bing: 'Bing', yandex: 'Yandex', libre: 'LibreTranslate', lingva: 'Lingva', deeplx: 'DeepLX', oneringtranslator: 'OneRingTranslator' }[provider] ?? provider;
+            body.append(h('p', { class: 'stmui-menu-foot', text: t('Tip: tap the translate button to switch between your language and the original. Hold it to open this list.') }));
             body.append(h('p', { class: 'stmui-menu-foot', text: t('Uses {provider} through your SillyTavern server. You can change it in Extensions → Chat Translation.', { provider: providerName }) }));
         },
     }));
@@ -5653,6 +5714,7 @@ function init() {
     for (const name of ['ONLINE_STATUS_CHANGED', 'CHARACTER_EDITED', 'CHARACTER_RENAMED', 'GROUP_UPDATED', 'SETTINGS_UPDATED']) {
         if (event_types[name]) eventSource?.on?.(event_types[name], refreshShell);
     }
+    document.addEventListener('click', onWandTranslateClick, true);
     // The wand menu can be (re)built after extensions load.
     setTimeout(syncWandShortcut, 1500);
     setTimeout(syncWandShortcut, 5000);

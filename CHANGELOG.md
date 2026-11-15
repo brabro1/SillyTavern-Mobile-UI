@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.9.0
+
+- **One-tap translate**: tapping the translate button in the top bar now translates the chat straight away into the language you used last, and tapping it again shows the original. Tapping while it is translating stops it. Hold the button to open the language list. A small tag on the button (like AR or JA) shows the language one tap gives. The first time, with no language picked yet, a tap opens the list.
+- SillyTavern's own **Translate Chat** in the ✨ menu translated one message at a time. While Mobile UI is on, it does the same one-tap translate as the top-bar button. Translate Input is left as it is.
+
 ## 2.8.1
 
 - Lorebook entries: SillyTavern gives an entry's content block the same class as its header, so the card-header layout was applied to the content too. The text box was squeezed to a sliver and the checkboxes piled onto other fields. The card layout now only touches the real header. The opened entry's header is solid (it was see-through) and scrolls away instead of covering a third of the screen. Nested drawers such as Additional Matching Sources keep their own look. The four checkboxes sit in two columns under "Content (Tokens)". The Depth label hides together with its box when the position doesn't use depth.
