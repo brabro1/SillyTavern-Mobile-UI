@@ -70,10 +70,26 @@ It only turns on for phones. On your computer SillyTavern looks the same as alwa
 
 **Personas on two tabs.** **All personas** to pick who you are, **Edit** to change the current one, with its picture and name at the top. No more scrolling past the whole list to reach the description.
 
+**Quick buttons after a reply.** Regenerate, Continue and Another version sit right above the message box when the character has answered. Or drag the last reply to the left for another version, and to the right to go back.
+
+**Search inside a chat.** **More → Search this chat** finds any word in the conversation, even in older messages, and jumps between the matches.
+
+**See how full the context is.** A thin line under the top bar fills up as the chat uses more of the model's memory. **Quick switch** shows the exact numbers.
+
+**Long messages fold up.** Very long older messages show the start and a **Show more** button. If you scroll up while a reply is coming in, a **New text** button takes you back down.
+
+**Pick your chat look.** **More → Themes → Chat look**: Cards, Bubbles (your messages on the right, like a messenger) or Flat.
+
+**Lorebook entries as cards.** Each entry shows its switch, its title and its keywords as small chips. Tap one and it opens on its own page; back closes it.
+
+**Easier presets.** Sliders have − and + buttons for small changes, prompt triggers are chips you tap, and the handles for reordering prompts are bigger.
+
 **A prompt editor that fits.** Editing a prompt in Presets opens a full page. Long names wrap onto several lines, and Close, Reset and a big Save button stay at the bottom. The back arrow and the back gesture close it.
 
 **Phone features** (under **More → Phone features**):
 
+- **Reply buttons**, **Drag to swipe**, **Fold long messages** and **Context meter:** the chat helpers above, each one can be switched off.
+- **Lorebook entry cards:** switch off to get SillyTavern's own lorebook entries back.
 - **Long-press for message menu:** hold a message to open its menu. Turn it off if you'd rather long-press to select text.
 - **Connection check:** the banner when SillyTavern stops answering.
 - **Faster long chats:** messages far off screen aren't drawn until you scroll to them.
@@ -173,7 +189,7 @@ Find them under **More → Mobile UI settings**. Each part can be switched on or
 | Enable Mobile UI | Turns everything on or off. Off gives you the normal SillyTavern back. |
 | Use it on this device | **Automatic** (phones only), **Always on** or **Off**. This is saved per device. |
 | Theme, Animations, Theme background, Modern font, New icons | Same choices as in **More → Themes**. |
-| Chat text size, Sharp character pictures, Animated pictures, New character pages, Chat list helpers, Long-press for message menu, Connection check, Faster long chats, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Picture viewer, Nicer notifications, Send animation, Vibration | Same choices as in **More → Phone features**. |
+| Chat text size, Reply buttons, Drag to swipe, Fold long messages, Context meter, Lorebook entry cards, Sharp character pictures, Animated pictures, New character pages, Chat list helpers, Long-press for message menu, Connection check, Faster long chats, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Picture viewer, Nicer notifications, Send animation, Vibration | Same choices as in **More → Phone features**. |
 | App navigation | The top bar and the bottom tabs. |
 | Modern chat look | Message cards, bigger text, rounded message box. |
 | Touch-friendly panels | Bigger buttons and sliders, roomier settings, menus from the bottom. |

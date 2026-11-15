@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.8.0
+
+Chat:
+- **Reply buttons**: Regenerate, Continue and Another version appear above the message box after a reply. They hide while you type, while a reply is being written, and when the last message is yours.
+- **Drag to swipe**: drag the last reply sideways. It tilts with your finger and a hint says what letting go will do (another version to the left, the previous one to the right). A short drag springs back; scrolling up and down is not affected. SillyTavern's own swipe gesture is held back while this is on, so it never fires twice.
+- **Search this chat** (More sheet): a search bar under the top bar finds text in every message, loading older messages when needed, with highlighted matches, a counter and older/newer arrows. Back closes it.
+- **Context meter**: a thin line under the top bar shows how full the context was on the last reply (orange near the limit). Quick switch shows the exact token numbers.
+- **Fold long messages**: older messages over about 2,500 characters fold with a fade and a Show more button.
+- **New text pill**: while a reply streams in and you are scrolled up, the jump button says New text.
+- **Chat look** (More → Themes): Cards (as before), Bubbles (your messages on the right) or Flat (no boxes).
+- **Quick Replies** show as a single row of scrollable chips.
+
+Lorebooks and presets:
+- **Lorebook entry cards**: each entry is a card with its switch, title and keyword chips. Opening an entry gives it the whole page with its buttons in a sticky header; back closes it.
+- **Triggers as chips** in the prompt editor, with a note when none are picked.
+- **Slider steppers**: − and + buttons beside every slider number. The number box is wide enough for values like 1.00.
+- **Bigger drag handles** for reordering prompts.
+
+Fixes:
+- SillyTavern's dry runs (used to count prompt tokens) no longer make Mobile UI think a reply is still being written.
+
 ## 2.7.1
 
 - Animated pictures now come from SillyTavern's own picture picker: when the picked file is a GIF, an animated WebP or an animated PNG (detected from the file's bytes), the moving version is kept automatically, also for brand-new characters. Picking a still picture removes the animation. The separate Animated button is gone; card tools are back to two rows of four.

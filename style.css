@@ -778,6 +778,14 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     pointer-events: none;
 }
 
+.stmui-menu-row.stmui-menu-row-info {
+    cursor: default;
+}
+
+.stmui-menu-row.stmui-menu-row-info:active {
+    background: transparent;
+}
+
 .stmui-menu-row span {
     flex: 1 1 auto;
 }
@@ -5507,3 +5515,709 @@ html.stmui-charpage .stmui-btn-label {
 
 
 
+
+/* ==========================================================================
+   Chat: reply buttons above the message box
+   ========================================================================== */
+
+.stmui-reply-actions {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 6px;
+    padding: 0 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.stmui-reply-actions[hidden],
+.stmui-reply-chip[hidden] {
+    display: none;
+}
+
+.stmui-reply-actions::-webkit-scrollbar {
+    display: none;
+}
+
+.stmui-reply-chip {
+    display: inline-flex;
+    flex: 1 1 auto;
+    justify-content: center;
+    min-width: 0;
+    align-items: center;
+    gap: 5px;
+    height: 34px;
+    padding: 0 8px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px;
+    background: var(--stmui-raised);
+    color: var(--stmui-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.stmui-reply-chip > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stmui-reply-chip .stmui-svg {
+    flex: 0 0 auto;
+    width: 15px;
+    height: 15px;
+    color: var(--stmui-accent);
+}
+
+.stmui-reply-chip:active {
+    background: var(--stmui-raised-2);
+    transform: scale(0.96);
+}
+
+html.stmui-motion-full .stmui-reply-actions:not([hidden]) {
+    animation: stmui-rise 0.3s var(--stmui-ease);
+}
+
+/* ==========================================================================
+   Chat: drag the last reply to swipe
+   ========================================================================== */
+
+.stmui-drag-hint {
+    position: fixed;
+    z-index: 3500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--stmui-surface) 92%, transparent);
+    color: var(--stmui-muted);
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    transform: translateY(-50%);
+    pointer-events: none;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.stmui-drag-next {
+    right: 10px;
+}
+
+.stmui-drag-previous {
+    left: 10px;
+}
+
+.stmui-drag-hint.stmui-drag-ready {
+    background: var(--stmui-accent);
+    color: var(--stmui-on-accent);
+}
+
+.stmui-drag-hint .stmui-svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ==========================================================================
+   Chat: folded long messages, "new text" pill
+   ========================================================================== */
+
+html.stmui-chat #chat .mes.stmui-long:not(.stmui-long-open) .mes_text {
+    max-height: 50vh;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(#000 70%, transparent);
+    mask-image: linear-gradient(#000 70%, transparent);
+}
+
+.stmui-more-btn {
+    display: none;
+}
+
+html.stmui-chat #chat .mes.stmui-long .stmui-more-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    margin: 6px 0 2px;
+    padding: 0 14px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px;
+    background: var(--stmui-raised-2);
+    color: var(--stmui-accent);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.stmui-jump-label {
+    display: none;
+}
+
+html.stmui-on .stmui-jump.stmui-jump-new {
+    width: auto;
+    padding: 0 14px 0 10px;
+    gap: 6px;
+    border-color: transparent;
+    border-radius: 999px;
+    background: var(--stmui-accent);
+    color: var(--stmui-on-accent);
+}
+
+html.stmui-on .stmui-jump.stmui-jump-new .stmui-jump-label {
+    display: inline;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   Chat: search this chat
+   ========================================================================== */
+
+.stmui-chat-finder {
+    position: fixed;
+    top: var(--topBarBlockSize, 56px);
+    left: 0;
+    right: 0;
+    z-index: 3400;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-sizing: border-box;
+    padding: 8px calc(8px + var(--stmui-safe-right, 0px)) 8px calc(10px + var(--stmui-safe-left, 0px));
+    border-bottom: 1px solid var(--stmui-line);
+    background: var(--stmui-solid);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    animation: stmui-fade 0.15s ease-out;
+}
+
+.stmui-chat-finder input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 42px;
+    margin: 0;
+    border-radius: 999px;
+    font-size: 16px;
+}
+
+.stmui-find-count {
+    min-width: 34px;
+    color: var(--stmui-muted);
+    font-size: 12.5px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.stmui-find-btn {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--stmui-text);
+    cursor: pointer;
+}
+
+.stmui-find-btn:active {
+    background: var(--stmui-raised-2);
+}
+
+.stmui-find-btn .stmui-svg {
+    width: 20px;
+    height: 20px;
+}
+
+mark.stmui-find-mark {
+    padding: 0 1px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--stmui-accent) 55%, transparent);
+    color: inherit;
+}
+
+/* ==========================================================================
+   Chat: context meter under the top bar
+   ========================================================================== */
+
+.stmui-meter {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    pointer-events: none;
+}
+
+.stmui-meter span {
+    display: block;
+    width: var(--stmui-meter, 0%);
+    height: 100%;
+    background: var(--stmui-accent);
+    opacity: 0.85;
+    transition: width 0.4s var(--stmui-ease);
+}
+
+.stmui-meter.stmui-meter-warn span {
+    background: #e6a23c;
+}
+
+.stmui-meter.stmui-meter-full span {
+    background: #e5574f;
+}
+
+/* ==========================================================================
+   Chat look: bubbles and flat
+   ========================================================================== */
+
+html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes {
+    max-width: 92%;
+    border-radius: 20px;
+}
+
+html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user="true"] {
+    align-self: flex-end;
+    max-width: 84%;
+    margin-left: auto;
+    border-color: transparent !important;
+    border-bottom-right-radius: 6px;
+    background: color-mix(in srgb, var(--stmui-accent) 22%, var(--stmui-surface)) !important;
+}
+
+html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes:not([is_user="true"]) {
+    align-self: flex-start;
+    border-bottom-left-radius: 6px;
+}
+
+html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user="true"] .mesAvatarWrapper {
+    display: none;
+}
+
+html.stmui-chat[data-stmui-look="flat"] body:not(.bubblechat):not(.documentstyle) #chat .mes {
+    max-width: none;
+    margin-bottom: 0;
+    border: 0 !important;
+    border-bottom: 1px solid var(--stmui-line) !important;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+html.stmui-chat[data-stmui-look="flat"] body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user="true"] {
+    background: color-mix(in srgb, var(--stmui-accent) 6%, transparent) !important;
+}
+
+.stmui-look-seg {
+    display: flex;
+    margin: 0 4px;
+}
+
+/* ==========================================================================
+   Quick Replies as a row of chips
+   ========================================================================== */
+
+html.stmui-chat #qr--bar {
+    margin: 0 0 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+html.stmui-chat #qr--bar .qr--buttons {
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    gap: 8px;
+    padding: 0 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+html.stmui-chat #qr--bar .qr--buttons::-webkit-scrollbar {
+    display: none;
+}
+
+html.stmui-chat #qr--bar .qr--button {
+    flex: 0 0 auto;
+    height: 34px;
+    margin: 0;
+    padding: 0 14px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px;
+    background: var(--stmui-raised);
+    font-size: 13.5px;
+    line-height: 32px;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Lorebook entries: cards, keyword chips, full-screen editor
+   ========================================================================== */
+
+html.stmui-lorecards #world_popup_entries_list .world_entry {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 18px;
+    background: var(--stmui-raised);
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls {
+    display: grid !important;
+    grid-template-areas:
+        "kill title state open"
+        "keys keys keys keys"
+        "meta meta meta meta";
+    grid-template-columns: 40px minmax(0, 1fr) auto 36px;
+    align-items: center;
+    gap: 6px 8px;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls > .flex-container,
+html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls .WIEntryTitleAndStatus,
+html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls .WIEntryTitleAndStatus > .flex-container {
+    display: contents !important;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls > .killSwitch {
+    grid-area: kill;
+    justify-self: center;
+    font-size: 26px;
+    cursor: pointer;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls textarea[name="comment"] {
+    grid-area: title;
+    min-height: 0;
+    height: auto;
+    margin: 0;
+    padding: 4px 0;
+    border: 0;
+    background: transparent;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.3;
+    field-sizing: content;
+    resize: none;
+    overflow: hidden;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls select[name="entryStateSelector"] {
+    grid-area: state;
+    width: auto;
+    min-width: 0;
+    height: 34px;
+    margin: 0;
+    padding: 0 22px 0 8px;
+    border-radius: 999px;
+    font-size: 13px;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls > .inline-drawer-toggle {
+    grid-area: open;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    color: var(--stmui-muted);
+    cursor: pointer;
+}
+
+html.stmui-lorecards #world_popup_entries_list .stmui-entry-keys {
+    grid-area: keys;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+html.stmui-lorecards #world_popup_entries_list .stmui-entry-keys[hidden] {
+    display: none;
+}
+
+.stmui-key-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--stmui-accent-soft);
+    color: var(--stmui-accent);
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.stmui-key-more {
+    background: var(--stmui-raised-2);
+    color: var(--stmui-muted);
+}
+
+/* Position, depth, order and chance: one row of four small fields. */
+html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls {
+    grid-area: meta;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+}
+
+html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls > .world_entry_form_control {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+    margin: 0;
+}
+
+html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls > [style*="none"],
+html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls > :has(> [style*="visibility: hidden"]) {
+    visibility: visible;
+}
+
+html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls label {
+    display: block !important;
+    margin: 0 0 2px;
+    color: var(--stmui-muted);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls :is(input, select) {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0;
+    height: 36px;
+    margin: 0;
+    padding: 0 8px;
+    font-size: 14px;
+}
+
+/* Move, duplicate and delete live in the opened entry, not on every card. */
+html.stmui-lorecards #world_popup_entries_list .world_entry:not(.stmui-entry-open) .inline-drawer-header > i.menu_button {
+    display: none !important;
+}
+
+/* One card per entry (SillyTavern's own card box inside it would double up). */
+html.stmui-lorecards #world_popup_entries_list .world_entry .world_entry_form {
+    margin: 0;
+    padding: 0;
+    border: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry .inline-drawer-header {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 !important;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry .inline-drawer-header > .world_entry_thin_controls {
+    flex: 1 0 100%;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls textarea[name="comment"] {
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
+}
+
+/* An opened entry fills the page between the bars. */
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open {
+    position: fixed;
+    inset: var(--topBarBlockSize) 0 var(--stmui-bottom) 0;
+    z-index: 3300;
+    margin: 0;
+    padding: 0 calc(14px + var(--stmui-safe-right, 0px)) 24px calc(14px + var(--stmui-safe-left, 0px));
+    border: 0;
+    border-radius: 0;
+    background: var(--stmui-solid);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: stmui-fade 0.18s ease-out;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .world_entry_thin_controls {
+    grid-template-areas:
+        "open title state kill"
+        "keys keys keys keys"
+        "meta meta meta meta";
+}
+
+/* The entry's header (title, switches, tools) stays at the top while you scroll the fields. */
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .inline-drawer-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0 -14px 10px;
+    padding: 10px 14px !important;
+    border-bottom: 1px solid var(--stmui-line);
+    background: var(--stmui-solid);
+}
+
+/* In the editor the chevron becomes a back arrow. */
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .world_entry_thin_controls > .inline-drawer-toggle {
+    color: var(--stmui-text);
+    transform: rotate(-90deg);
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .inline-drawer-header > i.menu_button {
+    display: inline-flex !important;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    margin: 0;
+    border-radius: 12px;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .inline-drawer-header > i.delete_entry_button {
+    color: #ef6f6f;
+}
+
+/* Fields stack instead of squeezing side by side. */
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .world_entry_edit [name="keywordsAndLogicBlock"],
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .world_entry_edit > .flex-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open [name="perEntryOverridesBlock"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .world_entry_form_control {
+    width: 100%;
+    min-width: 0;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open textarea[name="content"] {
+    min-height: 40dvh;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open textarea[name="key"],
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open textarea[name="keysecondary"] {
+    min-height: 46px;
+    field-sizing: content;
+}
+
+/* The page below is not scrolled while an entry is open. */
+html.stmui-entry-editing #WorldInfo {
+    overflow: hidden !important;
+}
+
+/* ==========================================================================
+   Presets: bigger drag handles, trigger chips, slider steppers
+   ========================================================================== */
+
+html.stmui-touch #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .drag-handle {
+    min-width: 30px;
+    justify-content: center;
+    padding: 0 6px;
+    color: var(--stmui-muted);
+    font-size: 20px;
+    touch-action: none;
+}
+
+html.stmui-touch #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt:has(.drag-handle.ui-sortable-handle) {
+    padding-left: 36px;
+}
+
+.stmui-trigger-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.stmui-trigger-chip {
+    height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px;
+    background: var(--stmui-raised);
+    color: var(--stmui-text);
+    font: inherit;
+    font-size: 13.5px;
+    cursor: pointer;
+}
+
+.stmui-trigger-chip.stmui-trigger-on {
+    border-color: transparent;
+    background: var(--stmui-accent);
+    color: var(--stmui-on-accent);
+    font-weight: 600;
+}
+
+.stmui-trigger-note {
+    flex-basis: 100%;
+    color: var(--stmui-muted);
+    font-size: 12px;
+}
+
+.stmui-trigger-note:empty {
+    display: none;
+}
+
+html.stmui-touch .range-block-counter.stmui-stepper {
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+}
+
+html.stmui-touch .range-block-counter.stmui-stepper {
+    flex: 0 0 auto;
+    width: auto !important;
+    min-width: 0;
+}
+
+html.stmui-touch .range-block-counter.stmui-stepper input {
+    flex: 0 0 auto;
+    width: 4.2em !important;
+    min-width: 4.2em;
+    padding-inline: 2px !important;
+    text-align: center;
+}
+
+.stmui-step {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--stmui-line);
+    border-radius: 50%;
+    background: var(--stmui-raised);
+    color: var(--stmui-text);
+    font: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.stmui-step:active {
+    background: var(--stmui-raised-2);
+    transform: scale(0.92);
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry .world_entry_form > .inline-drawer {
+    margin: 0;
+    padding: 0;
+    border: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+}

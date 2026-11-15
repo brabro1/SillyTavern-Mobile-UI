@@ -130,6 +130,27 @@ await step('Translate chat is offered (greyed out until a chat is open)', async 
     await closeSheet();
 });
 
+await step('chat tools: reply buttons and search this chat', async () => {
+    // Needs a character chat; open the first character if none is open.
+    await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        if (context.characterId === undefined && !context.groupId && context.characters.length) await context.selectCharacterById('0');
+    });
+    const inChat = await page.evaluate(() => SillyTavern.getContext().characterId !== undefined);
+    if (!inChat) throw new Error('no character to open');
+    await until(() => document.querySelectorAll('#chat .mes').length > 0);
+    const lastIsUser = await page.evaluate(() => SillyTavern.getContext().chat.at(-1)?.is_user);
+    if (!lastIsUser) await until(() => document.querySelector('.stmui-reply-actions:not([hidden])'));
+    await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="more"]').click());
+    await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Search this chat' }).click();
+    await until(() => document.querySelector('.stmui-chat-finder input'));
+    const word = await page.evaluate(() => document.querySelector('#chat .mes .mes_text')?.textContent.match(/[A-Za-z]{3,}/)?.[0] ?? 'the');
+    await page.locator('.stmui-chat-finder input').fill(word);
+    await until(() => document.querySelectorAll('mark.stmui-find-mark').length > 0);
+    await page.goBack();
+    await until(() => !document.querySelector('.stmui-chat-finder') && !document.querySelector('mark.stmui-find-mark'));
+});
+
 await step('find a setting searches the Settings page', async () => {
     await page.evaluate(() => document.querySelector('#user-settings-button > .drawer-toggle')?.click());
     await until(() => document.documentElement.dataset.stmuiPage === 'user-settings-button');

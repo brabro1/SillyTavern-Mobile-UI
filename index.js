@@ -57,6 +57,12 @@ const DEFAULTS = Object.freeze({
     recentLanguages: [],
     autoTranslate: false,
     charPage: true,
+    replyActions: true,
+    dragSwipe: true,
+    foldLong: true,
+    contextMeter: true,
+    chatLook: 'cards',
+    loreCards: true,
     sharpPictures: true,
     animatedPictures: true,
     recentTools: true,
@@ -67,6 +73,11 @@ const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extr
 /** Phone features shown as switches in More → Phone features and in the settings panel. */
 const EXTRAS = [
     { key: 'messageMenu', id: 'stmui_msgmenu', label: 'Message menu', hint: 'Tap ⋯ on a message for a full list of actions with names.' },
+    { key: 'replyActions', id: 'stmui_replyactions', label: 'Reply buttons', hint: 'Regenerate, Continue and Another version right above the message box after a reply.' },
+    { key: 'dragSwipe', id: 'stmui_dragswipe', label: 'Drag to swipe', hint: 'Drag the last reply left for another version, right for the previous one.' },
+    { key: 'foldLong', id: 'stmui_foldlong', label: 'Fold long messages', hint: 'Very long older messages get a Show more button.' },
+    { key: 'contextMeter', id: 'stmui_meter', label: 'Context meter', hint: 'A thin line under the top bar shows how full the context was on the last reply.' },
+    { key: 'loreCards', id: 'stmui_lorecards', label: 'Lorebook entry cards', hint: 'Entries as cards with keyword chips; an opened entry fills the page.' },
     { key: 'sharpPictures', id: 'stmui_sharp', label: 'Sharp character pictures', hint: 'Shows the full-quality picture instead of the small thumbnail, sized for your screen.' },
     { key: 'animatedPictures', id: 'stmui_gifs', label: 'Animated pictures', hint: 'Pick a GIF or animated WebP as a character picture and it moves everywhere.' },
     { key: 'charPage', id: 'stmui_charpage', label: 'New character pages', hint: 'Big avatar, labeled tools and tabs on character cards; names under favorites; an A–Z strip on the list.' },
@@ -1007,6 +1018,8 @@ function openLayerCount() {
     if (sheet) count += 1;
     if (viewer) count += 1;
     if (editorOpen()) count += 1;
+    if (chatFinderOpen()) count += 1;
+    if (openLoreEntry()) count += 1;
     return count;
 }
 
@@ -1071,6 +1084,14 @@ function closeTopLayer() {
     if (editorOpen()) {
         // Back keeps your changes, like a notes app. Cancel is still a tap away.
         saveEditor();
+        return true;
+    }
+    if (chatFinderOpen()) {
+        closeChatFinder();
+        return true;
+    }
+    if (openLoreEntry()) {
+        closeLoreEntry();
         return true;
     }
     const overlays = openOverlays();
@@ -1420,7 +1441,10 @@ class Shell {
 
         if (pageId) {
             const drawer = drawerById(pageId);
-            if (drawer && settings.touchSizing) requestAnimationFrame(() => fillRanges(drawer));
+            if (drawer && settings.touchSizing) {
+                requestAnimationFrame(() => fillRanges(drawer));
+                addSliderSteppers(drawer);
+            }
             const info = drawer ? pageInfo(drawer) : { title: '', icon: 'fa-gear' };
             this.titleEl.textContent = t(info.title);
             this.subEl.textContent = t(info.long ?? '');
@@ -1554,6 +1578,10 @@ function openMoreSheet() {
                 row('sparkles', 'Phone features', () => openExtrasSheet()),
                 row('zap', 'Quick switch', () => openQuickSwitch()),
                 row('languages', 'Translate chat', () => openTranslateSheet(), !inChat),
+                row('search', 'Search this chat', () => {
+                    closeSheet(true);
+                    openChatFinder();
+                }, !inChat),
                 isStandalone() ? null : row('download', 'Install as an app', () => installApp()),
                 row('star', "What's new", () => openWhatsNew()),
                 row('phone', 'Mobile UI settings', () => {
@@ -1724,7 +1752,7 @@ function setAppearance(key, value, origin) {
         syncSettingsInputs();
         shell?.update();
         // Switches already show their new state; re-render only what depends on the choice.
-        if (sheet && !sheet.picker && ['theme', 'motion', 'textSize'].includes(key)) sheet.refresh();
+        if (sheet && !sheet.picker && ['theme', 'motion', 'textSize', 'chatLook'].includes(key)) sheet.refresh();
     };
     if (key === 'theme') revealChange(origin, change);
     else change();
@@ -1811,6 +1839,8 @@ function openThemeSheet() {
                 switchRow('modernFont', 'Modern font', 'Your phone\'s own system font, crisp at every size.'),
                 switchRow('customIcons', 'New icons', 'Rounded line icons everywhere.'),
             ]));
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'Chat look' }));
+            body.append(chatLookControl());
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Animations' }));
             body.append(motionControl());
             body.append(h('p', { class: 'stmui-menu-foot', text: MOTION_LABELS[settings.motion] }));
@@ -2058,7 +2088,9 @@ function onChatScroll() {
         const chat = document.getElementById('chat');
         if (!chat || !extras.jump) return;
         const distance = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
-        extras.jump.classList.toggle('stmui-jump-on', distance > Math.max(320, chat.clientHeight * 0.7));
+        extras.jump.classList.toggle('stmui-jump-on', distance > Math.max(320, chat.clientHeight * 0.7) || (extras.generating && distance > 150));
+        // While a reply streams in below, the button says so.
+        extras.jump.classList.toggle('stmui-jump-new', extras.generating && distance > 150);
     });
 }
 
@@ -2087,7 +2119,7 @@ function syncJumpButton() {
             buzz(8);
             chat.scrollTo({ top: chat.scrollHeight, behavior: motionAllowed() ? 'smooth' : 'auto' });
         },
-    }, [ui('arrow-down')]);
+    }, [ui('arrow-down'), h('span', { class: 'stmui-jump-label', text: 'New text' })]);
     shieldFromDrawerAutoClose(extras.jump);
     sheld.append(extras.jump);
     chat.addEventListener('scroll', onChatScroll, { passive: true });
@@ -2210,6 +2242,7 @@ async function setAwake(on) {
 
 function onGenerating(on) {
     extras.generating = on;
+    onChatScroll();
     setAwake(on);
 }
 
@@ -4198,6 +4231,543 @@ function applyPendingAnimated() {
     setTimeout(() => setAnimatedPicture(id, url), 1500);
 }
 
+// -- chat: reply actions above the message box
+
+const chatTools = { bar: null, timer: 0 };
+
+function lastChatMessage() {
+    const chat = ctx().chat ?? [];
+    for (let id = chat.length - 1; id >= 0; id--) {
+        if (!chat[id]?.is_system) return { id, message: chat[id] };
+    }
+    return null;
+}
+
+function updateReplyActions() {
+    window.clearTimeout(chatTools.timer);
+    chatTools.timer = window.setTimeout(() => {
+        const form = document.getElementById('form_sheld');
+        const want = active && settings.chatStyle && settings.replyActions && form;
+        if (!want) {
+            chatTools.bar?.remove();
+            chatTools.bar = null;
+            return;
+        }
+        if (!chatTools.bar) {
+            const chip = (iconName, label, onclick) => h('button', { type: 'button', class: 'stmui-reply-chip', onclick: () => {
+                buzz(8);
+                onclick();
+            } }, [ui(iconName), h('span', { text: label })]);
+            chatTools.bar = h('div', { class: 'stmui-reply-actions', role: 'toolbar', 'aria-label': 'Reply actions' }, [
+                chip('refresh', 'Regenerate', () => document.getElementById('option_regenerate')?.click()),
+                chip('play', 'Continue', () => document.getElementById('option_continue')?.click()),
+                chip('chevron-right', 'Another version', () => {
+                    const swipe = [...document.querySelectorAll('#chat .mes.last_mes .swipe_right')].pop();
+                    swipe?.click();
+                }),
+            ]);
+            shieldFromDrawerAutoClose(chatTools.bar);
+            form.prepend(chatTools.bar);
+        }
+        const last = lastChatMessage();
+        const typing = !!document.getElementById('send_textarea')?.value.trim();
+        const show = !!last && !last.message.is_user && !extras.generating && !typing && !editorOpen() && !!(ctx().characterId !== undefined || ctx().groupId);
+        chatTools.bar.hidden = !show;
+        // "Another version" only makes sense where SillyTavern offers a swipe.
+        const swipe = [...document.querySelectorAll('#chat .mes.last_mes .swipe_right')].pop();
+        chatTools.bar.lastElementChild.hidden = !swipe || getComputedStyle(swipe).display === 'none';
+    }, 120);
+}
+
+// -- chat: drag the last reply sideways to swipe
+
+const drag = { mes: null, x: 0, y: 0, dx: 0, active: false, hint: null, started: 0 };
+
+function onSwipeStart(event) {
+    if (!active || !settings.chatStyle || !settings.dragSwipe || event.touches.length !== 1) return;
+    const mes = event.target.closest?.('#chat .mes.last_mes');
+    if (!mes || mes.getAttribute('is_user') === 'true' || mes.querySelector('#curEditTextarea')) return;
+    if (event.target.closest('textarea, input, button, a, .mes_buttons, .swipe_left, .swipe_right, pre, .mes_reasoning_details')) return;
+    drag.mes = mes;
+    drag.x = event.touches[0].clientX;
+    drag.y = event.touches[0].clientY;
+    drag.dx = 0;
+    drag.active = false;
+    drag.started = Date.now();
+}
+
+function onSwipeMove(event) {
+    if (!drag.mes) return;
+    const x = event.touches[0].clientX - drag.x;
+    const y = event.touches[0].clientY - drag.y;
+    if (!drag.active) {
+        if (Math.abs(y) > 14 && Math.abs(y) > Math.abs(x)) {
+            drag.mes = null;
+            return;
+        }
+        if (Math.abs(x) < 16) return;
+        drag.active = true;
+    }
+    drag.dx = Math.max(-150, Math.min(150, x));
+    drag.mes.style.transition = 'none';
+    drag.mes.style.transform = `translateX(${drag.dx}px) rotate(${drag.dx / 60}deg)`;
+    const canPrevious = (() => {
+        const left = drag.mes.querySelector('.swipe_left');
+        return left && getComputedStyle(left).display !== 'none';
+    })();
+    const kind = drag.dx < 0 ? 'next' : (canPrevious ? 'previous' : 'none');
+    if (!drag.hint || drag.hint.dataset.kind !== kind) {
+        drag.hint?.remove();
+        drag.hint = kind === 'none' ? null : h('div', { class: `stmui-drag-hint stmui-drag-${kind}`, 'data-kind': kind }, [
+            ui(kind === 'next' ? 'chevron-left' : 'chevron-right'),
+            h('span', { text: kind === 'next' ? 'Another version' : 'Previous version' }),
+        ]);
+        if (drag.hint) document.body.append(drag.hint);
+    }
+    if (drag.hint) {
+        const rect = drag.mes.getBoundingClientRect();
+        drag.hint.style.top = `${Math.max(rect.top, 70) + Math.min(rect.height, 300) / 2}px`;
+        drag.hint.classList.toggle('stmui-drag-ready', Math.abs(drag.dx) > 80);
+    }
+}
+
+function onSwipeEnd() {
+    const mes = drag.mes;
+    drag.mes = null;
+    if (!mes || !drag.active) return;
+    const fast = Math.abs(drag.dx) > 40 && Date.now() - drag.started < 250;
+    const go = Math.abs(drag.dx) > 80 || fast;
+    mes.style.transition = 'transform 0.25s var(--stmui-ease)';
+    mes.style.transform = '';
+    setTimeout(() => {
+        mes.style.transition = '';
+    }, 260);
+    drag.hint?.remove();
+    drag.hint = null;
+    if (!go) return;
+    buzz(12);
+    const button = mes.querySelector(drag.dx < 0 ? '.swipe_right' : '.swipe_left');
+    if (button && getComputedStyle(button).display !== 'none') button.click();
+}
+
+/** SillyTavern's own quick-flick swipe would fire as well; let the drag handle it. */
+function onSwipedEvent(event) {
+    if (active && settings.chatStyle && settings.dragSwipe) event.stopImmediatePropagation();
+}
+
+// -- chat: fold very long messages
+
+const LONG_MESSAGE = 2500;
+
+function foldLongMessages() {
+    if (!active || !settings.chatStyle || !settings.foldLong) {
+        document.querySelectorAll('#chat .mes.stmui-long, #chat .mes.stmui-long-open').forEach(mes => mes.classList.remove('stmui-long', 'stmui-long-open'));
+        document.querySelectorAll('.stmui-more-btn').forEach(node => node.remove());
+        return;
+    }
+    const chat = ctx().chat ?? [];
+    for (const mes of document.querySelectorAll('#chat > .mes')) {
+        const message = chat[Number(mes.getAttribute('mesid'))];
+        const text = message?.extra?.display_text ?? message?.mes ?? '';
+        const long = text.length > LONG_MESSAGE && !mes.classList.contains('last_mes') && !mes.querySelector('#curEditTextarea');
+        mes.classList.toggle('stmui-long', long);
+        let button = mes.querySelector('.stmui-more-btn');
+        if (long && !button) {
+            button = h('button', {
+                type: 'button',
+                class: 'stmui-more-btn',
+                onclick: () => {
+                    const open = mes.classList.toggle('stmui-long-open');
+                    button.textContent = open ? t('Show less') : t('Show more');
+                    if (!open) mes.scrollIntoView({ block: 'nearest' });
+                },
+            }, [t('Show more')]);
+            mes.querySelector('.mes_text')?.after(button);
+        } else if (!long && button) {
+            button.remove();
+            mes.classList.remove('stmui-long-open');
+        }
+    }
+}
+
+// -- chat: search inside the chat
+
+const finder = { bar: null, hits: [], index: -1, marks: [] };
+
+function chatFinderOpen() {
+    return !!finder.bar;
+}
+
+function closeChatFinder() {
+    clearFinderMarks();
+    document.querySelectorAll('#chat .mes.stmui-flash').forEach(mes => mes.classList.remove('stmui-flash'));
+    finder.bar?.remove();
+    finder.bar = null;
+    finder.hits = [];
+    finder.index = -1;
+    scheduleHistorySync();
+}
+
+function clearFinderMarks() {
+    for (const mark of finder.marks) {
+        if (!mark.isConnected) continue;
+        mark.replaceWith(document.createTextNode(mark.textContent));
+    }
+    for (const parent of new Set(finder.marks.map(mark => mark.parentElement).filter(Boolean))) parent.normalize?.();
+    finder.marks = [];
+}
+
+function markInMessage(mes, words) {
+    const text = mes.querySelector('.mes_text');
+    if (!text) return;
+    const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    const pattern = new RegExp(words.map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'gi');
+    for (const node of nodes) {
+        const value = node.nodeValue;
+        pattern.lastIndex = 0;
+        if (!pattern.test(value)) continue;
+        pattern.lastIndex = 0;
+        const fragment = document.createDocumentFragment();
+        let last = 0;
+        for (const match of value.matchAll(pattern)) {
+            fragment.append(value.slice(last, match.index));
+            const mark = h('mark', { class: 'stmui-find-mark', text: match[0] });
+            finder.marks.push(mark);
+            fragment.append(mark);
+            last = match.index + match[0].length;
+        }
+        fragment.append(value.slice(last));
+        node.replaceWith(fragment);
+    }
+}
+
+async function showFinderHit(index) {
+    if (!finder.hits.length) return;
+    finder.index = (index + finder.hits.length) % finder.hits.length;
+    const id = finder.hits[finder.index];
+    finder.bar.querySelector('.stmui-find-count').textContent = `${finder.index + 1}/${finder.hits.length}`;
+    // Older messages may not be on the page yet: ask SillyTavern to load more.
+    for (let tries = 0; tries < 60 && !document.querySelector(`#chat .mes[mesid="${id}"]`); tries++) {
+        const more = document.getElementById('show_more_messages');
+        if (!more) break;
+        more.click();
+        await new Promise(resolve => setTimeout(resolve, 150));
+    }
+    const mes = document.querySelector(`#chat .mes[mesid="${id}"]`);
+    if (!mes) return;
+    clearFinderMarks();
+    const words = normalizeText(finder.bar.querySelector('input').value).split(/\s+/).filter(Boolean);
+    markInMessage(mes, words);
+    if (mes.classList.contains('stmui-long') && !mes.classList.contains('stmui-long-open')) {
+        mes.classList.add('stmui-long-open');
+        const more = mes.querySelector('.stmui-more-btn');
+        if (more) more.textContent = t('Show less');
+    }
+    const firstMark = finder.marks[0];
+    (firstMark ?? mes).scrollIntoView({ block: 'center', behavior: motionAllowed() ? 'smooth' : 'auto' });
+    mes.classList.remove('stmui-flash');
+    void mes.offsetWidth;
+    mes.classList.add('stmui-flash');
+    window.setTimeout(() => mes.classList.remove('stmui-flash'), 1600);
+}
+
+function runChatSearch() {
+    const input = finder.bar?.querySelector('input');
+    if (!input) return;
+    const words = normalizeText(input.value).split(/\s+/).filter(Boolean);
+    const chat = ctx().chat ?? [];
+    finder.hits = [];
+    if (words.length) {
+        chat.forEach((message, id) => {
+            if (message?.is_system) return;
+            const text = normalizeText(`${message.mes ?? ''} ${message.extra?.display_text ?? ''}`);
+            if (words.every(word => text.includes(word))) finder.hits.push(id);
+        });
+    }
+    const count = finder.bar.querySelector('.stmui-find-count');
+    if (!words.length) count.textContent = '';
+    else if (!finder.hits.length) count.textContent = t('None');
+    if (finder.hits.length) showFinderHit(finder.hits.length - 1);
+    else clearFinderMarks();
+}
+
+function openChatFinder() {
+    if (finder.bar) {
+        finder.bar.querySelector('input').focus();
+        return;
+    }
+    const input = h('input', { type: 'search', class: 'text_pole', placeholder: t('Search this chat'), 'aria-label': t('Search this chat'), enterkeyhint: 'search' });
+    let timer = 0;
+    input.addEventListener('input', () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(runChatSearch, 250);
+    });
+    input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            showFinderHit(finder.index - 1);
+        }
+    });
+    const button = (iconName, label, onclick) => h('button', { type: 'button', class: 'stmui-find-btn', 'aria-label': label, title: label, onclick }, [ui(iconName)]);
+    finder.bar = h('div', { class: 'stmui-chat-finder', role: 'search' }, [
+        input,
+        h('span', { class: 'stmui-find-count' }),
+        button('chevron-up', 'Older match', () => showFinderHit(finder.index - 1)),
+        button('chevron-down', 'Newer match', () => showFinderHit(finder.index + 1)),
+        button('x', 'Close search', () => closeChatFinder()),
+    ]);
+    shieldFromDrawerAutoClose(finder.bar);
+    document.body.append(finder.bar);
+    setTimeout(() => input.focus(), 50);
+    scheduleHistorySync();
+}
+
+// -- chat: how full is the context?
+
+const meter = { used: 0, max: 0, bar: null };
+
+function contextMax() {
+    const context = ctx();
+    return context.mainApi === 'openai' ? Number(context.chatCompletionSettings?.openai_max_context) || 0 : Number(context.maxContext) || 0;
+}
+
+async function measurePrompt(text) {
+    try {
+        const tokens = await ctx().getTokenCountAsync?.(text);
+        if (typeof tokens === 'number') {
+            meter.used = tokens;
+            meter.max = contextMax();
+            renderMeter();
+        }
+    } catch {
+        // No tokenizer for this API: leave the meter as it was.
+    }
+}
+
+function onPromptReady(data) {
+    if (!active || !settings.contextMeter || data?.dryRun) return;
+    if (Array.isArray(data?.chat)) measurePrompt(data.chat.map(item => (typeof item.content === 'string' ? item.content : JSON.stringify(item.content ?? ''))).join('\n'));
+    else if (typeof data?.prompt === 'string') measurePrompt(data.prompt);
+}
+
+function renderMeter() {
+    const appbar = document.getElementById('stmui-appbar');
+    const want = active && settings.contextMeter && appbar && meter.used && meter.max;
+    if (!want) {
+        meter.bar?.remove();
+        meter.bar = null;
+        return;
+    }
+    if (!meter.bar || !meter.bar.isConnected) {
+        meter.bar = h('div', { class: 'stmui-meter', 'aria-hidden': 'true' }, [h('span')]);
+        appbar.append(meter.bar);
+    }
+    const share = Math.min(1, meter.used / meter.max);
+    meter.bar.style.setProperty('--stmui-meter', `${(share * 100).toFixed(1)}%`);
+    meter.bar.classList.toggle('stmui-meter-warn', share > 0.85);
+    meter.bar.classList.toggle('stmui-meter-full', share > 0.98);
+}
+
+function meterText() {
+    if (!meter.used || !meter.max) return t('Shown after the next reply');
+    return t('{used} of {max} tokens ({percent}%)', { used: meter.used.toLocaleString(), max: meter.max.toLocaleString(), percent: Math.round((meter.used / meter.max) * 100) });
+}
+
+// -- chat: look (cards, bubbles, flat)
+
+function applyChatLook() {
+    const root = document.documentElement;
+    if (active && settings.chatStyle && settings.chatLook && settings.chatLook !== 'cards') root.dataset.stmuiLook = settings.chatLook;
+    else delete root.dataset.stmuiLook;
+}
+
+function chatLookControl() {
+    const names = { cards: 'Cards', bubbles: 'Bubbles', flat: 'Flat' };
+    return h('div', { class: 'stmui-segmented stmui-look-seg', role: 'group', 'aria-label': 'Chat look' },
+        Object.entries(names).map(([look, label]) => h('button', {
+            type: 'button',
+            class: `stmui-seg ${(settings.chatLook || 'cards') === look ? 'stmui-seg-on' : ''}`,
+            'aria-pressed': String((settings.chatLook || 'cards') === look),
+            onclick: () => setAppearance('chatLook', look),
+        }, [label])));
+}
+
+// -- lorebooks: entry cards with keyword chips, full-screen entry editor
+
+const lore = { observer: null, timer: 0 };
+
+/** Keywords of every entry in the open lorebook, from its data (entries build their insides only when opened). */
+let loreKeys = { name: '', byUid: new Map() };
+
+async function refreshLoreKeys() {
+    const name = document.getElementById('world_editor_select')?.selectedOptions[0]?.textContent?.trim();
+    if (!name) return;
+    try {
+        const data = await ctx().loadWorldInfo?.(name);
+        const byUid = new Map();
+        for (const entry of Object.values(data?.entries ?? {})) byUid.set(String(entry.uid), Array.isArray(entry.key) ? entry.key : []);
+        loreKeys = { name, byUid };
+    } catch {
+        // Keep what we had.
+    }
+}
+
+function entryKeys(entry) {
+    const fromData = loreKeys.byUid.get(String(entry.getAttribute('uid')));
+    if (fromData) return fromData.map(key => String(key).trim()).filter(Boolean);
+    const field = entry.querySelector('textarea[name="key"]');
+    let keys = field?.value ? field.value.split(',') : [];
+    if (!keys.length) {
+        const select = entry.querySelector('select[name="key"]');
+        keys = Array.from(select?.selectedOptions ?? []).map(option => option.value);
+    }
+    return keys.map(key => key.trim()).filter(Boolean);
+}
+
+async function decorateEntries() {
+    const list = document.getElementById('world_popup_entries_list');
+    if (!list) return;
+    await refreshLoreKeys();
+    for (const entry of list.querySelectorAll('.world_entry')) {
+        const header = entry.querySelector('.world_entry_thin_controls');
+        if (!header) continue;
+        let chips = header.querySelector('.stmui-entry-keys');
+        if (!chips) {
+            chips = h('div', { class: 'stmui-entry-keys' });
+            header.append(chips);
+        }
+        const keys = entryKeys(entry);
+        const signature = keys.join('\u0001');
+        if (chips.dataset.keys !== signature) {
+            chips.dataset.keys = signature;
+            chips.replaceChildren(...keys.slice(0, 8).map(key => h('span', { class: 'stmui-key-chip', text: key })),
+                ...(keys.length > 8 ? [h('span', { class: 'stmui-key-chip stmui-key-more', text: `+${keys.length - 8}` })] : []));
+            chips.hidden = !keys.length;
+        }
+        const content = entry.querySelector('.inline-drawer-content');
+        const open = !!content && content.style.display !== 'none' && getComputedStyle(content).display !== 'none';
+        if (entry.classList.contains('stmui-entry-open') !== open) {
+            entry.classList.toggle('stmui-entry-open', open);
+            scheduleHistorySync();
+        }
+    }
+    const anyOpen = !!list.querySelector('.world_entry.stmui-entry-open');
+    document.documentElement.classList.toggle('stmui-entry-editing', anyOpen);
+}
+
+function openLoreEntry() {
+    return document.querySelector('#world_popup_entries_list .world_entry.stmui-entry-open');
+}
+
+function closeLoreEntry() {
+    const entry = openLoreEntry();
+    entry?.querySelector('.world_entry_thin_controls > .inline-drawer-toggle')?.click();
+    setTimeout(decorateEntries, 50);
+    setTimeout(decorateEntries, 400);
+}
+
+function syncLoreEntries() {
+    const list = document.getElementById('world_popup_entries_list');
+    const want = active && settings.touchSizing && settings.loreCards;
+    document.documentElement.classList.toggle('stmui-lorecards', !!want);
+    if (!want) {
+        lore.observer?.disconnect();
+        lore.observer = null;
+        document.querySelectorAll('.stmui-entry-keys').forEach(node => node.remove());
+        document.querySelectorAll('.world_entry.stmui-entry-open').forEach(node => node.classList.remove('stmui-entry-open'));
+        document.documentElement.classList.remove('stmui-entry-editing');
+        return;
+    }
+    if (list && !lore.observer) {
+        lore.observer = new MutationObserver(records => {
+            if (records.every(record => record.target.closest?.('.stmui-entry-keys'))) return;
+            window.clearTimeout(lore.timer);
+            lore.timer = window.setTimeout(decorateEntries, 120);
+        });
+        lore.observer.observe(list, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+        list.addEventListener('input', event => {
+            if (event.target.matches?.('textarea[name="key"]')) {
+                window.clearTimeout(lore.timer);
+                lore.timer = window.setTimeout(decorateEntries, 300);
+            }
+        });
+    }
+    decorateEntries();
+}
+
+// -- presets: prompt triggers as chips
+
+function syncTriggerChips() {
+    const select = document.getElementById('completion_prompt_manager_popup_entry_form_injection_trigger');
+    if (!select) return;
+    let chips = document.getElementById('stmui_trigger_chips');
+    const want = active && settings.touchSizing;
+    if (!want) {
+        chips?.remove();
+        select.classList.remove('stmui-native-hidden');
+        return;
+    }
+    if (!chips) {
+        chips = h('div', { id: 'stmui_trigger_chips', class: 'stmui-trigger-chips', role: 'group', 'aria-label': 'Triggers' });
+        chips.addEventListener('click', event => {
+            const chip = event.target.closest('.stmui-trigger-chip');
+            if (!chip) return;
+            const option = Array.from(select.options).find(item => item.value === chip.dataset.value);
+            if (!option) return;
+            option.selected = !option.selected;
+            $j()(select).trigger('change');
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            buzz(6);
+            syncTriggerChips();
+        });
+        select.after(chips);
+        select.classList.add('stmui-native-hidden');
+    }
+    const none = !Array.from(select.options).some(option => option.selected);
+    chips.replaceChildren(...Array.from(select.options).map(option => h('button', {
+        type: 'button',
+        class: `stmui-trigger-chip ${option.selected ? 'stmui-trigger-on' : ''}`,
+        'data-value': option.value,
+        'aria-pressed': String(option.selected),
+    }, [option.textContent.trim()])), h('small', { class: 'stmui-trigger-note', text: none ? t('None picked: used for every kind of reply.') : '' }));
+}
+
+// -- sliders: − and + beside the number
+
+function addSliderSteppers(root = document) {
+    if (!active || !settings.touchSizing) return;
+    for (const counter of root.querySelectorAll('.range-block-counter')) {
+        const input = counter.querySelector('input[type="number"]');
+        if (!input || counter.querySelector('.stmui-step')) continue;
+        const step = direction => () => {
+            const before = input.value;
+            try {
+                if (direction > 0) input.stepUp();
+                else input.stepDown();
+            } catch {
+                const size = Number(input.step) || 1;
+                input.value = String(Number(input.value || 0) + direction * size);
+            }
+            if (input.value === before) return;
+            buzz(4);
+            // Move the slider itself, the way SillyTavern does after typing a number.
+            const master = input.dataset.for ? document.getElementById(input.dataset.for) : null;
+            if (master) $j()(master).val(input.value).trigger('input', { forced: true });
+            else $j()(input).trigger('input').trigger('change');
+        };
+        counter.classList.add('stmui-stepper');
+        counter.prepend(h('button', { type: 'button', class: 'stmui-step stmui-step-down', 'aria-label': 'Less', onclick: step(-1) }, ['−']));
+        counter.append(h('button', { type: 'button', class: 'stmui-step stmui-step-up', 'aria-label': 'More', onclick: step(1) }, ['+']));
+    }
+}
+
+function removeSliderSteppers() {
+    document.querySelectorAll('.stmui-step').forEach(node => node.remove());
+    document.querySelectorAll('.range-block-counter.stmui-stepper').forEach(node => node.classList.remove('stmui-stepper'));
+}
+
 // -- long-press a message for its menu
 
 const press = { timer: 0, x: 0, y: 0, fired: 0 };
@@ -4490,6 +5060,13 @@ function openQuickSwitch() {
                     onPick: value => pickFromSelect(preset, value),
                 })));
             }
+            if (settings.contextMeter) {
+                // Information only, so no arrow and nothing to tap.
+                rows.push(h('div', { class: 'stmui-menu-row stmui-menu-row-info' }, [
+                    ui('chart', 'stmui-menu-row-icon'),
+                    h('span', { class: 'stmui-row-text' }, [h('span', { text: t('Context used') }), h('small', { text: meterText() })]),
+                ]));
+            }
             const status = ctx().onlineStatus;
             rows.push(row('globe', t('API connection'), status && status !== 'no_connection' ? t('Connected') : t('Not connected'), () => {
                 closeSheet(true);
@@ -4706,6 +5283,15 @@ function applyTextSize() {
 
 function syncExtras() {
     applyTextSize();
+    applyChatLook();
+    updateReplyActions();
+    foldLongMessages();
+    syncLoreEntries();
+    syncTriggerChips();
+    renderMeter();
+    if (active && settings.touchSizing) addSliderSteppers();
+    else removeSliderSteppers();
+    if (!active) closeChatFinder();
     syncPictures();
     syncCharacterPage();
     syncWelcome();
@@ -4733,6 +5319,7 @@ function syncExtras() {
             timer = window.setTimeout(() => {
                 timer = 0;
                 syncPromptNameBox();
+                syncTriggerChips();
                 shell?.update();
             }, 60);
         }).observe(editor, { attributes: true, attributeFilter: ['style', 'class'] });
@@ -4744,6 +5331,15 @@ function syncExtras() {
     document.addEventListener('click', onEditCopyClick, true);
     document.addEventListener('click', onAvatarClick, true);
     document.addEventListener('change', onAvatarPicked, true);
+    document.addEventListener('touchstart', onSwipeStart, { passive: true });
+    document.addEventListener('touchmove', onSwipeMove, { passive: true });
+    document.addEventListener('touchend', onSwipeEnd);
+    document.addEventListener('touchcancel', onSwipeEnd);
+    window.addEventListener('swiped-left', onSwipedEvent, true);
+    window.addEventListener('swiped-right', onSwipedEvent, true);
+    document.addEventListener('input', event => {
+        if (event.target?.id === 'send_textarea') updateReplyActions();
+    }, true);
     document.addEventListener('touchstart', onToastTouchStart, { passive: true });
     document.addEventListener('touchmove', onToastTouchMove, { passive: true });
     document.addEventListener('touchend', onToastTouchEnd);
@@ -5010,6 +5606,26 @@ function init() {
         setTimeout(onChatScroll, 300);
     });
     if (event_types.MESSAGE_SENT) eventSource?.on?.(event_types.MESSAGE_SENT, clearDraft);
+    // Reply buttons and folded messages follow whatever changes in the chat.
+    let chatTimer = 0;
+    const chatChanged = () => {
+        updateReplyActions();
+        window.clearTimeout(chatTimer);
+        chatTimer = window.setTimeout(foldLongMessages, 200);
+    };
+    for (const name of ['MESSAGE_RECEIVED', 'MESSAGE_DELETED', 'MESSAGE_SWIPED', 'MESSAGE_EDITED', 'CHARACTER_MESSAGE_RENDERED', 'USER_MESSAGE_RENDERED', 'MORE_MESSAGES_LOADED', 'GENERATION_STARTED', 'GENERATION_ENDED', 'GENERATION_STOPPED', 'CHAT_CHANGED']) {
+        if (event_types[name]) eventSource?.on?.(event_types[name], chatChanged);
+    }
+    for (const name of ['CHAT_COMPLETION_PROMPT_READY', 'GENERATE_AFTER_COMBINE_PROMPTS']) {
+        if (event_types[name]) eventSource?.on?.(event_types[name], onPromptReady);
+    }
+    if (event_types.CHAT_CHANGED) {
+        eventSource?.on?.(event_types.CHAT_CHANGED, () => {
+            meter.used = 0;
+            renderMeter();
+            closeChatFinder();
+        });
+    }
     // Keep new, edited and swiped messages in the chat's translated language.
     for (const name of ['CHARACTER_MESSAGE_RENDERED', 'USER_MESSAGE_RENDERED']) {
         if (event_types[name]) eventSource?.on?.(event_types[name], id => queueAutoTranslate(id));
@@ -5022,7 +5638,10 @@ function init() {
             });
         }
     }
-    if (event_types.GENERATION_STARTED) eventSource?.on?.(event_types.GENERATION_STARTED, () => onGenerating(true));
+    if (event_types.GENERATION_STARTED) eventSource?.on?.(event_types.GENERATION_STARTED, (type, options, dryRun) => {
+        // Dry runs (prompt token counts) start but never end; they aren't replies.
+        if (!dryRun) onGenerating(true);
+    });
     for (const name of ['GENERATION_ENDED', 'GENERATION_STOPPED']) {
         if (event_types[name]) eventSource?.on?.(event_types[name], () => onGenerating(false));
     }

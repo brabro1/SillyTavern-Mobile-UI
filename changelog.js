@@ -1,6 +1,19 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.8.0',
+        items: [
+            "Reply buttons: Regenerate, Continue and Another version sit right above the message box after each reply.",
+            "Drag the last reply left for another version, or right to go back. It follows your finger and tells you what will happen.",
+            "Search inside the chat (More, then Search this chat). Matches light up and the arrows jump between them, even into older messages.",
+            "A thin line under the top bar shows how full the context was. Quick switch shows the exact numbers.",
+            "Very long older messages fold up with a Show more button. While a reply streams in and you have scrolled up, a New text button takes you down.",
+            "Pick how the chat looks under More, then Themes: Cards, Bubbles or Flat. Quick Replies show as a row of chips.",
+            "Lorebook entries are tidy cards with an on/off switch and their keywords as chips. Opening one fills the page, and back closes it.",
+            "Presets: prompt Triggers are chips you tap, sliders have − and + buttons, and the handles for reordering prompts are bigger.",
+        ],
+    },
+    {
         version: '2.7.1',
         items: [
             "Animated pictures need no extra button: pick a GIF or animated WebP the usual way (tap the character's picture) and it moves everywhere. Pick a normal picture to go back.",
