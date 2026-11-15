@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.8.1',
+        items: [
+            "Opened lorebook entries are fixed: the text box is full width again, nothing overlaps, and the checkboxes sit neatly in two columns.",
+            "The picture viewer shows the full-quality picture again instead of a small blurry copy.",
+        ],
+    },
+    {
         version: '2.8.0',
         items: [
             "Reply buttons: Regenerate, Continue and Another version sit right above the message box after each reply.",

@@ -2594,9 +2594,13 @@ function onAvatarClick(event) {
     event.stopImmediatePropagation();
     buzz(8);
     const message = avatar.closest('.mes');
+    const shown = img.getAttribute('src');
+    // Sharp pictures put a small scaled copy (a blob: URL) in the avatar; the
+    // thumbnail SillyTavern asked for still tells us which original to open.
+    const source = shown.startsWith('blob:') && img.dataset.stmuiThumb ? img.dataset.stmuiThumb : shown;
     openViewer({
-        thumb: img.getAttribute('src'),
-        full: fullImageUrl(img.getAttribute('src')),
+        thumb: shown,
+        full: fullImageUrl(source),
         title: message?.getAttribute('ch_name') || 'Picture',
     });
 }
@@ -4631,7 +4635,8 @@ async function decorateEntries() {
     if (!list) return;
     await refreshLoreKeys();
     for (const entry of list.querySelectorAll('.world_entry')) {
-        const header = entry.querySelector('.world_entry_thin_controls');
+        // The content block uses the same class, so ask for the one in the header.
+        const header = entry.querySelector('.inline-drawer-header > .world_entry_thin_controls');
         if (!header) continue;
         let chips = header.querySelector('.stmui-entry-keys');
         if (!chips) {

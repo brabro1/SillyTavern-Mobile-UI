@@ -5865,7 +5865,7 @@ html.stmui-lorecards #world_popup_entries_list .world_entry {
     background: var(--stmui-raised);
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls {
+html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls {
     display: grid !important;
     grid-template-areas:
         "kill title state open"
@@ -5876,20 +5876,20 @@ html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls {
     gap: 6px 8px;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls > .flex-container,
-html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls .WIEntryTitleAndStatus,
-html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls .WIEntryTitleAndStatus > .flex-container {
+html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls > .flex-container,
+html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls .WIEntryTitleAndStatus,
+html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls .WIEntryTitleAndStatus > .flex-container {
     display: contents !important;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls > .killSwitch {
+html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls > .killSwitch {
     grid-area: kill;
     justify-self: center;
     font-size: 26px;
     cursor: pointer;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls textarea[name="comment"] {
+html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls textarea[name="comment"] {
     grid-area: title;
     min-height: 0;
     height: auto;
@@ -5905,7 +5905,7 @@ html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls textar
     overflow: hidden;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls select[name="entryStateSelector"] {
+html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls select[name="entryStateSelector"] {
     grid-area: state;
     width: auto;
     min-width: 0;
@@ -5916,7 +5916,7 @@ html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls select
     font-size: 13px;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls > .inline-drawer-toggle {
+html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls > .inline-drawer-toggle {
     grid-area: open;
     display: inline-flex !important;
     align-items: center;
@@ -5978,6 +5978,11 @@ html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls > :has(> 
     visibility: visible;
 }
 
+/* Depth only applies to some positions; SillyTavern hides its box, so hide its label too. */
+html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls > .world_entry_form_control:has(> input[style*="visibility: hidden"]) > label {
+    visibility: hidden;
+}
+
 html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls label {
     display: block !important;
     margin: 0 0 2px;
@@ -5998,7 +6003,7 @@ html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls :is(input
 }
 
 /* Move, duplicate and delete live in the opened entry, not on every card. */
-html.stmui-lorecards #world_popup_entries_list .world_entry:not(.stmui-entry-open) .inline-drawer-header > i.menu_button {
+html.stmui-lorecards #world_popup_entries_list .world_entry:not(.stmui-entry-open) > .world_entry_form > .inline-drawer > .inline-drawer-header > i.menu_button {
     display: none !important;
 }
 
@@ -6011,18 +6016,18 @@ html.stmui-lorecards #world_popup_entries_list .world_entry .world_entry_form {
     box-shadow: none !important;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry .inline-drawer-header {
+html.stmui-lorecards #world_popup_entries_list .world_entry > .world_entry_form > .inline-drawer > .inline-drawer-header {
     display: flex !important;
     flex-wrap: wrap;
     gap: 8px;
     padding: 0 !important;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry .inline-drawer-header > .world_entry_thin_controls {
+html.stmui-lorecards #world_popup_entries_list .world_entry > .world_entry_form > .inline-drawer > .inline-drawer-header > .world_entry_thin_controls {
     flex: 1 0 100%;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry_thin_controls textarea[name="comment"] {
+html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls textarea[name="comment"] {
     width: 100% !important;
     max-width: none !important;
     flex: none !important;
@@ -6043,31 +6048,31 @@ html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open {
     animation: stmui-fade 0.18s ease-out;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .world_entry_thin_controls {
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open > .world_entry_form > .inline-drawer > .inline-drawer-header > .world_entry_thin_controls {
     grid-template-areas:
         "open title state kill"
         "keys keys keys keys"
         "meta meta meta meta";
 }
 
-/* The entry's header (title, switches, tools) stays at the top while you scroll the fields. */
-html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .inline-drawer-header {
-    position: sticky;
-    top: 0;
+/* The entry's header (title, switches, tools) sits at the top. It scrolls away
+   with the fields: kept in place it would cover a third of a phone screen. */
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open > .world_entry_form > .inline-drawer > .inline-drawer-header {
+    position: relative;
     z-index: 2;
     margin: 0 -14px 10px;
     padding: 10px 14px !important;
     border-bottom: 1px solid var(--stmui-line);
-    background: var(--stmui-solid);
+    background: var(--stmui-solid) !important;
 }
 
 /* In the editor the chevron becomes a back arrow. */
-html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .world_entry_thin_controls > .inline-drawer-toggle {
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open > .world_entry_form > .inline-drawer > .inline-drawer-header > .world_entry_thin_controls > .inline-drawer-toggle {
     color: var(--stmui-text);
     transform: rotate(-90deg);
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .inline-drawer-header > i.menu_button {
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open > .world_entry_form > .inline-drawer > .inline-drawer-header > i.menu_button {
     display: inline-flex !important;
     flex: 1 1 auto;
     align-items: center;
@@ -6077,7 +6082,7 @@ html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .in
     border-radius: 12px;
 }
 
-html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .inline-drawer-header > i.delete_entry_button {
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open > .world_entry_form > .inline-drawer > .inline-drawer-header > i.delete_entry_button {
     color: #ef6f6f;
 }
 
@@ -6110,6 +6115,27 @@ html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open tex
 html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open textarea[name="keysecondary"] {
     min-height: 46px;
     field-sizing: content;
+}
+
+/* "Content (Tokens: n)" on one line, the four checkboxes in two columns under it. */
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open [name="contentAndCharFilterBlock"] label > small > .justifySpaceBetween {
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 4px 8px;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open [name="contentAndCharFilterBlock"] label > small > .justifySpaceBetween > div.flex-container {
+    display: grid !important;
+    flex: 1 0 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 10px;
+    margin: 4px 0 2px;
+}
+
+html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open [name="contentAndCharFilterBlock"] label > small > .justifySpaceBetween > div.flex-container label.checkbox {
+    flex-wrap: nowrap !important;
+    gap: 6px;
+    line-height: 1.25;
 }
 
 /* The page below is not scrolled while an entry is open. */
