@@ -49,8 +49,8 @@
 - **Light on your phone:** typing, scrolling and pages are measured on a phone-speed CPU and kept smooth, even in long chats. Older phone? Pick **Light** animations under **More → Themes**.
 
 ### Chatting
-- **Messages made for a phone:** the text runs across the whole card, edge to edge. The picture, name and date sit in a small header, swipes and counts in a quiet footer, and the model's thinking folds into a neat box you can open. Cards, bubbles or flat. Drag the last reply sideways to swipe.
-- **A floating message box:** your text gets the whole width, with the tools in a row underneath. Your persona sits there as a little picture with your name: tap it to switch who you are, or to edit your persona's name and description on the spot.
+- **Messages made for a phone:** the text runs across the whole card, edge to edge. The picture, name and date sit in a small header, swipes in a small ‹ 1/3 › pill (the last one offers a new version), and the model's thinking folds into a neat box you can open. Cards, bubbles or flat. Drag the last reply sideways to swipe.
+- **A floating message box:** it floats over the chat, so messages scroll on behind it. Your text gets the whole width, with the tools in a row underneath. Your persona sits there as a little picture with your name: tap it to switch who you are, or to edit your persona's name and description on the spot.
 - **Context ring:** a ring in the message box fills up as the chat uses more of the model's memory. Tap it for the Context page: what filled it (character, lorebooks, examples, chat history), how much room is left, the model and preset, and the full prompt.
 - **Edit on a full page:** tap ✎ and the message opens full screen, with Save right above the keyboard.
 - **Search this chat:** find any word in the conversation and jump between matches.
@@ -67,7 +67,7 @@
 ### Everything else
 - **12 themes:** 9 dark and 3 light, or keep your own SillyTavern colors. New rounded icons and smooth, light animations.
 - **Quick switch (⚡):** change persona, connection profile, model or preset in two taps.
-- **Recent chats by character:** the start screen shows one card per character with all your chats with them inside, newest first. Tap the character for the latest chat, or any chat under it. Pinned chats stay on top, and you can search them all.
+- **Recent chats by character:** the start screen shows one card per character with their picture, the last thing said and how many chats you have. Tap it for the latest chat, or the arrow to drop down the list: **New chat**, **All chats**, **Character**, and every recent chat with them. Pinned chats stay on top, and search opens the cards that match.
 - **Search everything:** characters, chats, lorebooks and settings in one search box. On settings pages, 🔍 finds any option by name.
 - **Know when Termux stopped:** a banner shows when SillyTavern stops answering and goes away when it's back.
 - **Your language:** Pocket Tavern's menus come in English, Spanish, Portuguese, Russian, Chinese, Japanese and Arabic.

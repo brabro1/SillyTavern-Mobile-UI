@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.14.0
+
+- **Recent chats as dropdowns.** Each character's card is now closed by default and shows the picture (with a badge for how many chats), the name, the date and the last thing said, in two lines. Tap the card for the latest chat; tap the arrow on the right to drop the list down smoothly. Inside are three quick actions, **New chat**, **All chats** (SillyTavern's chat list for that character) and **Character** (the character card), and then every recent chat with them on the thread line, each with pin, rename and delete. Open cards stay open while the app is open. Searching opens the cards that have a match.
+- **The message box floats for real.** It now sits over the chat instead of below it, so messages scroll on behind and around it, with a soft fade near the bottom. The chat keeps room at its end for the last message, and stays at the newest message when the box grows while you type.
+- **New swipe arrows.** Fixed: on some phones the back arrow sat higher than the counter and the next arrow (SillyTavern showed it as a plain block, so its icon stuck to the top). The arrows and the counter are now one pill, ‹ 1/3 ›, with round centered buttons. On the last version the next arrow turns into an accent-colored "new version" icon, because tapping it there writes a new reply.
+
 ## 2.13.0
 
 - **Messages, redesigned for phones.** Each message is now a grid instead of SillyTavern's two columns. The text runs across the whole card instead of starting right of the picture. The header holds the picture (a bit smaller), the name with the date under it, and the ⋯ and ✎ buttons. The footer holds the message number, time and token count (when SillyTavern shows them) on the left and the swipe arrows with a small counter pill on the right. Messages that can't be swiped no longer keep an empty row for the hidden arrows. Cards sit closer to the screen edges. Works with Cards, Bubbles and Flat. The full-screen editor keeps SillyTavern's own layout while you edit.

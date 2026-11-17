@@ -315,6 +315,9 @@ const STRINGS = {
     '{count} chats': ['{count} chats', '{count} chats', 'Чатов: {count}', '{count} 个聊天', '{count} 件のチャット', '{count} دردشات'],
     'Open the latest chat with {name}': ['Abrir el último chat con {name}', 'Abrir o último chat com {name}', 'Открыть последний чат с {name}', '打开与 {name} 的最新聊天', '{name} との最新のチャットを開く', 'فتح آخر دردشة مع {name}'],
     'Show {count} more': ['Ver {count} más', 'Ver mais {count}', 'Показать ещё {count}', '再显示 {count} 个', 'さらに {count} 件表示', 'عرض {count} أخرى'],
+    'All chats': ['Todos los chats', 'Todos os chats', 'Все чаты', '全部聊天', 'すべてのチャット', 'كل الدردشات'],
+    'Character': ['Personaje', 'Personagem', 'Персонаж', '角色', 'キャラクター', 'الشخصية'],
+    'Show chats with {name}': ['Ver chats con {name}', 'Ver chats com {name}', 'Показать чаты с {name}', '显示与 {name} 的聊天', '{name} とのチャットを表示', 'عرض الدردشات مع {name}'],
 };
 
 LANGS.forEach((code, column) => {

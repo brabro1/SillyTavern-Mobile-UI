@@ -1710,7 +1710,7 @@ function toastIconCss() {
         .map(([type, name]) => `html.stmui-toasts #toast-container > .toast-${type} { --stmui-t-icon: ${iconUrl(name)}; }`)
         .join(' ')
         // A grey magnifier drawn inside search boxes.
-        + ` html.stmui-on { --stmui-search-icon: ${iconUrl('search').replace('%23000', '%23909090')}; --stmui-think-icon: ${iconUrl('sparkles')}; }`;
+        + ` html.stmui-on { --stmui-search-icon: ${iconUrl('search').replace('%23000', '%23909090')}; --stmui-think-icon: ${iconUrl('sparkles')}; --stmui-regen-icon: ${iconUrl('refresh')}; }`;
 }
 
 function applyAppearance() {
@@ -2134,9 +2134,6 @@ function syncJumpButton() {
         chat?.removeEventListener('scroll', onChatScroll);
         cancelAnimationFrame(extras.jumpFrame);
         extras.jumpFrame = 0;
-        extras.formObserver?.disconnect();
-        extras.formObserver = null;
-        sheld?.style.removeProperty('--stmui-form-h');
         return;
     }
     if (extras.jump) return;
@@ -2153,12 +2150,6 @@ function syncJumpButton() {
     shieldFromDrawerAutoClose(extras.jump);
     sheld.append(extras.jump);
     chat.addEventListener('scroll', onChatScroll, { passive: true });
-    // Sit just above the message box, however tall it grows.
-    const form = document.getElementById('form_sheld');
-    if (form && 'ResizeObserver' in window) {
-        extras.formObserver = new ResizeObserver(() => sheld.style.setProperty('--stmui-form-h', `${Math.round(form.offsetHeight)}px`));
-        extras.formObserver.observe(form);
-    }
     onChatScroll();
 }
 
@@ -3647,10 +3638,7 @@ function syncWelcome() {
         welcome.observer?.disconnect();
         welcome.observer = null;
         for (const group of document.querySelectorAll('.stmui-chat-group')) {
-            group.querySelectorAll('.recentChat').forEach(card => {
-                card.classList.remove('stmui-group-extra');
-                group.before(card);
-            });
+            group.querySelectorAll('.recentChat').forEach(card => group.before(card));
             group.remove();
         }
         document.querySelectorAll('.showMoreChats.stmui-native-hidden').forEach(node => node.classList.remove('stmui-native-hidden'));
@@ -3714,6 +3702,7 @@ function enhanceWelcome() {
             }
             for (const group of list.querySelectorAll('.stmui-chat-group')) {
                 group.hidden = words.length > 0 && !group.querySelector('.recentChat:not(.stmui-nomatch)');
+                group.classList.toggle('stmui-group-found', words.length > 0 && !group.hidden);
             }
             list.classList.toggle('stmui-searching', words.length > 0);
             empty.hidden = shown > 0;
@@ -3725,58 +3714,107 @@ function enhanceWelcome() {
     for (const card of cards) wireSwipe(card, card.parentElement);
 }
 
-/** How many chats a group shows before "Show more". */
-const GROUP_VISIBLE = 2;
+/** Characters whose chat list is open; remembered while the app stays open. */
+const openChatGroups = new Set();
+
+/** Opens this chat, then runs `then` once SillyTavern has switched to it. */
+function openRecentThen(card, then) {
+    const context = ctx();
+    const before = context.getCurrentChatId?.();
+    const done = () => setTimeout(then, 150);
+    if (before && before === card.dataset.file) {
+        done();
+        return;
+    }
+    let fired = false;
+    const once = () => {
+        if (fired) return;
+        fired = true;
+        context.eventSource?.removeListener?.(context.eventTypes.CHAT_CHANGED, once);
+        done();
+    };
+    context.eventSource?.on?.(context.eventTypes.CHAT_CHANGED, once);
+    card.click();
+    // In case the event never comes (for example the chat was already open).
+    setTimeout(once, 2500);
+}
 
 /**
- * One character's recent chats as a single card: the character on top (tap to
- * open the latest chat), then each chat under it. SillyTavern's own chat rows
- * are moved in, so tapping, renaming, pinning and deleting work as before.
+ * One character's recent chats as a dropdown card. The top row shows the
+ * character, the last thing said and when; tap it for the latest chat, or the
+ * arrow to open the list: quick actions (new chat, all chats, character card)
+ * and every recent chat with them. SillyTavern's own chat rows are moved in, so
+ * tapping, renaming, pinning and deleting work as before.
  */
 function buildChatGroup(chats) {
     const latest = chats[0];
+    const isGroupChat = latest.classList.contains('group');
+    const key = isGroupChat ? `g:${latest.dataset.group}` : `c:${latest.dataset.avatar}`;
     const name = latest.querySelector('.characterName')?.textContent.trim() ?? '';
-    const head = h('button', {
+    const group = h('section', { class: 'stmui-chat-group', 'data-name': name });
+    if (isGroupChat) group.classList.add('stmui-chat-group-group');
+
+    // The top row: open the latest chat.
+    const main = h('button', {
         type: 'button',
-        class: 'stmui-group-head',
+        class: 'stmui-group-main',
         onclick: () => {
             buzz(6);
             latest.click();
         },
     });
+    main.setAttribute('aria-label', t('Open the latest chat with {name}', { name }));
     const picture = latest.querySelector(':scope > .avatar')?.cloneNode(true);
+    const face = h('span', { class: 'stmui-group-face' });
     if (picture) {
         picture.classList.add('stmui-group-avatar');
         picture.removeAttribute('title');
-        head.append(picture);
+        face.append(picture);
     }
+    if (chats.length > 1) face.append(h('span', { class: 'stmui-group-badge', text: String(chats.length) }));
     const title = h('b', { class: 'stmui-group-name' });
     title.textContent = name;
     const when = h('small', { class: 'stmui-group-when' });
     when.textContent = latest.querySelector('.chatDate')?.textContent.trim() ?? '';
-    head.append(
-        h('span', { class: 'stmui-group-text' }, [title, h('small', { class: 'stmui-group-count', text: chats.length === 1 ? t('1 chat') : t('{count} chats', { count: chats.length }) })]),
-        when,
-        ui('chevron-right', 'stmui-group-go'),
-    );
-    head.setAttribute('aria-label', t('Open the latest chat with {name}', { name }));
-    const body = h('div', { class: 'stmui-group-chats' }, chats);
-    const group = h('section', { class: 'stmui-chat-group', 'data-name': name }, [head, body]);
-    if (latest.classList.contains('group')) group.classList.add('stmui-chat-group-group');
-    if (chats.length > GROUP_VISIBLE) {
-        chats.slice(GROUP_VISIBLE).forEach(card => card.classList.add('stmui-group-extra'));
-        const more = h('button', {
-            type: 'button',
-            class: 'stmui-group-more',
-            onclick: () => {
-                const open = group.classList.toggle('stmui-group-open');
-                more.querySelector('span').textContent = open ? t('Show less') : t('Show {count} more', { count: chats.length - GROUP_VISIBLE });
-                more.setAttribute('aria-expanded', String(open));
-            },
-        }, [h('span', { text: t('Show {count} more', { count: chats.length - GROUP_VISIBLE }) }), ui('chevron-down')]);
-        more.setAttribute('aria-expanded', 'false');
-        group.append(more);
-    }
+    const last = h('small', { class: 'stmui-group-last' });
+    last.textContent = latest.querySelector('.chatMessage')?.textContent.replace(/\s+/g, ' ').trim() ?? '';
+    main.append(face, h('span', { class: 'stmui-group-text' }, [h('span', { class: 'stmui-group-line' }, [title, when]), last]));
+
+    // The arrow: open or close the list.
+    const toggle = h('button', {
+        type: 'button',
+        class: 'stmui-group-toggle',
+        'aria-label': t('Show chats with {name}', { name }),
+        onclick: () => {
+            buzz(4);
+            setOpen(!group.classList.contains('stmui-group-open'));
+        },
+    }, [ui('chevron-down')]);
+    const setOpen = open => {
+        group.classList.toggle('stmui-group-open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        if (open) openChatGroups.add(key);
+        else openChatGroups.delete(key);
+    };
+
+    // Inside: quick actions, then the chats.
+    const action = (iconName, label, run) => h('button', {
+        type: 'button',
+        class: 'stmui-group-action',
+        onclick: () => {
+            buzz(6);
+            openRecentThen(latest, run);
+        },
+    }, [ui(iconName), h('span', { text: label })]);
+    const actions = h('div', { class: 'stmui-group-actions' }, [
+        action('plus', 'New chat', () => document.getElementById('option_start_new_chat')?.click()),
+        action('history', 'All chats', () => document.getElementById('option_select_chat')?.click()),
+        isGroupChat ? null : action('user', 'Character', () => openPage('rightNavHolder')),
+    ]);
+    const list = h('div', { class: 'stmui-group-chats' }, chats);
+    const panel = h('div', { class: 'stmui-group-panel' }, [h('div', { class: 'stmui-group-inner' }, [actions, list])]);
+    group.append(h('div', { class: 'stmui-group-head' }, [main, toggle]), panel);
+    setOpen(openChatGroups.has(key));
     return group;
 }
 
@@ -4490,7 +4528,7 @@ function applyPendingAnimated() {
  * persona (picture and name, tap to switch) and a ring that fills as the
  * context fills (tap it for what is in there).
  */
-const composer = { persona: null, ring: null, personas: null };
+const composer = { persona: null, ring: null, personas: null, formObserver: null };
 
 /** SillyTavern's personas module, loaded once; it knows the current persona. */
 function loadPersonasModule() {
@@ -4533,10 +4571,40 @@ function buildContextRing() {
     return ring;
 }
 
+/**
+ * The message box floats over the chat, so the chat scrolls behind it. Its
+ * height (it grows as you type) is kept in --stmui-form-h: the chat leaves that
+ * much room at the bottom, and the jump button sits just above it.
+ */
+function watchFormHeight(on) {
+    const sheld = document.getElementById('sheld');
+    const form = document.getElementById('form_sheld');
+    if (!on || !sheld || !form || !('ResizeObserver' in window)) {
+        composer.formObserver?.disconnect();
+        composer.formObserver = null;
+        sheld?.style.removeProperty('--stmui-form-h');
+        return;
+    }
+    if (composer.formObserver) return;
+    let last = -1;
+    composer.formObserver = new ResizeObserver(() => {
+        const height = Math.round(form.offsetHeight);
+        if (height === last) return;
+        const chat = document.getElementById('chat');
+        // Stay at the newest message when the box grows or shrinks.
+        const atBottom = chat && chat.scrollHeight - chat.scrollTop - chat.clientHeight < 40;
+        last = height;
+        sheld.style.setProperty('--stmui-form-h', `${height}px`);
+        if (atBottom) requestAnimationFrame(() => chat.scrollTo(0, chat.scrollHeight));
+    });
+    composer.formObserver.observe(form);
+}
+
 function syncComposer() {
     const left = document.getElementById('leftSendForm');
     const right = document.getElementById('rightSendForm');
     const want = active && settings.chatStyle && left && right;
+    watchFormHeight(!!want);
     if (!want || !settings.contextMeter) {
         composer.ring?.remove();
         composer.ring = null;

@@ -1,6 +1,14 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.14.0',
+        items: [
+            "Recent chats are dropdowns: tap a character for the latest chat, or the arrow for New chat, All chats, Character and all your chats with them.",
+            "The message box truly floats: messages scroll on behind it.",
+            "New swipe arrows: one ‹ 1/3 › pill, and on the last version the arrow becomes a \"new version\" button.",
+        ],
+    },
+    {
         version: '2.13.0',
         items: [
             "Messages are redesigned for phones: the text runs across the whole card, with the picture, name and date in a small header.",
