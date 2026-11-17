@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.11.0
+
+Performance round. Measured on a phone-speed CPU (4× slower than a computer) in a 150-message chat, with `tests/perf.mjs`. Times are how long the screen was frozen:
+
+| | Before | Now | Plain SillyTavern |
+| --- | ---: | ---: | ---: |
+| Typing a message | 646 ms | 0 ms | 0 ms |
+| A reply streaming in | 290 ms | 32 ms | 23 ms |
+| Scrolling the chat | 66 ms | 0 ms | 0 ms |
+| Opening pages | 1416 ms | 182 ms | 446 ms |
+| Opening More and Themes | 373 ms | 136 ms | – |
+| Scrolling the character list | 1936 ms | 383 ms | 679 ms |
+
+- **Sharp pictures no longer measure every picture.** After any scroll anywhere (even the message box scrolling while you type), every avatar on the page was measured, which woke up all the off-screen messages in a long chat. Now only the few pictures already known to be near the screen are checked, and scrolling inside text boxes is ignored.
+- **New pictures go in together**, once per frame, instead of one by one, so the page restyles once.
+- **The title slide in the top bar** no longer forces the whole page to lay out before it starts.
+- **Sheets open lighter.** The keyboard-height helper used to add and remove page-wide values for every sheet, restyling the whole page twice; it now stays put and only writes when the number really changes.
+- **The A–Z strip** is only rebuilt when the letters change, not every time SillyTavern redraws the list.
+- **No live blur behind the bars.** The top bar, the tabs and the message box blurred the chat behind them on every scroll frame, the heaviest effect for a phone's graphics chip. They were already 88–92% solid; now they are 96–97% solid without blur and look almost the same.
+- **The status bar color** is read after the first frame instead of in the middle of starting up.
+
 ## 2.10.1
 
 - **− and + for every slider**: they only showed for Chat Completion presets. Text Completion, KoboldAI and NovelAI sliders keep their number in a different box, which now gets the buttons too.

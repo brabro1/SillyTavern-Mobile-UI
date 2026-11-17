@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.11.0',
+        items: [
+            "Faster and smoother everywhere: typing, scrolling, replies coming in, opening pages and menus all do much less work, so your phone stays cool and responsive.",
+            "The top bar, tabs and message box are now nearly solid instead of blurring the chat behind them, which was the heaviest effect for phones. They look almost the same.",
+        ],
+    },
+    {
         version: '2.10.1',
         items: [
             "The − and + buttons now sit beside every slider, also for Text Completion and KoboldAI presets.",

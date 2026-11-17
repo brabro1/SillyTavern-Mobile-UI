@@ -972,9 +972,8 @@ html.stmui-shell .stmui-appbar {
     padding: var(--stmui-safe-top) calc(6px + var(--stmui-safe-right)) 0 calc(6px + var(--stmui-safe-left));
     box-sizing: border-box;
     border-bottom: 1px solid var(--stmui-line);
-    background: color-mix(in srgb, var(--stmui-surface) 88%, transparent);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    backdrop-filter: blur(16px) saturate(1.2);
+    /* Nearly solid instead of live blur: blurring the chat behind on every scroll frame is heavy for phones. */
+    background: color-mix(in srgb, var(--stmui-surface) 96%, transparent);
     color: var(--stmui-text);
     text-shadow: none;
 }
@@ -1130,9 +1129,7 @@ html.stmui-shell .stmui-tabbar {
     padding: 0 var(--stmui-safe-right) var(--stmui-safe-bottom) var(--stmui-safe-left);
     box-sizing: border-box;
     border-top: 1px solid var(--stmui-line);
-    background: color-mix(in srgb, var(--stmui-surface) 92%, transparent);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    backdrop-filter: blur(16px) saturate(1.2);
+    background: color-mix(in srgb, var(--stmui-surface) 97%, transparent);
     text-shadow: none;
     transition: transform 0.18s ease;
 }
@@ -1497,9 +1494,7 @@ html.stmui-chat #form_sheld {
     padding: 6px 8px 8px;
     box-sizing: border-box;
     border-top: 1px solid var(--stmui-line);
-    background: color-mix(in srgb, var(--stmui-surface) 90%, transparent);
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
+    background: color-mix(in srgb, var(--stmui-surface) 96%, transparent);
 }
 
 html.stmui-chat:not(.stmui-shell) #form_sheld {
@@ -2908,6 +2903,11 @@ html input[type='checkbox'].stmui-switch:checked::before {
     from { opacity: 0; }
 }
 
+/* Same as stmui-fade; switching between the two restarts the animation. */
+@keyframes stmui-fade-b {
+    from { opacity: 0; }
+}
+
 @keyframes stmui-slide-in {
     from {
         opacity: 0;
@@ -2916,6 +2916,13 @@ html input[type='checkbox'].stmui-switch:checked::before {
 }
 
 @keyframes stmui-swap {
+    from {
+        opacity: 0;
+        transform: translateX(12px);
+    }
+}
+
+@keyframes stmui-swap-b {
     from {
         opacity: 0;
         transform: translateX(12px);
@@ -3002,6 +3009,10 @@ html.stmui-motion-full .stmui-ab-swap :is(.stmui-ab-text, .stmui-ab-avatar) {
     animation: stmui-swap 0.32s var(--stmui-ease);
 }
 
+html.stmui-motion-full .stmui-ab-swap-b :is(.stmui-ab-text, .stmui-ab-avatar) {
+    animation: stmui-swap-b 0.32s var(--stmui-ease);
+}
+
 html.stmui-motion-full.stmui-chat #chat .mes.last_mes {
     animation: stmui-mes-in 0.4s var(--stmui-ease);
 }
@@ -3050,6 +3061,10 @@ html.stmui-motion-light .stmui-tab-indicator {
 }
 
 html.stmui-motion-light.stmui-shell #top-settings-holder .drawer-content.openDrawer,
+html.stmui-motion-light .stmui-ab-swap-b :is(.stmui-ab-text, .stmui-ab-avatar) {
+    animation: stmui-fade-b 0.14s ease-out;
+}
+
 html.stmui-motion-light .stmui-ab-swap :is(.stmui-ab-text, .stmui-ab-avatar),
 html.stmui-motion-light.stmui-touch :is(#options, #extensionsMenu),
 html.stmui-motion-light.stmui-touch dialog.popup[opening] {

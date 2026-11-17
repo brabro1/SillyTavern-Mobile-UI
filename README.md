@@ -46,6 +46,7 @@
 - **The back gesture works:** swiping back closes the open menu, popup or page instead of leaving SillyTavern.
 - **Pages that fit:** every panel opens full screen with a title and a back arrow. Menus and popups slide up from the bottom, within reach of your thumb.
 - **Install it like an app:** **More → Install as an app** puts SillyTavern on your home screen, full screen without the browser bar.
+- **Light on your phone:** typing, scrolling and pages are measured on a phone-speed CPU and kept smooth, even in long chats. Older phone? Pick **Light** animations under **More → Themes**.
 
 ### Chatting
 - **A cleaner chat:** soft message cards (or bubbles, or flat), bigger text and a rounded message box.

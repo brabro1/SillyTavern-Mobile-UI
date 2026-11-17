@@ -807,10 +807,17 @@ function viewportFollow() {
     const vv = window.visualViewport;
     const root = document.documentElement;
     if (!vv) return;
+    // A variable on <html> restyles the whole page, so only write it when the number really changed.
+    let lastHeight = -1;
+    let lastTop = -1;
     const apply = () => {
-        root.style.setProperty('--stmui-vv-height', `${Math.round(vv.height)}px`);
-        root.style.setProperty('--stmui-vv-top', `${Math.round(vv.offsetTop)}px`);
-        sheet?.dialog.classList.toggle('stmui-compact', vv.height < COMPACT_BELOW);
+        const height = Math.round(vv.height);
+        const top = Math.round(vv.offsetTop);
+        if (height !== lastHeight) root.style.setProperty('--stmui-vv-height', `${height}px`);
+        if (top !== lastTop) root.style.setProperty('--stmui-vv-top', `${top}px`);
+        lastHeight = height;
+        lastTop = top;
+        sheet?.dialog.classList.toggle('stmui-compact', height < COMPACT_BELOW);
     };
     apply();
     vv.addEventListener('resize', apply);
@@ -828,9 +835,11 @@ let stopViewportFollow = null;
 function showSheet(instance) {
     if (sheet) closeSheet(true);
     sheet = instance;
+    // The viewport follower runs all the time Pocket Tavern is on (see applyState);
+    // here the new sheet only needs to know whether the screen is short.
+    sheet.dialog.classList.toggle('stmui-compact', (window.visualViewport?.height ?? window.innerHeight) < COMPACT_BELOW);
     document.body.append(sheet.dialog);
     sheet.dialog.showModal();
-    stopViewportFollow = viewportFollow();
     requestAnimationFrame(() => sheet?.dialog.classList.add('stmui-sheet-open'));
     sheet.panel.focus({ preventScroll: true });
     scheduleHistorySync();
@@ -845,8 +854,6 @@ function closeSheet(immediate = false) {
     if (!current || current.closing) return;
     current.closing = true;
     sheet = null;
-    stopViewportFollow?.();
-    stopViewportFollow = null;
     const finish = () => {
         if (current.dialog.open) current.dialog.close();
         current.dialog.remove();
@@ -1433,9 +1440,10 @@ class Shell {
         this.renderContent(pageId);
         // A short slide when the title changes, so moving between pages feels connected.
         if (before && before !== this.titleEl.textContent) {
-            this.who.classList.remove('stmui-ab-swap');
-            void this.who.offsetWidth;
-            this.who.classList.add('stmui-ab-swap');
+            // Two classes with the same animation: switching restarts it without forcing a layout.
+            this.swapFlip = !this.swapFlip;
+            this.who.classList.toggle('stmui-ab-swap', this.swapFlip);
+            this.who.classList.toggle('stmui-ab-swap-b', !this.swapFlip);
         }
     }
 
@@ -1675,6 +1683,7 @@ function ensureStyle(id) {
 }
 
 let originalThemeColor;
+let themeColorCall = 0;
 
 /** Android's status bar follows <meta name="theme-color">; match it to the app bar. */
 function syncThemeColor(theme) {
@@ -1689,8 +1698,18 @@ function syncThemeColor(theme) {
         meta = h('meta', { name: 'theme-color' });
         document.head.append(meta);
     }
-    const own = getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim();
-    meta.setAttribute('content', theme ? theme.bg : (own || '#171717'));
+    const call = (themeColorCall += 1);
+    if (theme) {
+        meta.setAttribute('content', theme.bg);
+        return;
+    }
+    // Reading a CSS color makes the browser restyle the page at once; wait for the next frame instead.
+    const target = meta;
+    requestAnimationFrame(() => {
+        if (!active || !target.isConnected || call !== themeColorCall) return;
+        const own = getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim();
+        target.setAttribute('content', own || '#171717');
+    });
 }
 
 const TOAST_ICONS = { success: 'circle-check', info: 'info', warning: 'alert-triangle', error: 'alert-circle' };
@@ -3551,20 +3570,29 @@ function letterOf(name) {
 function buildAzStrip() {
     const holder = document.getElementById('rm_characters_block');
     const list = document.getElementById('rm_print_characters_block');
-    document.getElementById('stmui_az')?.remove();
-    if (!active || !settings.touchSizing || !settings.charPage || !holder || !list) return;
+    const old = document.getElementById('stmui_az');
+    const none = () => old?.remove();
+    if (!active || !settings.touchSizing || !settings.charPage || !holder || !list) return none();
     const sort = document.getElementById('character_sort_order')?.selectedOptions[0];
-    if (sort?.dataset.field !== 'name' || sort?.dataset.order === 'random') return;
+    if (sort?.dataset.field !== 'name' || sort?.dataset.order === 'random') return none();
     const entries = Array.from(list.querySelectorAll(':scope > .character_select, :scope > .group_select, :scope > .bogus_folder_select'));
-    if (entries.length < 10) return;
+    if (entries.length < 10) return none();
     const firstOf = new Map();
     for (const entry of entries) {
         const letter = letterOf(entry.querySelector('.ch_name')?.textContent);
         if (!firstOf.has(letter)) firstOf.set(letter, entry);
     }
-    if (firstOf.size < 3) return;
+    if (firstOf.size < 3) return none();
     const letters = Array.from(firstOf.keys());
-    const strip = h('div', { id: 'stmui_az', class: 'stmui-az', 'aria-label': 'Jump to letter' }, letters.map(letter => h('span', { text: letter, 'data-letter': letter })));
+    // Same letters as before (the list was only redrawn): keep the strip, just point it at the new entries.
+    if (old && old.parentElement === holder && old.dataset.letters === letters.join('')) {
+        old.stmuiFirst = firstOf;
+        placeAzStrip(old, list, letters.length);
+        return;
+    }
+    old?.remove();
+    const strip = h('div', { id: 'stmui_az', class: 'stmui-az', 'aria-label': 'Jump to letter', 'data-letters': letters.join('') }, letters.map(letter => h('span', { text: letter, 'data-letter': letter })));
+    strip.stmuiFirst = firstOf;
     let bubble = document.getElementById('stmui_az_bubble');
     if (!bubble) {
         bubble = h('div', { id: 'stmui_az_bubble', class: 'stmui-az-bubble', 'aria-hidden': 'true' });
@@ -3577,8 +3605,8 @@ function buildAzStrip() {
         const letter = letters[index];
         if (letter === last) return;
         last = letter;
-        const target = firstOf.get(letter);
-        if (target) list.scrollTop += target.getBoundingClientRect().top - list.getBoundingClientRect().top - 2;
+        const target = strip.stmuiFirst.get(letter);
+        if (target?.isConnected) list.scrollTop += target.getBoundingClientRect().top - list.getBoundingClientRect().top - 2;
         bubble.textContent = letter;
         bubble.classList.add('stmui-az-bubble-on');
         buzz(4);
@@ -3603,9 +3631,15 @@ function buildAzStrip() {
     for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) strip.addEventListener(type, end);
     shieldFromDrawerAutoClose(strip);
     holder.append(strip);
-    // Sit exactly beside the list, below the controls.
-    strip.style.top = `${list.offsetTop + 6}px`;
-    strip.style.height = `${Math.max(120, Math.min(list.clientHeight - 12, letters.length * 26))}px`;
+    placeAzStrip(strip, list, letters.length);
+}
+
+/** Sits exactly beside the list, below the controls. Only writes when the place changed. */
+function placeAzStrip(strip, list, count) {
+    const top = `${list.offsetTop + 6}px`;
+    const height = `${Math.max(120, Math.min(list.clientHeight - 12, count * 26))}px`;
+    if (strip.style.top !== top) strip.style.top = top;
+    if (strip.style.height !== height) strip.style.height = height;
 }
 
 // -- recent chats: search, pinned section, swipe to pin or delete
@@ -3974,7 +4008,26 @@ const pictures = {
     queue: [],
     running: 0,
     timer: 0,
+    // Pictures the on-screen watcher reported as (nearly) on screen.
+    near: new Set(),
+    // New sources waiting to be put in, all in one frame.
+    swaps: new Map(),
+    swapFrame: 0,
 };
+
+/** Puts in new picture sources together, once per frame, so the page restyles once. */
+function swapPicture(img, url) {
+    pictures.swaps.set(img, url);
+    if (pictures.swapFrame) return;
+    pictures.swapFrame = requestAnimationFrame(() => {
+        pictures.swapFrame = 0;
+        const swaps = [...pictures.swaps];
+        pictures.swaps.clear();
+        for (const [image, src] of swaps) {
+            if (image.isConnected && (image.getAttribute('src') === image.dataset.stmuiThumb || thumbInfo(image.getAttribute('src') ?? ''))) image.setAttribute('src', src);
+        }
+    });
+}
 
 function thumbInfo(src) {
     try {
@@ -4068,9 +4121,7 @@ function upgradePicture(img) {
     // The thumbnail is 96 pixels wide; only bigger pictures need the original.
     if (needed <= 100) return;
     const width = needed <= 200 ? 200 : needed <= 400 ? 400 : 640;
-    sharpPicture(info, width).then(url => {
-        if (img.isConnected && (img.getAttribute('src') === img.dataset.stmuiThumb || thumbInfo(img.getAttribute('src') ?? ''))) img.setAttribute('src', url);
-    }).catch(() => {});
+    sharpPicture(info, width).then(url => swapPicture(img, url)).catch(() => {});
 }
 
 function watchPicture(img) {
@@ -4081,17 +4132,23 @@ function watchPicture(img) {
     scheduleVisibleCheck();
 }
 
-/** Backup for the on-screen watcher: after scrolling stops, upgrade what is on screen. */
-function scheduleVisibleCheck() {
+/**
+ * Backup for the on-screen watcher: after scrolling stops, upgrade the pictures
+ * it reported as near the screen that still show a thumbnail. Only those are
+ * looked at, so a long chat or character list costs nothing here.
+ */
+function scheduleVisibleCheck(event) {
+    // Text boxes scroll while you type; they never hold pictures.
+    if (event?.target instanceof HTMLTextAreaElement || event?.target instanceof HTMLInputElement) return;
     window.clearTimeout(pictures.timer);
     pictures.timer = window.setTimeout(() => {
         if (!active || !(settings.sharpPictures || settings.animatedPictures)) return;
-        const margin = 300;
-        for (const img of document.querySelectorAll('img[data-stmui-watched]')) {
-            if (!thumbInfo(img.getAttribute('src') ?? '') && !(img.dataset.stmuiThumb && img.getAttribute('src') === img.dataset.stmuiThumb)) continue;
-            const rect = img.getBoundingClientRect();
-            if (!rect.width || rect.bottom < -margin || rect.top > innerHeight + margin) continue;
-            upgradePicture(img);
+        for (const img of pictures.near) {
+            if (!img.isConnected) {
+                pictures.near.delete(img);
+                continue;
+            }
+            if (thumbInfo(img.getAttribute('src') ?? '') || (img.dataset.stmuiThumb && img.getAttribute('src') === img.dataset.stmuiThumb)) upgradePicture(img);
         }
     }, 150);
 }
@@ -4113,6 +4170,10 @@ function syncPictures() {
         document.removeEventListener('scroll', scheduleVisibleCheck, { capture: true });
         pictures.observer = null;
         pictures.seen = null;
+        pictures.near.clear();
+        pictures.swaps.clear();
+        cancelAnimationFrame(pictures.swapFrame);
+        pictures.swapFrame = 0;
         // Put SillyTavern's own thumbnails back.
         for (const img of document.querySelectorAll('img[data-stmui-thumb]')) {
             img.setAttribute('src', img.dataset.stmuiThumb);
@@ -4128,7 +4189,10 @@ function syncPictures() {
         // Only pictures that are (nearly) on screen are upgraded, so long lists stay light.
         pictures.seen = new IntersectionObserver(entries => {
             for (const entry of entries) {
-                if (entry.isIntersecting) upgradePicture(entry.target);
+                if (entry.isIntersecting) {
+                    pictures.near.add(entry.target);
+                    upgradePicture(entry.target);
+                } else pictures.near.delete(entry.target);
             }
         }, { rootMargin: '300px' });
     }
@@ -5492,10 +5556,15 @@ function applyState() {
     setFeatureClasses();
     applyAppearance();
     watchRanges(active && settings.touchSizing);
-    if (active) startObserver();
-    else {
+    if (active) {
+        startObserver();
+        // Kept running while on: adding and removing its page-wide variables for every sheet restyled the whole page twice.
+        if (!stopViewportFollow) stopViewportFollow = viewportFollow() ?? null;
+    } else {
         stopObserver();
         closeSheet(true);
+        stopViewportFollow?.();
+        stopViewportFollow = null;
     }
     syncShell();
     const backGesture = active && settings.backGesture;
