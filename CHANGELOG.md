@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.14.2
+
+- **No keyboard when an edit opens.** Tapping ✎ (or Edit in the message menu, editing a message's thinking, opening a lorebook entry or a persona) made SillyTavern focus the text box, which popped up the keyboard. A text box in an edit area that takes focus because you tapped something else now stays closed; tap the text itself to type. SillyTavern's copy fallback still works.
+- **A smoother keyboard.** The sheets' keyboard-height value was written on the page root on every frame while the keyboard slid in, which restyled the whole page each frame; it now goes on the open sheet only, once per frame, and nothing happens when no sheet is open. The tab bar steps aside the moment you tap a text box instead of jumping away halfway through the keyboard's slide, and screen-size changes are handled at most once per frame.
+- **Smoother dropdowns.** Recent chats no longer grow open frame by frame (which re-laid out the whole list on every frame). A card now opens in one step while the cards below glide into place and the content fades in, using movement only, so it stays smooth on phones. Light animations make it quicker, Off turns it off.
+
 ## 2.14.1
 
 - **No surprise keyboard.** SillyTavern focused the message box when a chat opened, which popped up the keyboard. For a moment after a chat opens (from Recent chats, the character list, chat history or search), the box now only takes focus when you tap it yourself.

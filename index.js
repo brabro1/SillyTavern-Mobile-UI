@@ -804,30 +804,39 @@ class MenuSheet {
     }
 }
 
+/**
+ * Keeps an open sheet sized to the part of the screen above the keyboard. The
+ * values go on the sheet itself, and nothing happens while no sheet is open:
+ * on <html> they restyled the whole page on every frame of the keyboard's slide.
+ */
+function fitSheetToViewport() {
+    const vv = window.visualViewport;
+    const dialog = sheet?.dialog;
+    if (!vv || !dialog) return;
+    const height = `${Math.round(vv.height)}px`;
+    const top = `${Math.round(vv.offsetTop)}px`;
+    if (dialog.style.getPropertyValue('--stmui-vv-height') !== height) dialog.style.setProperty('--stmui-vv-height', height);
+    if (dialog.style.getPropertyValue('--stmui-vv-top') !== top) dialog.style.setProperty('--stmui-vv-top', top);
+    dialog.classList.toggle('stmui-compact', vv.height < COMPACT_BELOW);
+}
+
 function viewportFollow() {
     const vv = window.visualViewport;
-    const root = document.documentElement;
     if (!vv) return;
-    // A variable on <html> restyles the whole page, so only write it when the number really changed.
-    let lastHeight = -1;
-    let lastTop = -1;
+    let frame = 0;
     const apply = () => {
-        const height = Math.round(vv.height);
-        const top = Math.round(vv.offsetTop);
-        if (height !== lastHeight) root.style.setProperty('--stmui-vv-height', `${height}px`);
-        if (top !== lastTop) root.style.setProperty('--stmui-vv-top', `${top}px`);
-        lastHeight = height;
-        lastTop = top;
-        sheet?.dialog.classList.toggle('stmui-compact', height < COMPACT_BELOW);
+        if (frame || !sheet) return;
+        frame = requestAnimationFrame(() => {
+            frame = 0;
+            fitSheetToViewport();
+        });
     };
-    apply();
     vv.addEventListener('resize', apply);
     vv.addEventListener('scroll', apply);
     return () => {
         vv.removeEventListener('resize', apply);
         vv.removeEventListener('scroll', apply);
-        root.style.removeProperty('--stmui-vv-height');
-        root.style.removeProperty('--stmui-vv-top');
+        cancelAnimationFrame(frame);
     };
 }
 
@@ -839,6 +848,7 @@ function showSheet(instance) {
     // The viewport follower runs all the time Pocket Tavern is on (see applyState);
     // here the new sheet only needs to know whether the screen is short.
     sheet.dialog.classList.toggle('stmui-compact', (window.visualViewport?.height ?? window.innerHeight) < COMPACT_BELOW);
+    fitSheetToViewport();
     document.body.append(sheet.dialog);
     sheet.dialog.showModal();
     // Opening focuses the first field; make sure that did not scroll the sheet.
@@ -1198,11 +1208,37 @@ function showCharacterList() {
 
 let shell = null;
 
+function isTypingField(element) {
+    return !!element?.matches?.('textarea, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="file"]), [contenteditable="true"]');
+}
+
 class Shell {
     constructor() {
         this.drawerObserver = null;
         this.keyboardBase = { width: 0, height: 0 };
-        this.onResize = () => this.checkKeyboard();
+        this.focusAt = 0;
+        this.resizeFrame = 0;
+        // The keyboard slides in over many frames; look once per frame at most.
+        this.onResize = () => {
+            if (this.resizeFrame) return;
+            this.resizeFrame = requestAnimationFrame(() => {
+                this.resizeFrame = 0;
+                this.checkKeyboard();
+            });
+        };
+        // Tapping a text box: step the tab bar aside right away, before the
+        // keyboard starts moving, instead of jumping halfway through its slide.
+        this.onFocusIn = event => {
+            if (!isTypingField(event.target)) return;
+            setTimeout(() => {
+                if (!isTypingField(document.activeElement)) return;
+                this.focusAt = Date.now();
+                this.checkKeyboard();
+                // No keyboard came (a hardware keyboard, say): look again once it would have.
+                setTimeout(() => this.checkKeyboard(), 900);
+            }, 0);
+        };
+        this.onFocusOut = () => setTimeout(() => this.checkKeyboard(), 0);
         this.build();
     }
 
@@ -1341,6 +1377,8 @@ class Shell {
             this.drawerObserver.observe(content, { attributes: true, attributeFilter: ['class'] });
         }
         window.addEventListener('resize', this.onResize);
+        document.addEventListener('focusin', this.onFocusIn);
+        document.addEventListener('focusout', this.onFocusOut);
         this.checkKeyboard();
         this.update();
     }
@@ -1350,6 +1388,9 @@ class Shell {
         document.getElementById('right-nav-panel')?.removeEventListener('click', this.onPanelClick);
         this.drawerObserver?.disconnect();
         window.removeEventListener('resize', this.onResize);
+        document.removeEventListener('focusin', this.onFocusIn);
+        document.removeEventListener('focusout', this.onFocusOut);
+        cancelAnimationFrame(this.resizeFrame);
         this.appbar.remove();
         this.tabbar.remove();
         const root = document.documentElement;
@@ -1363,8 +1404,9 @@ class Shell {
         const height = window.innerHeight;
         if (Math.abs(width - this.keyboardBase.width) > 40) this.keyboardBase = { width, height };
         if (height > this.keyboardBase.height) this.keyboardBase.height = height;
-        const typing = document.activeElement?.matches?.('textarea, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), [contenteditable="true"]');
-        const keyboard = height < this.keyboardBase.height * 0.78 && !!typing;
+        const typing = isTypingField(document.activeElement);
+        // While the keyboard is still on its way up, count it as up already.
+        const keyboard = typing && (height < this.keyboardBase.height * 0.78 || Date.now() - this.focusAt < 800);
         document.documentElement.classList.toggle('stmui-keyboard', keyboard);
     }
 
@@ -2186,7 +2228,10 @@ function writeDraft(key, value) {
  * keyboard. For a short while after a chat opens, the box only takes focus
  * when you tapped it yourself.
  */
-const focusGuard = { until: 0, tapped: 0 };
+const focusGuard = { until: 0, tapped: 0, target: null, at: 0 };
+
+/** Where SillyTavern (and Pocket Tavern) put text you edit. */
+const EDIT_AREAS = '#chat, #WorldInfo, #world_popup, #completion_prompt_manager_popup, #persona-management-block, #rm_ch_create_block, #stmui-sheet';
 
 function guardKeyboard(ms = 2500) {
     focusGuard.until = Date.now() + ms;
@@ -2195,15 +2240,28 @@ function guardKeyboard(ms = 2500) {
 function onFocusGuardPointer(event) {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    focusGuard.target = target;
+    focusGuard.at = Date.now();
     if (target.closest('#send_form')) focusGuard.tapped = Date.now();
     // Opening a chat from a list: the focus that follows is not yours.
     else if (target.closest('.recentChat, .stmui-group-main, .character_select, .group_select, .select_chat_block, .stmui-choice, .stmui-search-hit')) guardKeyboard(3500);
 }
 
 function onFocusGuardFocus(event) {
-    if (!active || event.target?.id !== 'send_textarea') return;
+    const box = event.target;
+    if (!active || !(box instanceof HTMLTextAreaElement)) return;
     const now = Date.now();
-    if (now < focusGuard.until && now - focusGuard.tapped > 1200) event.target.blur();
+    if (box.id === 'send_textarea') {
+        if (now < focusGuard.until && now - focusGuard.tapped > 1200) box.blur();
+        return;
+    }
+    // Any other text box (editing a message, its thinking, a persona, a lorebook
+    // entry...): when it took focus right after you tapped something else, like
+    // ✎ Edit, keep the keyboard down. Tap the box itself to type.
+    // Only real edit areas: SillyTavern's copy trick focuses a short-lived box of its own and must keep working.
+    if (!box.closest(EDIT_AREAS)) return;
+    const tappedElsewhere = focusGuard.target && now - focusGuard.at < 1500 && !box.contains(focusGuard.target);
+    if (tappedElsewhere) box.blur();
 }
 
 function onDraftInput(event) {
@@ -3759,6 +3817,17 @@ function showWelcomeFromTop() {
     }
 }
 
+/** The cards after this one that are on screen (or just below), for the glide. */
+function followingCards(group) {
+    const out = [];
+    const limit = window.innerHeight + 200;
+    for (let node = group.nextElementSibling; node && out.length < 12; node = node.nextElementSibling) {
+        if (node.getBoundingClientRect().top > limit) break;
+        out.push(node);
+    }
+    return out;
+}
+
 /** Characters whose chat list is open; remembered while the app stays open. */
 const openChatGroups = new Set();
 
@@ -3832,14 +3901,29 @@ function buildChatGroup(chats) {
         'aria-label': t('Show chats with {name}', { name }),
         onclick: () => {
             buzz(4);
-            setOpen(!group.classList.contains('stmui-group-open'));
+            setOpen(!group.classList.contains('stmui-group-open'), true);
         },
     }, [ui('chevron-down')]);
-    const setOpen = open => {
+    const setOpen = (open, animate = false) => {
+        // The cards below move by however much this one grows or shrinks; they
+        // glide there (movement only, so it stays smooth) instead of the card
+        // growing frame by frame.
+        const below = animate && motionAllowed() ? followingCards(group) : [];
+        const before = below.map(card => card.getBoundingClientRect().top);
         group.classList.toggle('stmui-group-open', open);
         toggle.setAttribute('aria-expanded', String(open));
         if (open) openChatGroups.add(key);
         else openChatGroups.delete(key);
+        if (!below.length && !(animate && motionAllowed())) return;
+        const quick = settings.motion === 'light';
+        const timing = { duration: quick ? 160 : 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' };
+        below.forEach((card, index) => {
+            const shift = before[index] - card.getBoundingClientRect().top;
+            if (Math.abs(shift) > 1) card.animate([{ transform: `translateY(${shift}px)` }, { transform: 'none' }], timing);
+        });
+        if (open) {
+            panel.animate([{ opacity: 0, transform: 'translateY(-10px)' }, { opacity: 1, transform: 'none' }], timing);
+        }
     };
 
     // Inside: quick actions, then the chats.

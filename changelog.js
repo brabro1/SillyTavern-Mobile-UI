@@ -1,6 +1,14 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.14.2',
+        items: [
+            "Opening an edit (a message, its thinking, a lorebook entry, a persona) no longer pops up the keyboard; tap the text to type.",
+            "The keyboard comes up more smoothly: the tab bar steps aside right away and the page no longer redraws on every frame of it.",
+            "Recent chat dropdowns open and close smoothly, with the cards below gliding into place.",
+        ],
+    },
+    {
         version: '2.14.1',
         items: [
             "Opening a chat no longer pops up the keyboard; it opens when you tap the message box.",

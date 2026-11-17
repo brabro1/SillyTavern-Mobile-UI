@@ -6100,20 +6100,23 @@ html.stmui-chat .stmui-group-open .stmui-group-toggle .stmui-svg {
     transform: rotate(180deg);
 }
 
-/* The dropdown: it grows open smoothly (rows from 0fr to 1fr). */
+/* The dropdown opens in one step; the script then lets the cards below glide
+   into place and the content fade in (movement only, so it stays smooth). */
 html.stmui-chat .stmui-group-panel {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.28s var(--stmui-ease);
+    display: none;
 }
 
 html.stmui-chat :is(.stmui-group-open, .stmui-group-found) > .stmui-group-panel {
-    grid-template-rows: 1fr;
+    display: block;
 }
 
-html.stmui-chat .stmui-group-inner {
-    min-height: 0;
-    overflow: hidden;
+/* Answer the finger at once. */
+html.stmui-chat :is(.stmui-group-main, .stmui-group-toggle, .stmui-group-action) {
+    touch-action: manipulation;
+}
+
+html.stmui-chat .stmui-group-toggle:active .stmui-svg {
+    scale: 0.85;
 }
 
 html.stmui-chat .stmui-group-actions {
