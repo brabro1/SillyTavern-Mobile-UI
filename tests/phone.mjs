@@ -150,6 +150,8 @@ await step('message box: persona button, context ring and Context page; search t
         await until(() => document.querySelector('#stmui-sheet .stmui-persona-card-edit'));
         await page.locator('#stmui-sheet .stmui-persona-card-edit').click();
         await until(() => document.querySelector('#stmui-sheet .stmui-pe-text'));
+        // Tap the box first, like a person: the editor opens without the keyboard.
+        await page.locator('#stmui-sheet .stmui-pe-text').tap();
         await page.locator('#stmui-sheet .stmui-pe-text').fill(text);
         await page.locator('#stmui-sheet .stmui-pe-save').click();
         await until(() => !document.getElementById('stmui-sheet'));
