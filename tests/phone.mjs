@@ -130,7 +130,7 @@ await step('Translate chat is offered (greyed out until a chat is open)', async 
     await closeSheet();
 });
 
-await step('chat tools: reply buttons and search this chat', async () => {
+await step('message box: persona button, context ring and Context page; search this chat', async () => {
     // Needs a character chat; open the first character if none is open.
     await page.evaluate(async () => {
         const context = SillyTavern.getContext();
@@ -139,8 +139,13 @@ await step('chat tools: reply buttons and search this chat', async () => {
     const inChat = await page.evaluate(() => SillyTavern.getContext().characterId !== undefined);
     if (!inChat) throw new Error('no character to open');
     await until(() => document.querySelectorAll('#chat .mes').length > 0);
-    const lastIsUser = await page.evaluate(() => SillyTavern.getContext().chat.at(-1)?.is_user);
-    if (!lastIsUser) await until(() => document.querySelector('.stmui-reply-actions:not([hidden])'));
+    await until(() => document.querySelector('#leftSendForm .stmui-persona-chip img') && document.querySelector('#rightSendForm .stmui-ctx-ring'));
+    await page.locator('.stmui-ctx-ring').click();
+    await until(() => document.querySelector('#stmui-sheet .stmui-ctx-hero'));
+    await closeSheet();
+    await page.locator('.stmui-persona-chip').click();
+    await until(() => document.querySelectorAll('#stmui-sheet .stmui-choice').length > 0);
+    await closeSheet();
     await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="more"]').click());
     await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Search this chat' }).click();
     await until(() => document.querySelector('.stmui-chat-finder input'));

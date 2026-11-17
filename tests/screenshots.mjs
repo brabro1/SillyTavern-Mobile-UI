@@ -81,10 +81,36 @@ await setTheme('st');
 await setLook('Cards');
 await openDemoChat();
 
-if (want('chat')) {
-    await until(() => document.querySelector('.stmui-reply-actions:not([hidden])')).catch(() => {});
-    await shot('chat');
-}
+// The test copy never really replies, so give the last reply a sample prompt
+// record, the kind SillyTavern keeps after each reply. It only lives in this page.
+await page.evaluate(async () => {
+    const context = SillyTavern.getContext();
+    const module = await import('/scripts/itemized-prompts.js');
+    const character = context.characters[context.characterId];
+    const chat = context.chat;
+    const last = chat.map((message, index) => (message.is_user ? -1 : index)).filter(index => index >= 0).pop();
+    const history = chat.map(message => `${message.name}: ${message.mes}`).join('\n').repeat(6);
+    const lore = 'Eldoria is an old forest kingdom where the oaks remember every traveler. The glade is warded and only opens for those who need healing. '.repeat(14);
+    const story = [character.description, character.personality, character.scenario].join('\n');
+    module.itemizedPrompts.push({
+        mesId: last, main_api: context.mainApi, charDescription: character.description, charPersonality: character.personality,
+        scenarioText: character.scenario, userPersona: 'A tired traveler who got lost in the storm.', worldInfoString: lore,
+        storyString: `${story}\n${lore}`, examplesString: character.mes_example || '', mesSendString: history,
+        finalPrompt: [story, lore, character.mes_example, history].join('\n'),
+        this_max_context: Number(context.maxContext) - Number(document.getElementById('amount_gen')?.value || 0), padding: 64,
+        instruction: '', promptBias: '', allAnchors: '', summarizeString: '', authorsNoteString: '', smartContextString: '',
+        beforeScenarioAnchor: '', afterScenarioAnchor: '', zeroDepthAnchor: '', chatInjects: '', chatVectorsString: '',
+        dataBankVectorsString: '', presetName: 'Default', messagesCount: chat.length * 6, examplesCount: 2, rawPrompt: '',
+    });
+    chat[last].extra = { ...(chat[last].extra ?? {}), model: 'Mistral-Nemo-12B', api: context.mainApi };
+});
+// Opening the Context page reads the record and fills the ring.
+await page.locator('.stmui-ctx-ring').click();
+await until(() => document.querySelector('#stmui-sheet .stmui-ctx-list'));
+if (want('context')) await shot('context');
+await closeSheet();
+
+if (want('chat')) await shot('chat');
 
 if (want('bubbles')) {
     await setLook('Bubbles');

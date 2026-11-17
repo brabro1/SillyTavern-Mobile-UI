@@ -1,6 +1,15 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.12.0',
+        items: [
+            "A new message box: one floating box with your text on top and the tools in a row underneath, without the square strip behind it.",
+            "Your persona is in the message box: tap your picture to switch who you are.",
+            "The context meter is now a ring in the message box. Tap it for the Context page: what filled the context, how much room is left, and the full prompt.",
+            "The Regenerate, Continue and Another version buttons are gone. Dragging the last reply still swipes.",
+        ],
+    },
+    {
         version: '2.11.1',
         items: [
             "Scrolling up in a chat no longer stutters or pulls you back and forth.",

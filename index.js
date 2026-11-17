@@ -57,7 +57,6 @@ const DEFAULTS = Object.freeze({
     recentLanguages: [],
     autoTranslate: false,
     charPage: true,
-    replyActions: true,
     dragSwipe: true,
     foldLong: true,
     contextMeter: true,
@@ -73,10 +72,9 @@ const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extr
 /** Phone features shown as switches in More → Phone features and in the settings panel. */
 const EXTRAS = [
     { key: 'messageMenu', id: 'stmui_msgmenu', label: 'Message menu', hint: 'Tap ⋯ on a message for a full list of actions with names.' },
-    { key: 'replyActions', id: 'stmui_replyactions', label: 'Reply buttons', hint: 'Regenerate, Continue and Another version right above the message box after a reply.' },
     { key: 'dragSwipe', id: 'stmui_dragswipe', label: 'Drag to swipe', hint: 'Drag the last reply left for another version, right for the previous one.' },
     { key: 'foldLong', id: 'stmui_foldlong', label: 'Fold long messages', hint: 'Very long older messages get a Show more button.' },
-    { key: 'contextMeter', id: 'stmui_meter', label: 'Context meter', hint: 'A thin line under the top bar shows how full the context was on the last reply.' },
+    { key: 'contextMeter', id: 'stmui_meter', label: 'Context ring', hint: 'A ring in the message box shows how full the context is. Tap it for the details.' },
     { key: 'loreCards', id: 'stmui_lorecards', label: 'Lorebook entry cards', hint: 'Entries as cards with keyword chips; an opened entry fills the page.' },
     { key: 'sharpPictures', id: 'stmui_sharp', label: 'Sharp character pictures', hint: 'Shows the full-quality picture instead of the small thumbnail, sized for your screen.' },
     { key: 'animatedPictures', id: 'stmui_gifs', label: 'Animated pictures', hint: 'Pick a GIF or animated WebP as a character picture and it moves everywhere.' },
@@ -1316,26 +1314,6 @@ class Shell {
 
         for (const el of [this.appbar, this.tabbar]) shieldFromDrawerAutoClose(el);
 
-        // Long-press the avatar in the bar to switch persona.
-        let holdTimer = 0;
-        let held = 0;
-        this.who.addEventListener('pointerdown', () => {
-            if (currentPageId()) return;
-            window.clearTimeout(holdTimer);
-            holdTimer = window.setTimeout(() => {
-                held = Date.now();
-                buzz(15);
-                openPersonaChooser();
-            }, 500);
-        });
-        for (const type of ['pointerup', 'pointercancel', 'pointerleave']) this.who.addEventListener(type, () => window.clearTimeout(holdTimer));
-        this.who.addEventListener('contextmenu', event => event.preventDefault());
-        this.who.addEventListener('click', event => {
-            if (Date.now() - held < 700) {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-            }
-        }, true);
         document.body.append(this.appbar, this.tabbar);
 
         // The Characters page switches between list, editor and group views without events.
@@ -4420,52 +4398,90 @@ function applyPendingAnimated() {
     setTimeout(() => setAnimatedPicture(id, url), 1500);
 }
 
-// -- chat: reply actions above the message box
+// -- chat: the message box (persona button, context ring)
 
-const chatTools = { bar: null, timer: 0 };
+/**
+ * The message box is one floating rounded box: the text on top, and a row of
+ * tools along its bottom. Pocket Tavern adds two things to that row: your
+ * persona (picture and name, tap to switch) and a ring that fills as the
+ * context fills (tap it for what is in there).
+ */
+const composer = { persona: null, ring: null, personas: null };
 
-function lastChatMessage() {
-    const chat = ctx().chat ?? [];
-    for (let id = chat.length - 1; id >= 0; id--) {
-        if (!chat[id]?.is_system) return { id, message: chat[id] };
-    }
-    return null;
+/** SillyTavern's personas module, loaded once; it knows the current persona. */
+function loadPersonasModule() {
+    composer.personas ??= import('/scripts/personas.js').catch(() => null);
+    return composer.personas;
 }
 
-function updateReplyActions() {
-    window.clearTimeout(chatTools.timer);
-    chatTools.timer = window.setTimeout(() => {
-        const form = document.getElementById('form_sheld');
-        const want = active && settings.chatStyle && settings.replyActions && form;
-        if (!want) {
-            chatTools.bar?.remove();
-            chatTools.bar = null;
-            return;
-        }
-        if (!chatTools.bar) {
-            const chip = (iconName, label, onclick) => h('button', { type: 'button', class: 'stmui-reply-chip', onclick: () => {
-                buzz(8);
-                onclick();
-            } }, [ui(iconName), h('span', { text: label })]);
-            chatTools.bar = h('div', { class: 'stmui-reply-actions', role: 'toolbar', 'aria-label': 'Reply actions' }, [
-                chip('refresh', 'Regenerate', () => document.getElementById('option_regenerate')?.click()),
-                chip('play', 'Continue', () => document.getElementById('option_continue')?.click()),
-                chip('chevron-right', 'Another version', () => {
-                    const swipe = [...document.querySelectorAll('#chat .mes.last_mes .swipe_right')].pop();
-                    swipe?.click();
-                }),
-            ]);
-            shieldFromDrawerAutoClose(chatTools.bar);
-            form.prepend(chatTools.bar);
-        }
-        const last = lastChatMessage();
-        const typing = !!document.getElementById('send_textarea')?.value.trim();
-        const show = !!last && !last.message.is_user && !extras.generating && !typing && !editorOpen() && !!(ctx().characterId !== undefined || ctx().groupId);
-        chatTools.bar.hidden = !show;
-        // "Another version" only makes sense where SillyTavern offers a swipe.
-        const swipe = [...document.querySelectorAll('#chat .mes.last_mes .swipe_right')].pop();
-        chatTools.bar.lastElementChild.hidden = !swipe || getComputedStyle(swipe).display === 'none';
-    }, 120);
+function personaName(avatar) {
+    return ctx().powerUserSettings?.personas?.[avatar] || ctx().name1 || '';
+}
+
+function personaPicture(avatar) {
+    return avatar ? `/thumbnail?type=persona&file=${encodeURIComponent(avatar)}` : 'img/user-default.png';
+}
+
+async function updatePersonaButton() {
+    const button = composer.persona;
+    if (!button) return;
+    const module = await loadPersonasModule();
+    const avatar = module?.user_avatar || currentPersona();
+    const name = personaName(avatar);
+    const img = button.querySelector('img');
+    const src = personaPicture(avatar);
+    if (img.getAttribute('src') !== src) img.setAttribute('src', src);
+    // Set as plain text: a persona's name is never translated.
+    button.querySelector('.stmui-persona-name').textContent = name;
+    button.setAttribute('aria-label', name ? t('You are {name}. Tap to switch persona.', { name }) : t('Switch persona'));
+}
+
+function buildContextRing() {
+    const ring = h('button', {
+        type: 'button',
+        class: 'stmui-ctx-ring stmui-ctx-empty',
+        onclick: () => {
+            buzz(6);
+            openContextSheet();
+        },
+    }, [h('span', { class: 'stmui-ctx-num', 'aria-hidden': 'true' })]);
+    ring.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 36 36" aria-hidden="true"><circle class="stmui-ctx-track" cx="18" cy="18" r="15"/><circle class="stmui-ctx-fill" cx="18" cy="18" r="15" pathLength="100"/></svg>');
+    return ring;
+}
+
+function syncComposer() {
+    const left = document.getElementById('leftSendForm');
+    const right = document.getElementById('rightSendForm');
+    const want = active && settings.chatStyle && left && right;
+    if (!want || !settings.contextMeter) {
+        composer.ring?.remove();
+        composer.ring = null;
+    }
+    if (!want) {
+        composer.persona?.remove();
+        composer.persona = null;
+        return;
+    }
+    if (!composer.persona || !composer.persona.isConnected) {
+        composer.persona?.remove();
+        composer.persona = h('button', {
+            type: 'button',
+            class: 'stmui-persona-chip',
+            title: 'Switch persona',
+            onclick: () => {
+                buzz(6);
+                openPersonaChooser();
+            },
+        }, [h('img', { class: 'stmui-persona-img', alt: '' }), h('span', { class: 'stmui-persona-name' })]);
+        left.prepend(composer.persona);
+    }
+    if (settings.contextMeter && (!composer.ring || !composer.ring.isConnected)) {
+        composer.ring?.remove();
+        composer.ring = buildContextRing();
+        right.prepend(composer.ring);
+    }
+    updatePersonaButton();
+    renderMeter();
 }
 
 // -- chat: drag the last reply sideways to swipe
@@ -4747,11 +4763,23 @@ function openChatFinder() {
 
 // -- chat: how full is the context?
 
-const meter = { used: 0, max: 0, bar: null };
+const meter = { used: 0, max: 0, breakdown: null, chatId: null };
 
 function contextMax() {
     const context = ctx();
     return context.mainApi === 'openai' ? Number(context.chatCompletionSettings?.openai_max_context) || 0 : Number(context.maxContext) || 0;
+}
+
+/** How many tokens are kept free for the reply. */
+function replyLength() {
+    const context = ctx();
+    if (context.mainApi === 'openai') return Number(context.chatCompletionSettings?.openai_max_tokens) || 0;
+    return Number(document.getElementById('amount_gen')?.value) || 0;
+}
+
+/** What the prompt itself may use: the context size minus the room kept for the reply. */
+function contextAvailable() {
+    return Math.max(0, contextMax() - replyLength());
 }
 
 async function measurePrompt(text) {
@@ -4759,12 +4787,133 @@ async function measurePrompt(text) {
         const tokens = await ctx().getTokenCountAsync?.(text);
         if (typeof tokens === 'number') {
             meter.used = tokens;
-            meter.max = contextMax();
+            meter.max = contextAvailable() || contextMax();
+            meter.breakdown = null;
             renderMeter();
         }
     } catch {
         // No tokenizer for this API: leave the meter as it was.
     }
+}
+
+const CTX_PARTS = {
+    system: { label: 'Main prompt and instructions', color: '#94a3b8' },
+    character: { label: 'Character, persona and scenario', color: '#a78bfa' },
+    examples: { label: 'Example messages', color: '#f5b942' },
+    lore: { label: 'Lorebooks', color: '#2dd4bf' },
+    history: { label: 'Chat history', color: 'var(--stmui-accent)' },
+    notes: { label: "Author's note and extras", color: '#f472b6' },
+    bias: { label: 'Bias', color: '#cbd5e1' },
+    other: { label: 'Other', color: '#64748b' },
+};
+
+/**
+ * What filled the context on the last reply, from SillyTavern's own record of
+ * each prompt (the same numbers as its Prompt popup). Null before any reply.
+ */
+async function contextBreakdown() {
+    const module = await import('/scripts/itemized-prompts.js').catch(() => null);
+    const list = module?.itemizedPrompts;
+    const chat = ctx().chat ?? [];
+    if (!Array.isArray(list) || !list.length) return null;
+    let index = -1;
+    for (let i = list.length - 1; i >= 0; i--) {
+        if (chat[list[i]?.mesId]) {
+            index = i;
+            break;
+        }
+    }
+    if (index < 0) return null;
+    const entry = list[index];
+    const p = await module.itemizedParams(list, index, entry.mesId);
+    const n = value => Math.max(0, Math.round(Number(value) || 0));
+    let total;
+    let available;
+    let parts;
+    if (p.this_main_api === 'openai') {
+        total = n(p.finalPromptTokens);
+        available = n(p.thisPrompt_max_context);
+        const story = n(p.afterScenarioAnchorTokens) + n(p.beforeScenarioAnchorTokens) + n(p.oaiPromptTokens);
+        parts = [
+            ['system', n(p.oaiSystemTokens)],
+            ['character', Math.max(0, story - n(p.examplesStringTokens))],
+            ['examples', n(p.examplesStringTokens)],
+            ['lore', n(p.worldInfoStringTokens)],
+            ['history', n(p.ActualChatHistoryTokens)],
+            ['bias', n(p.oaiBiasTokens)],
+        ];
+    } else {
+        total = n(p.totalTokensInPrompt) || n(p.finalPromptTokens);
+        available = n(p.thisPrompt_max_context);
+        parts = [
+            ['character', n(p.storyStringTokens)],
+            ['examples', n(p.examplesStringTokens)],
+            ['lore', n(p.worldInfoStringTokens)],
+            ['history', n(p.ActualChatHistoryTokens)],
+            ['notes', n(p.allAnchorsTokens)],
+            ['bias', n(p.promptBiasTokens)],
+        ];
+    }
+    const counted = parts.reduce((sum, [, tokens]) => sum + tokens, 0);
+    if (total > counted + 2) parts.push(['other', total - counted]);
+    if (!total) total = counted;
+    return {
+        total,
+        available: available || contextAvailable(),
+        reply: replyLength(),
+        parts: parts.filter(([, tokens]) => tokens > 0).map(([key, tokens]) => ({ key, tokens })),
+        character: {
+            Description: n(p.charDescriptionTokens),
+            Personality: n(p.charPersonalityTokens),
+            Scenario: n(p.scenarioTextTokens),
+            Persona: n(p.userPersonaStringTokens),
+        },
+        facts: [
+            ['Messages in context', p.messagesCount],
+            ['Example messages', p.examplesCount],
+            ['Model', p.modelUsed],
+            ['Preset', p.presetName],
+            ['Connection', p.apiUsed || p.mainApiFriendlyName],
+            ['Tokenizer', p.selectedTokenizer],
+        ].filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== ''),
+        showPrompt: () => module.promptItemize(list, entry.mesId),
+    };
+}
+
+/** After a chat opens, fill the ring from its last reply right away. */
+async function loadMeterFromHistory() {
+    if (!active || !settings.contextMeter) return;
+    const chatId = ctx().getCurrentChatId?.();
+    try {
+        const info = await contextBreakdown();
+        if (ctx().getCurrentChatId?.() !== chatId) return;
+        meter.chatId = chatId;
+        if (info) {
+            meter.used = info.total;
+            meter.max = info.available;
+            meter.breakdown = info;
+        }
+        renderMeter();
+    } catch (error) {
+        console.debug(LOG, 'Could not read the last prompt', error);
+    }
+}
+
+function contextShare() {
+    return meter.used && meter.max ? Math.min(1, meter.used / meter.max) : 0;
+}
+
+/** A ring with the share drawn on it; used in the message box and, bigger, in the Context sheet. */
+function paintRing(ring, share, empty) {
+    const percent = Math.round(share * 100);
+    // A style, not an attribute: the stylesheet's starting value would win over an attribute.
+    const fill = ring.querySelector('.stmui-ctx-fill');
+    if (fill) fill.style.strokeDasharray = `${empty ? 0 : Math.max(2, percent)} 100`;
+    ring.classList.toggle('stmui-ctx-empty', empty);
+    ring.classList.toggle('stmui-ctx-warn', !empty && share > 0.85 && share <= 0.98);
+    ring.classList.toggle('stmui-ctx-full', !empty && share > 0.98);
+    const num = ring.querySelector('.stmui-ctx-num');
+    if (num) num.textContent = empty ? '' : String(percent);
 }
 
 function onPromptReady(data) {
@@ -4774,21 +4923,163 @@ function onPromptReady(data) {
 }
 
 function renderMeter() {
-    const appbar = document.getElementById('stmui-appbar');
-    const want = active && settings.contextMeter && appbar && meter.used && meter.max;
-    if (!want) {
-        meter.bar?.remove();
-        meter.bar = null;
+    const ring = composer.ring;
+    if (!ring) return;
+    const empty = !meter.used || !meter.max;
+    const share = contextShare();
+    paintRing(ring, share, empty);
+    const label = empty ? t('Context: no reply yet. Tap for details.') : t('Context {percent}% full. Tap for details.', { percent: Math.round(share * 100) });
+    ring.setAttribute('aria-label', label);
+    ring.title = label;
+}
+
+/** The Context sheet: how full, what filled it, and where to change it. */
+function openContextSheet() {
+    const inChat = !!(ctx().groupId || ctx().characterId !== undefined);
+    let info = meter.breakdown;
+    let loading = inChat && !info;
+    let failed = false;
+    const instance = new MenuSheet({
+        title: t('Context'),
+        subtitle: t('What the model reads before it replies'),
+        fill: body => fillContextSheet(body, { inChat, info, loading, failed }),
+    });
+    showSheet(instance);
+    if (!loading) return;
+    contextBreakdown().then(result => {
+        info = result;
+        if (result) {
+            meter.used = result.total;
+            meter.max = result.available;
+            meter.breakdown = result;
+            renderMeter();
+        }
+    }).catch(error => {
+        failed = true;
+        console.debug(LOG, 'Could not read the last prompt', error);
+    }).finally(() => {
+        loading = false;
+        if (sheet === instance) instance.fill = body => fillContextSheet(body, { inChat, info, loading, failed });
+        if (sheet === instance) instance.refresh();
+    });
+}
+
+function fillContextSheet(body, { inChat, info, loading, failed }) {
+    if (!inChat) {
+        body.append(h('p', { class: 'stmui-menu-foot', text: t('Open a chat first.') }));
         return;
     }
-    if (!meter.bar || !meter.bar.isConnected) {
-        meter.bar = h('div', { class: 'stmui-meter', 'aria-hidden': 'true' }, [h('span')]);
-        appbar.append(meter.bar);
+    const fmt = value => Number(value || 0).toLocaleString();
+    const total = info?.total ?? meter.used;
+    const available = info?.available ?? (meter.max || contextAvailable());
+    const reply = info?.reply ?? replyLength();
+    const empty = !total || !available;
+    const share = empty ? 0 : Math.min(1, total / available);
+
+    // The big ring and the headline.
+    const big = h('div', { class: 'stmui-ctx-big' }, [
+        h('span', { class: 'stmui-ctx-num' }),
+        h('small', { class: 'stmui-ctx-unit', text: empty ? '' : t('full') }),
+    ]);
+    big.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 36 36" aria-hidden="true"><circle class="stmui-ctx-track" cx="18" cy="18" r="15"/><circle class="stmui-ctx-fill" cx="18" cy="18" r="15" pathLength="100"/></svg>');
+    paintRing(big, share, empty);
+    if (empty) big.querySelector('.stmui-ctx-num').textContent = '–';
+    const head = h('div', { class: 'stmui-ctx-head' });
+    if (loading) {
+        head.append(h('b', { text: t('Counting…') }));
+    } else if (empty) {
+        head.append(h('b', { text: t('No reply yet in this chat') }), h('small', { text: t('After the next reply you will see what filled the context: the character, lorebooks, chat history and more.') }));
+    } else {
+        head.append(
+            h('b', { text: t('{used} tokens', { used: fmt(total) }) }),
+            h('small', { text: t('of {available} the model can read', { available: fmt(available) }) }),
+            h('small', { class: 'stmui-ctx-sub', text: t('{max} context, {reply} kept for the reply', { max: fmt(available + reply), reply: fmt(reply) }) }),
+        );
     }
-    const share = Math.min(1, meter.used / meter.max);
-    meter.bar.style.setProperty('--stmui-meter', `${(share * 100).toFixed(1)}%`);
-    meter.bar.classList.toggle('stmui-meter-warn', share > 0.85);
-    meter.bar.classList.toggle('stmui-meter-full', share > 0.98);
+    body.append(h('div', { class: 'stmui-ctx-hero' }, [big, head]));
+    if (loading) return;
+
+    // What filled it: one bar, then one row per part.
+    if (info?.parts?.length && !empty) {
+        const bar = h('div', { class: 'stmui-ctx-bar', role: 'img', 'aria-label': t('What filled the context') });
+        for (const part of info.parts) {
+            const span = h('span');
+            span.style.setProperty('--c', CTX_PARTS[part.key].color);
+            span.style.flexBasis = `${(part.tokens / available) * 100}%`;
+            bar.append(span);
+        }
+        body.append(bar);
+        const rows = info.parts.map(part => {
+            const dot = h('span', { class: 'stmui-ctx-dot' });
+            dot.style.setProperty('--c', CTX_PARTS[part.key].color);
+            const text = h('span', { class: 'stmui-ctx-name' }, [h('span', { text: CTX_PARTS[part.key].label })]);
+            if (part.key === 'character') {
+                const pieces = Object.entries(info.character).filter(([, tokens]) => tokens > 0).map(([name, tokens]) => `${t(name)} ${fmt(tokens)}`);
+                if (pieces.length) text.append(h('small', { text: pieces.join(' · ') }));
+            }
+            if (part.key === 'history') {
+                const count = info.facts.find(([name]) => name === 'Messages in context')?.[1];
+                if (count) text.append(h('small', { text: t('{count} messages', { count }) }));
+            }
+            return h('div', { class: 'stmui-ctx-row' }, [
+                dot,
+                text,
+                h('span', { class: 'stmui-ctx-tok' }, [h('b', { text: fmt(part.tokens) }), h('small', { text: `${Math.max(1, Math.round((part.tokens / available) * 100))}%` })]),
+            ]);
+        });
+        const free = Math.max(0, available - total);
+        const freeDot = h('span', { class: 'stmui-ctx-dot stmui-ctx-dot-free' });
+        rows.push(h('div', { class: 'stmui-ctx-row stmui-ctx-row-free' }, [
+            freeDot,
+            h('span', { class: 'stmui-ctx-name' }, [h('span', { text: t('Free space') })]),
+            h('span', { class: 'stmui-ctx-tok' }, [h('b', { text: fmt(free) }), h('small', { text: `${Math.round((free / available) * 100)}%` })]),
+        ]));
+        body.append(h('div', { class: 'stmui-ctx-list' }, rows));
+    }
+
+    // A plain-words note on what this means.
+    if (!empty) {
+        const warn = share > 0.85;
+        const note = warn
+            ? t('Almost full: the oldest messages are left out so the newest ones fit.')
+            : t('Room for about {free} more tokens before older messages start to drop out.', { free: fmt(Math.max(0, available - total)) });
+        body.append(h('p', { class: `stmui-ctx-note ${warn ? 'stmui-ctx-note-warn' : ''}`, text: note }));
+    }
+    if (failed) body.append(h('p', { class: 'stmui-ctx-note stmui-ctx-note-warn', text: t('Could not read the details of the last reply.') }));
+
+    // Facts about the last reply and the settings.
+    const facts = [...(info?.facts ?? []).filter(([name]) => name !== 'Messages in context' || !info?.parts?.length)];
+    facts.push(['Context size', fmt(available + reply)], ['Kept for the reply', fmt(reply)]);
+    body.append(h('div', { class: 'stmui-ctx-facts' }, facts.map(([name, value]) => {
+        const fact = h('div', { class: 'stmui-ctx-fact' }, [h('small', { text: name })]);
+        // Values (model and preset names) are shown as they are, not translated.
+        const strong = document.createElement('b');
+        strong.textContent = String(value);
+        fact.append(strong);
+        return fact;
+    })));
+
+    const actions = [];
+    if (info?.showPrompt) {
+        actions.push(h('button', {
+            type: 'button',
+            class: 'stmui-ctx-btn',
+            onclick: () => {
+                closeSheet(true);
+                info.showPrompt();
+            },
+        }, [ui('file-text'), h('span', { text: 'Show the full prompt' })]));
+    }
+    actions.push(h('button', {
+        type: 'button',
+        class: 'stmui-ctx-btn',
+        onclick: () => {
+            closeSheet(true);
+            openPage('ai-config-button');
+        },
+    }, [ui('sliders'), h('span', { text: 'Change context size' })]));
+    body.append(h('div', { class: 'stmui-ctx-actions' }, actions));
+    if (info) body.append(h('p', { class: 'stmui-menu-foot', text: t('Counted from the last reply in this chat.') }));
 }
 
 function meterText() {
@@ -5301,13 +5592,7 @@ function openQuickSwitch() {
                     onPick: value => pickFromSelect(preset, value),
                 })));
             }
-            if (settings.contextMeter) {
-                // Information only, so no arrow and nothing to tap.
-                rows.push(h('div', { class: 'stmui-menu-row stmui-menu-row-info' }, [
-                    ui('chart', 'stmui-menu-row-icon'),
-                    h('span', { class: 'stmui-row-text' }, [h('span', { text: t('Context used') }), h('small', { text: meterText() })]),
-                ]));
-            }
+            if (settings.contextMeter) rows.push(row('chart', t('Context used'), meterText(), () => openContextSheet()));
             const status = ctx().onlineStatus;
             rows.push(row('globe', t('API connection'), status && status !== 'no_connection' ? t('Connected') : t('Not connected'), () => {
                 closeSheet(true);
@@ -5525,7 +5810,7 @@ function applyTextSize() {
 function syncExtras() {
     applyTextSize();
     applyChatLook();
-    updateReplyActions();
+    syncComposer();
     foldLongMessages();
     syncLoreEntries();
     syncTriggerChips();
@@ -5586,9 +5871,6 @@ function syncExtras() {
     document.addEventListener('touchcancel', onSwipeEnd);
     window.addEventListener('swiped-left', onSwipedEvent, true);
     window.addEventListener('swiped-right', onSwipedEvent, true);
-    document.addEventListener('input', event => {
-        if (event.target?.id === 'send_textarea') updateReplyActions();
-    }, true);
     document.addEventListener('touchstart', onToastTouchStart, { passive: true });
     document.addEventListener('touchmove', onToastTouchMove, { passive: true });
     document.addEventListener('touchend', onToastTouchEnd);
@@ -5863,10 +6145,9 @@ function init() {
     });
     if (event_types.MORE_MESSAGES_LOADED) eventSource?.on?.(event_types.MORE_MESSAGES_LOADED, () => primeChatSizes(400));
     if (event_types.MESSAGE_SENT) eventSource?.on?.(event_types.MESSAGE_SENT, clearDraft);
-    // Reply buttons and folded messages follow whatever changes in the chat.
+    // Folded messages follow whatever changes in the chat.
     let chatTimer = 0;
     const chatChanged = () => {
-        updateReplyActions();
         window.clearTimeout(chatTimer);
         chatTimer = window.setTimeout(foldLongMessages, 200);
     };
@@ -5879,8 +6160,22 @@ function init() {
     if (event_types.CHAT_CHANGED) {
         eventSource?.on?.(event_types.CHAT_CHANGED, () => {
             meter.used = 0;
+            meter.breakdown = null;
             renderMeter();
             closeChatFinder();
+            // SillyTavern loads the chat's prompt records a moment after the chat.
+            setTimeout(loadMeterFromHistory, 900);
+            updatePersonaButton();
+        });
+    }
+    // The persona button follows persona changes, renames and new pictures.
+    for (const name of ['PERSONA_CHANGED', 'PERSONA_RENAMED', 'PERSONA_UPDATED', 'SETTINGS_UPDATED']) {
+        if (event_types[name]) eventSource?.on?.(event_types[name], () => setTimeout(updatePersonaButton, 50));
+    }
+    // A new reply has its own record; the ring's details follow it.
+    if (event_types.GENERATION_ENDED) {
+        eventSource?.on?.(event_types.GENERATION_ENDED, () => {
+            meter.breakdown = null;
         });
     }
     // Keep new, edited and swiped messages in the chat's translated language.

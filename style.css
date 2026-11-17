@@ -1491,12 +1491,14 @@ html.stmui-chat #chat .mes_edit_buttons .menu_button {
 
 /* -- Message box ---------------------------------------------------------- */
 
+/* No strip behind the box: only the floating box itself. */
 html.stmui-chat #form_sheld {
     margin: 0;
-    padding: 6px 8px 8px;
+    padding: 4px 10px 8px;
     box-sizing: border-box;
-    border-top: 1px solid var(--stmui-line);
-    background: color-mix(in srgb, var(--stmui-surface) 96%, transparent);
+    border: 0;
+    background: transparent !important;
+    box-shadow: none;
 }
 
 html.stmui-chat:not(.stmui-shell) #form_sheld {
@@ -1504,30 +1506,60 @@ html.stmui-chat:not(.stmui-shell) #form_sheld {
 }
 
 html.stmui-chat #send_form {
-    min-height: 52px;
-    padding: 5px;
+    min-height: 0;
+    padding: 4px 6px 6px;
     box-sizing: border-box;
     border: 1px solid var(--stmui-line) !important;
-    border-radius: 26px;
+    border-radius: 24px;
     background: var(--stmui-raised) !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 html.stmui-chat #send_form:focus-within {
-    border-color: color-mix(in srgb, var(--stmui-accent) 55%, transparent) !important;
+    border-color: color-mix(in srgb, var(--stmui-accent) 38%, var(--stmui-line)) !important;
 }
 
+/* The hint text starts where your text starts. */
+html.stmui-chat #send_textarea::placeholder {
+    text-align: start;
+}
+
+/* The text gets the whole width on top; the tools sit in a row along the bottom. */
 html.stmui-chat #nonQRFormItems {
-    align-items: flex-end;
-    column-gap: 0;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "text text text"
+        "left gap right";
+    align-items: center;
+    column-gap: 4px;
+    row-gap: 0;
+}
+
+html.stmui-chat #send_textarea {
+    grid-area: text;
+}
+
+html.stmui-chat #leftSendForm {
+    grid-area: left;
+    gap: 2px;
+}
+
+html.stmui-chat #rightSendForm {
+    grid-area: right;
+    gap: 6px;
 }
 
 html.stmui-chat #leftSendForm,
 html.stmui-chat #rightSendForm {
+    display: flex;
     flex-wrap: nowrap;
     align-items: center;
     width: auto;
+    min-width: 0;
     height: auto;
     padding: 0;
 }
@@ -1535,12 +1567,12 @@ html.stmui-chat #rightSendForm {
 html.stmui-chat #leftSendForm > div,
 html.stmui-chat #rightSendForm > div:not(.mes_stop):not(.stscript_btn),
 html.stmui-chat #options_button {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     margin: 0;
     border-radius: 50%;
-    font-size: 19px;
-    opacity: 0.85;
+    font-size: 18px;
+    opacity: 0.8;
 }
 
 html.stmui-chat #options_button {
@@ -1549,12 +1581,13 @@ html.stmui-chat #options_button {
 
 html.stmui-chat #send_textarea {
     box-sizing: border-box;
+    width: 100%;
     /* Grow from one line; SillyTavern's own script sets an inline height where CSS cannot. */
     height: auto;
-    min-height: 42px;
+    min-height: 40px;
     max-height: 40dvh;
     margin: 0;
-    padding: 10px 6px;
+    padding: 9px 10px 5px;
     border: 0;
     background: transparent;
     font-size: 16px;
@@ -2472,16 +2505,405 @@ html.stmui-on .mes_text video {
         font-size: 20px;
     }
 
-    html.stmui-chat #send_form {
-        min-height: 44px;
-    }
-
     html.stmui-chat #leftSendForm > div,
     html.stmui-chat #rightSendForm > div:not(.mes_stop):not(.stscript_btn),
     html.stmui-chat #options_button {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
     }
+}
+
+/* -- Message box: your persona and the context ring ------------------------ */
+
+.stmui-persona-chip {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    max-width: 128px;
+    height: 34px;
+    margin: 0 4px 0 1px;
+    padding: 0 11px 0 3px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--stmui-accent) 9%, transparent);
+    color: var(--stmui-text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.stmui-persona-chip:active {
+    transform: scale(0.95);
+}
+
+.stmui-persona-img {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 0 0 1.5px var(--stmui-raised), 0 0 0 3px color-mix(in srgb, var(--stmui-accent) 70%, transparent);
+}
+
+.stmui-persona-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stmui-persona-name:empty {
+    display: none;
+}
+
+.stmui-persona-chip:has(.stmui-persona-name:empty) {
+    padding-right: 3px;
+}
+
+.stmui-ctx-ring {
+    position: relative;
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--stmui-muted);
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.stmui-ctx-ring:active {
+    transform: scale(0.92);
+}
+
+.stmui-ctx-ring svg,
+.stmui-ctx-big svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    overflow: visible;
+}
+
+.stmui-ctx-track {
+    fill: none;
+    stroke: var(--stmui-line);
+    stroke-width: 3.4;
+}
+
+.stmui-ctx-fill {
+    fill: none;
+    stroke: var(--stmui-accent);
+    stroke-width: 3.4;
+    stroke-linecap: round;
+    stroke-dasharray: 0 100;
+    transition: stroke-dasharray 0.6s var(--stmui-ease), stroke 0.3s ease;
+}
+
+.stmui-ctx-ring svg {
+    inset: 4px;
+    width: 28px;
+    height: 28px;
+}
+
+.stmui-ctx-warn .stmui-ctx-fill {
+    stroke: #f0a030;
+}
+
+.stmui-ctx-full .stmui-ctx-fill {
+    stroke: #e5484d;
+}
+
+/* Before the first reply: a dotted ring. */
+.stmui-ctx-empty .stmui-ctx-track {
+    stroke-dasharray: 2.2 3.6;
+}
+
+.stmui-ctx-empty .stmui-ctx-fill {
+    opacity: 0;
+}
+
+.stmui-ctx-num {
+    position: relative;
+    color: var(--stmui-text);
+    font-size: 10px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.stmui-ctx-warn .stmui-ctx-num {
+    color: #f0a030;
+}
+
+.stmui-ctx-full .stmui-ctx-num {
+    color: #e5484d;
+}
+
+/* -- The Context sheet ----------------------------------------------------- */
+
+.stmui-ctx-hero {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 8px 18px 16px;
+}
+
+.stmui-ctx-big {
+    position: relative;
+    display: grid;
+    flex: 0 0 auto;
+    place-content: center;
+    justify-items: center;
+    width: 92px;
+    height: 92px;
+}
+
+.stmui-ctx-big .stmui-ctx-track,
+.stmui-ctx-big .stmui-ctx-fill {
+    stroke-width: 3;
+}
+
+.stmui-ctx-big .stmui-ctx-num {
+    font-size: 26px;
+    line-height: 1;
+}
+
+.stmui-ctx-big .stmui-ctx-num:not(:empty)::after {
+    content: '%';
+    margin-left: 1px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.7;
+}
+
+.stmui-ctx-big.stmui-ctx-empty .stmui-ctx-num::after {
+    content: none;
+}
+
+.stmui-ctx-unit {
+    position: relative;
+    margin-top: 3px;
+    color: var(--stmui-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.stmui-ctx-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.stmui-ctx-head b {
+    color: var(--stmui-text);
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.stmui-ctx-head small {
+    color: var(--stmui-muted);
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.stmui-ctx-head .stmui-ctx-sub {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.stmui-ctx-bar {
+    display: flex;
+    gap: 2px;
+    height: 12px;
+    margin: 0 16px 14px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--stmui-line) 70%, transparent);
+}
+
+.stmui-ctx-bar > span {
+    flex-grow: 0;
+    flex-shrink: 0;
+    min-width: 4px;
+    background: var(--c);
+}
+
+html.stmui-motion-full .stmui-sheet-open .stmui-ctx-bar > span {
+    animation: stmui-ctx-grow 0.6s var(--stmui-ease) backwards;
+    transform-origin: left;
+}
+
+@keyframes stmui-ctx-grow {
+    from { transform: scaleX(0); }
+}
+
+.stmui-ctx-list {
+    margin: 0 12px;
+    overflow: hidden;
+    border: 1px solid var(--stmui-line);
+    border-radius: 16px;
+    background: var(--stmui-raised);
+}
+
+.stmui-ctx-row {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--stmui-line);
+}
+
+.stmui-ctx-row:last-child {
+    border-bottom: 0;
+}
+
+.stmui-ctx-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--c);
+}
+
+.stmui-ctx-dot-free {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--stmui-muted);
+}
+
+.stmui-ctx-name {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    color: var(--stmui-text);
+    font-size: 14px;
+}
+
+.stmui-ctx-name small {
+    overflow: hidden;
+    color: var(--stmui-muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stmui-ctx-tok {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    font-variant-numeric: tabular-nums;
+}
+
+.stmui-ctx-tok b {
+    color: var(--stmui-text);
+    font-size: 14px;
+}
+
+.stmui-ctx-tok small {
+    color: var(--stmui-muted);
+    font-size: 11px;
+}
+
+.stmui-ctx-row-free .stmui-ctx-name,
+.stmui-ctx-row-free .stmui-ctx-tok b {
+    color: var(--stmui-muted);
+}
+
+.stmui-ctx-note {
+    margin: 12px 14px 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--stmui-accent) 10%, transparent);
+    color: var(--stmui-text);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.stmui-ctx-note-warn {
+    background: rgba(240, 160, 48, 0.14);
+}
+
+.stmui-ctx-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 12px 12px 0;
+}
+
+.stmui-ctx-fact {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 14px;
+    background: var(--stmui-raised);
+}
+
+.stmui-ctx-fact small {
+    color: var(--stmui-muted);
+    font-size: 11px;
+}
+
+.stmui-ctx-fact b {
+    overflow: hidden;
+    color: var(--stmui-text);
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stmui-ctx-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 12px 4px;
+}
+
+.stmui-ctx-btn {
+    display: inline-flex;
+    flex: 1 1 140px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 42px;
+    padding: 0 14px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px;
+    background: var(--stmui-raised);
+    color: var(--stmui-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.stmui-ctx-btn .stmui-svg {
+    width: 17px;
+    height: 17px;
+    color: var(--stmui-accent);
+}
+
+.stmui-ctx-btn:active {
+    transform: scale(0.97);
 }
 
 /* ==========================================================================
@@ -5616,70 +6038,6 @@ html.stmui-charpage .stmui-btn-label {
 
 
 /* ==========================================================================
-   Chat: reply buttons above the message box
-   ========================================================================== */
-
-.stmui-reply-actions {
-    display: flex;
-    gap: 8px;
-    margin: 0 0 6px;
-    padding: 0 2px;
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-.stmui-reply-actions[hidden],
-.stmui-reply-chip[hidden] {
-    display: none;
-}
-
-.stmui-reply-actions::-webkit-scrollbar {
-    display: none;
-}
-
-.stmui-reply-chip {
-    display: inline-flex;
-    flex: 1 1 auto;
-    justify-content: center;
-    min-width: 0;
-    align-items: center;
-    gap: 5px;
-    height: 34px;
-    padding: 0 8px;
-    border: 1px solid var(--stmui-line);
-    border-radius: 999px;
-    background: var(--stmui-raised);
-    color: var(--stmui-text);
-    font: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.stmui-reply-chip > span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.stmui-reply-chip .stmui-svg {
-    flex: 0 0 auto;
-    width: 15px;
-    height: 15px;
-    color: var(--stmui-accent);
-}
-
-.stmui-reply-chip:active {
-    background: var(--stmui-raised-2);
-    transform: scale(0.96);
-}
-
-html.stmui-motion-full .stmui-reply-actions:not([hidden]) {
-    animation: stmui-rise 0.3s var(--stmui-ease);
-}
-
-/* ==========================================================================
    Chat: drag the last reply to swipe
    ========================================================================== */
 
@@ -5837,36 +6195,6 @@ mark.stmui-find-mark {
     border-radius: 3px;
     background: color-mix(in srgb, var(--stmui-accent) 55%, transparent);
     color: inherit;
-}
-
-/* ==========================================================================
-   Chat: context meter under the top bar
-   ========================================================================== */
-
-.stmui-meter {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    height: 2px;
-    pointer-events: none;
-}
-
-.stmui-meter span {
-    display: block;
-    width: var(--stmui-meter, 0%);
-    height: 100%;
-    background: var(--stmui-accent);
-    opacity: 0.85;
-    transition: width 0.4s var(--stmui-ease);
-}
-
-.stmui-meter.stmui-meter-warn span {
-    background: #e6a23c;
-}
-
-.stmui-meter.stmui-meter-full span {
-    background: #e5574f;
 }
 
 /* ==========================================================================

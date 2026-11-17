@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.12.0
+
+- **A new message box.** One floating rounded box: the text gets the whole width on top, and the tools sit in a row along the bottom (your persona, SillyTavern's ☰ and ✨, any extension buttons, the context ring and Send). The square strip behind it is gone, and the typed-text hint starts on the left like your text.
+- **Persona in the message box.** Your persona shows as a round picture with your name; tap it to switch persona. It follows persona changes, renames and new pictures. Holding the character's picture in the top bar no longer switches persona.
+- **Context ring and Context page.** The thin line under the top bar is now a ring next to Send, with the percentage inside. It turns orange above 85% and red when full, and is dotted before the first reply. It fills as soon as a chat with replies opens. Tap it for the Context page:
+  - how full the context is, in tokens and as a big ring;
+  - what filled it, as one colored bar and a row per part: main prompt and instructions, character/persona/scenario (with description, personality, scenario and persona counts), example messages, lorebooks, chat history (with the number of messages), author's note, and the free space;
+  - a plain-words note: how much room is left, or that the oldest messages are being left out;
+  - the model, preset, connection, tokenizer, context size and the room kept for the reply;
+  - **Show the full prompt** (SillyTavern's own prompt view) and **Change context size**.
+  The numbers come from SillyTavern's record of the last reply, the same as its Prompt popup. Quick switch's "Context used" row opens the page too.
+- **Reply buttons removed.** Regenerate, Continue and Another version above the message box are gone (and their switch in Phone features). Dragging the last reply sideways still swipes, and SillyTavern's ☰ menu still has Regenerate and Continue.
+- The screenshot script gives the last test reply a sample prompt record so the ring and the Context page can be shown; the README has a new Context picture.
+
 ## 2.11.1
 
 - **Smooth scrolling up in long chats.** With Faster long chats on, messages off screen are skipped and should keep their height. But the chat is a flex column, and the skipped messages shrank to almost nothing (24 px instead of, say, 725 px). Scrolling up, each one popped open to its real height and the browser had to move the chat to make up for it, dozens of times per scroll. That was the stutter and the back-and-forth. Messages no longer shrink, and right after a chat opens (or translates, folds or changes width) every message is drawn once for one frame, so the browser knows each real height. Measured: 48 height changes per scroll before, 0 now.

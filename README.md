@@ -20,8 +20,8 @@
 | Chat | Characters | Character card |
 | :---: | :---: | :---: |
 | ![Chat with the top bar and bottom tabs](docs/screenshots/chat.jpg) | ![Characters as picture cards with the A–Z strip](docs/screenshots/characters.jpg) | ![Character card with tabs](docs/screenshots/card.jpg) |
-| **Themes** | **Translated chat** | **More** |
-| ![Theme picker](docs/screenshots/themes.jpg) | ![Chat translated to Spanish](docs/screenshots/translate.jpg) | ![More menu](docs/screenshots/more.jpg) |
+| **Themes** | **Translated chat** | **Context** |
+| ![Theme picker](docs/screenshots/themes.jpg) | ![Chat translated to Spanish](docs/screenshots/translate.jpg) | ![The Context page: how full the context is and what filled it](docs/screenshots/context.jpg) |
 
 <details>
 <summary>More screenshots</summary>
@@ -33,8 +33,8 @@
 | ![Chat in the Bubbles look](docs/screenshots/bubbles.jpg) | ![Midnight theme](docs/screenshots/midnight.jpg) | ![Paper theme](docs/screenshots/light.jpg) |
 | **Lorebook picker** | **Lorebook entries** | **Presets** |
 | ![Lorebook picker](docs/screenshots/lorebooks.jpg) | ![Lorebook entries as cards with keyword chips](docs/screenshots/lorebook-entries.jpg) | ![Presets with − and + beside each slider](docs/screenshots/presets.jpg) |
-| **Prompt editor** | **Personas** | |
-| ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) | |
+| **Prompt editor** | **Personas** | **More** |
+| ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) | ![More menu](docs/screenshots/more.jpg) |
 
 </details>
 
@@ -49,11 +49,11 @@
 - **Light on your phone:** typing, scrolling and pages are measured on a phone-speed CPU and kept smooth, even in long chats. Older phone? Pick **Light** animations under **More → Themes**.
 
 ### Chatting
-- **A cleaner chat:** soft message cards (or bubbles, or flat), bigger text and a rounded message box.
-- **Reply buttons:** Regenerate, Continue and Another version right above the message box. Or drag the last reply sideways to swipe.
+- **A cleaner chat:** soft message cards (or bubbles, or flat) and bigger text. Drag the last reply sideways to swipe.
+- **A floating message box:** your text gets the whole width, with the tools in a row underneath. Your persona sits there as a little picture with your name: tap it to switch who you are.
+- **Context ring:** a ring in the message box fills up as the chat uses more of the model's memory. Tap it for the Context page: what filled it (character, lorebooks, examples, chat history), how much room is left, the model and preset, and the full prompt.
 - **Edit on a full page:** tap ✎ and the message opens full screen, with Save right above the keyboard.
 - **Search this chat:** find any word in the conversation and jump between matches.
-- **Context meter:** a thin line under the top bar shows how full the model's memory is.
 - **One-tap translate:** tap the translate button to see the chat in your language, tap again for the original. Hold it to pick a language. Even long chats change in about a second.
 - **Full-screen pictures:** tap an avatar to see it full size. Pinch to zoom, rotate or save.
 
