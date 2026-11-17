@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.14.1
+
+- **No surprise keyboard.** SillyTavern focused the message box when a chat opened, which popped up the keyboard. For a moment after a chat opens (from Recent chats, the character list, chat history or search), the box now only takes focus when you tap it yourself.
+- **Recent chats start at the top.** SillyTavern scrolled the start screen to its end after drawing it (and again after its welcome message), so the home button left you at the bottom. It now starts at the top, unless you already began scrolling.
+- **The persona sheet stays open after switching.** Picking another persona switches right away and the sheet redraws with the new one on top, so you can switch again or edit it without reopening.
+
 ## 2.14.0
 
 - **Recent chats as dropdowns.** Each character's card is now closed by default and shows the picture (with a badge for how many chats), the name, the date and the last thing said, in two lines. Tap the card for the latest chat; tap the arrow on the right to drop the list down smoothly. Inside are three quick actions, **New chat**, **All chats** (SillyTavern's chat list for that character) and **Character** (the character card), and then every recent chat with them on the thread line, each with pin, rename and delete. Open cards stay open while the app is open. Searching opens the cards that have a match.

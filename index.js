@@ -2181,6 +2181,31 @@ function writeDraft(key, value) {
     }
 }
 
+/**
+ * Opening a chat made SillyTavern focus the message box, which pops up the
+ * keyboard. For a short while after a chat opens, the box only takes focus
+ * when you tapped it yourself.
+ */
+const focusGuard = { until: 0, tapped: 0 };
+
+function guardKeyboard(ms = 2500) {
+    focusGuard.until = Date.now() + ms;
+}
+
+function onFocusGuardPointer(event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest('#send_form')) focusGuard.tapped = Date.now();
+    // Opening a chat from a list: the focus that follows is not yours.
+    else if (target.closest('.recentChat, .stmui-group-main, .character_select, .group_select, .select_chat_block, .stmui-choice, .stmui-search-hit')) guardKeyboard(3500);
+}
+
+function onFocusGuardFocus(event) {
+    if (!active || event.target?.id !== 'send_textarea') return;
+    const now = Date.now();
+    if (now < focusGuard.until && now - focusGuard.tapped > 1200) event.target.blur();
+}
+
 function onDraftInput(event) {
     if (!active || !settings.saveDrafts || event.target?.id !== 'send_textarea') return;
     window.clearTimeout(extras.draftTimer);
@@ -3712,6 +3737,26 @@ function enhanceWelcome() {
     }
 
     for (const card of cards) wireSwipe(card, card.parentElement);
+    showWelcomeFromTop();
+}
+
+/**
+ * SillyTavern scrolls the chat to its end after drawing the start screen (and
+ * again after its welcome message), which put you at the bottom of Recent
+ * chats. Start at the top instead, unless you already started scrolling.
+ */
+function showWelcomeFromTop() {
+    const chat = document.getElementById('chat');
+    if (!chat) return;
+    let touched = false;
+    const stop = () => { touched = true; };
+    chat.addEventListener('touchstart', stop, { once: true, passive: true });
+    chat.addEventListener('wheel', stop, { once: true, passive: true });
+    for (const delay of [0, 120, 400, 900]) {
+        setTimeout(() => {
+            if (!touched && chat.querySelector('.welcomePanel')) chat.scrollTop = 0;
+        }, delay);
+    }
 }
 
 /** Characters whose chat list is open; remembered while the app stays open. */
@@ -5695,12 +5740,13 @@ async function choosePersona(avatar) {
  */
 async function openPersonaChooser() {
     const module = await loadPersonasModule();
-    const current = module?.user_avatar || currentPersona();
-    const all = personaChoices();
-    showSheet(new MenuSheet({
+    const instance = new MenuSheet({
         title: t('Your persona'),
         subtitle: t('Who you are in the chat'),
         fill: body => {
+            // Read fresh each time: after switching, the sheet redraws with the new persona.
+            const current = module?.user_avatar || currentPersona();
+            const all = personaChoices();
             const description = ctx().powerUserSettings?.persona_descriptions?.[current]?.description ?? '';
             const name = h('b', { class: 'stmui-persona-card-name' });
             name.textContent = personaName(current) || t('No name');
@@ -5725,9 +5771,11 @@ async function openPersonaChooser() {
                     type: 'button',
                     class: 'stmui-menu-row stmui-choice',
                     'data-search': normalizeText(`${option.label} ${option.note ?? ''}`),
-                    onclick: () => {
-                        closeSheet(true);
-                        choosePersona(option.value);
+                    onclick: async () => {
+                        // Stay open: you see the switch and can switch again.
+                        buzz(8);
+                        await choosePersona(option.value);
+                        if (sheet === instance) instance.refresh();
                     },
                 }, [
                     h('img', { class: 'stmui-choice-img', src: option.image, alt: '', loading: 'lazy' }),
@@ -5752,7 +5800,8 @@ async function openPersonaChooser() {
                 },
             }, [ui('settings', 'stmui-menu-row-icon'), h('span', { text: 'All persona settings' }), ui('chevron-right', 'stmui-menu-row-go')])]));
         },
-    }));
+    });
+    showSheet(instance);
 }
 
 /** A quick editor for the current persona: its name and description. */
@@ -6179,6 +6228,8 @@ function syncExtras() {
     document.addEventListener('touchend', onToastTouchEnd);
     document.addEventListener('touchcancel', onToastTouchEnd);
     document.addEventListener('input', onDraftInput, true);
+    document.addEventListener('pointerdown', onFocusGuardPointer, true);
+    document.addEventListener('focusin', onFocusGuardFocus, true);
     document.addEventListener('visibilitychange', onVisibility);
     document.addEventListener('pointerdown', onMessagePressStart, true);
     document.addEventListener('pointermove', onMessagePressMove, true);
@@ -6440,6 +6491,7 @@ function init() {
         applyPendingAnimated();
         sheet?.refresh();
         shell?.onChatChanged();
+        guardKeyboard();
         restoreDraft();
         // A new chat starts at the bottom; hide the jump button until you scroll up.
         setTimeout(onChatScroll, 300);

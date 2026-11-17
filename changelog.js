@@ -1,6 +1,14 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.14.1',
+        items: [
+            "Opening a chat no longer pops up the keyboard; it opens when you tap the message box.",
+            "The home button takes you to the top of Recent chats instead of the bottom.",
+            "Switching persona keeps the persona sheet open, so you see the change and can switch again.",
+        ],
+    },
+    {
         version: '2.14.0',
         items: [
             "Recent chats are dropdowns: tap a character for the latest chat, or the arrow for New chat, All chats, Character and all your chats with them.",
