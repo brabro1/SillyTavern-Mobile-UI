@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.11.1
+
+- **Smooth scrolling up in long chats.** With Faster long chats on, messages off screen are skipped and should keep their height. But the chat is a flex column, and the skipped messages shrank to almost nothing (24 px instead of, say, 725 px). Scrolling up, each one popped open to its real height and the browser had to move the chat to make up for it, dozens of times per scroll. That was the stutter and the back-and-forth. Messages no longer shrink, and right after a chat opens (or translates, folds or changes width) every message is drawn once for one frame, so the browser knows each real height. Measured: 48 height changes per scroll before, 0 now.
+- **The Characters page opens on the list.** With a chat open, the page first slid in showing that character's card, then switched to the list, which SillyTavern rebuilt, and then the cards faded in one by one. Now it switches to the list before the page slides in, doesn't ask SillyTavern to rebuild a list that is already showing, and the cards no longer fade in one after another.
+- **Sharp pictures without the flash.** When SillyTavern rebuilds a list, every spot that already had a sharp picture gets it back before the page is drawn. New sharp pictures made close together go in together.
+- **Sheets slide up from the bottom.** The More menu and the other sheets now slide all the way up from the bottom edge (and back down when closed) instead of fading in 40 px lower. Opening focused the search box while the sheet was still below the screen, and the browser scrolled the sheet to it, so it came in from the top; that can't happen anymore. The tiles inside no longer fade in one by one.
+
 ## 2.11.0
 
 Performance round. Measured on a phone-speed CPU (4× slower than a computer) in a 150-message chat, with `tests/perf.mjs`. Times are how long the screen was frozen:

@@ -257,6 +257,9 @@ dialog.stmui-sheet {
     background: transparent;
     color: var(--stmui-text);
     overflow: hidden;
+    /* clip, not just hidden: opening focuses the search box while the sheet is still below the screen,
+       and a merely hidden overflow got scrolled to it, so the sheet flew in from the top. */
+    overflow: clip;
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -292,16 +295,15 @@ dialog.stmui-sheet.stmui-sheet-open::backdrop {
     background: linear-gradient(var(--stmui-surface), var(--stmui-surface)), #101010;
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
     outline: none;
-    transform: translateY(40px);
-    opacity: 0;
-    transition: transform 0.24s var(--stmui-ease), opacity 0.2s ease;
+    transform: translateY(100%);
+    transition: transform 0.2s ease-in;
     box-sizing: border-box;
     overscroll-behavior: contain;
 }
 
 .stmui-sheet-open .stmui-panel {
     transform: translateY(0);
-    opacity: 1;
+    transition: transform 0.3s var(--stmui-ease-sheet);
 }
 
 .stmui-head {
@@ -3017,30 +3019,14 @@ html.stmui-motion-full.stmui-chat #chat .mes.last_mes {
     animation: stmui-mes-in 0.4s var(--stmui-ease);
 }
 
+/* Sheets slide all the way up from the bottom edge, and quickly back down when closed. */
 html.stmui-motion-full .stmui-panel {
-    transition: transform 0.44s var(--stmui-ease-sheet), opacity 0.24s ease;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1);
 }
 
-html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card) {
-    animation: stmui-rise 0.42s var(--stmui-ease) backwards;
+html.stmui-motion-full .stmui-sheet-open .stmui-panel {
+    transition: transform 0.38s var(--stmui-ease-sheet);
 }
-
-html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(2) { animation-delay: 30ms; }
-html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(3) { animation-delay: 60ms; }
-html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(4) { animation-delay: 90ms; }
-html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(5) { animation-delay: 120ms; }
-html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(6) { animation-delay: 150ms; }
-html.stmui-motion-full .stmui-sheet-open :is(.stmui-tile, .stmui-theme-card):nth-child(n+7) { animation-delay: 180ms; }
-
-html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(-n+10) {
-    animation: stmui-rise 0.4s var(--stmui-ease) backwards;
-}
-
-html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(2) { animation-delay: 35ms; }
-html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(3) { animation-delay: 70ms; }
-html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(4) { animation-delay: 105ms; }
-html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(5) { animation-delay: 140ms; }
-html.stmui-motion-full #right-nav-panel.openDrawer #rm_print_characters_block > :nth-child(n+6) { animation-delay: 175ms; }
 
 html.stmui-motion-full.stmui-touch :is(#options, #extensionsMenu) {
     animation: stmui-menu-in 0.32s var(--stmui-ease-sheet);
@@ -4494,6 +4480,14 @@ html.stmui-chat.stmui-editing #chat .mes_edit_buttons .mes_edit_delete {
 html.stmui-on.stmui-fast-chat #chat > .mes:not(.last_mes):not(:has(#curEditTextarea)) {
     content-visibility: auto;
     contain-intrinsic-size: auto 260px;
+    /* The chat is a flex column: without this, skipped messages shrank to almost nothing
+       and popped open while scrolling up, pulling the chat under your finger. */
+    flex-shrink: 0;
+}
+
+/* For one frame after a chat opens every message is drawn, so its real height is remembered. */
+html.stmui-on.stmui-fast-chat #chat.stmui-fast-prime > .mes:not(.last_mes):not(:has(#curEditTextarea)) {
+    content-visibility: visible;
 }
 
 /* ==========================================================================

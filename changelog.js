@@ -1,6 +1,14 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.11.1',
+        items: [
+            "Scrolling up in a chat no longer stutters or pulls you back and forth.",
+            "The Characters page opens straight on the list in one smooth move, without flashing.",
+            "Menus like More slide up from the bottom of the screen and no longer flash while opening.",
+        ],
+    },
+    {
         version: '2.11.0',
         items: [
             "Faster and smoother everywhere: typing, scrolling, replies coming in, opening pages and menus all do much less work, so your phone stays cool and responsive.",

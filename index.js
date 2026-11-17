@@ -540,8 +540,11 @@ function wireSheet(target) {
         if (startY === null) return;
         startY = null;
         panel.style.transition = '';
-        panel.style.transform = '';
-        if (dy > 90) closeSheet();
+        // Pulled far enough: keep going down from where the finger let go.
+        if (dy > 90) {
+            panel.style.transform = 'translateY(100%)';
+            closeSheet();
+        } else panel.style.transform = '';
     };
     head.addEventListener('touchstart', begin, { passive: true });
     head.addEventListener('touchmove', move, { passive: true });
@@ -840,6 +843,8 @@ function showSheet(instance) {
     sheet.dialog.classList.toggle('stmui-compact', (window.visualViewport?.height ?? window.innerHeight) < COMPACT_BELOW);
     document.body.append(sheet.dialog);
     sheet.dialog.showModal();
+    // Opening focuses the first field; make sure that did not scroll the sheet.
+    sheet.dialog.scrollTop = 0;
     requestAnimationFrame(() => sheet?.dialog.classList.add('stmui-sheet-open'));
     sheet.panel.focus({ preventScroll: true });
     scheduleHistorySync();
@@ -864,7 +869,7 @@ function closeSheet(immediate = false) {
         // Taps during the fade-out must not hit rows of a sheet that is already closing.
         current.dialog.style.pointerEvents = 'none';
         current.dialog.classList.remove('stmui-sheet-open');
-        setTimeout(finish, 180);
+        setTimeout(finish, 210);
     }
     scheduleHistorySync();
 }
@@ -1181,7 +1186,13 @@ function goHome() {
     document.getElementById('option_close_chat')?.click();
 }
 
+/**
+ * Shows SillyTavern's character list in the right panel. Skipped when the list is
+ * already showing: asking again makes SillyTavern throw the list away and draw it anew.
+ */
 function showCharacterList() {
+    const block = document.getElementById('rm_characters_block');
+    if (block && block.style.display !== 'none' && getComputedStyle(block).display !== 'none' && block.querySelector('#rm_print_characters_block > *')) return;
     document.getElementById('rm_button_characters')?.click();
 }
 
@@ -1397,8 +1408,10 @@ class Shell {
             else document.querySelector(`#${id} > .drawer-content`)?.scrollTo?.({ top: 0, behavior: 'smooth' });
             return;
         }
+        // Switch to the list first, so the page slides in already showing it
+        // instead of showing the open character's card and then changing.
+        if (id === 'rightNavHolder') showCharacterList();
         openPage(id);
-        if (id === 'rightNavHolder') setTimeout(showCharacterList, 30);
     }
 
     /** Called when SillyTavern switches chats. */
@@ -1413,8 +1426,8 @@ class Shell {
         const context = ctx();
         if (context.groupId || context.characterId !== undefined) openPage('rightNavHolder');
         else {
+            showCharacterList();
             openPage('rightNavHolder');
-            setTimeout(showCharacterList, 30);
         }
     }
 
@@ -3151,6 +3164,8 @@ async function translateChat(code) {
     translation.running = false;
     if (ctx().getCurrentChatId?.() === chatId) await ctx().saveChat?.();
     shell?.update();
+    // Every message changed its text, so its height too.
+    primeChatSizes();
     if (translation.cancel) translateStatus(t('Translation stopped'), { done: true });
     else translateStatus(failed === total ? t('Could not reach the translator') : t('Chat shown in {lang}', { lang: name }), { done: true, failed: failed > 0 });
 }
@@ -3199,6 +3214,7 @@ async function showOriginal() {
     });
     if (changed) await context.saveChat?.();
     shell?.update();
+    if (changed) primeChatSizes();
     translateStatus(t('Showing the original text'), { done: true });
 }
 
@@ -4013,20 +4029,61 @@ const pictures = {
     // New sources waiting to be put in, all in one frame.
     swaps: new Map(),
     swapFrame: 0,
+    // The picture last shown in each kind of spot ("grid|avatar|Aria.png" → url).
+    last: new Map(),
 };
 
-/** Puts in new picture sources together, once per frame, so the page restyles once. */
+/** Which kind of spot a picture sits in; pictures in the same kind of spot have the same size. */
+function pictureSpot(img) {
+    if (img.closest('#rm_print_characters_block')) return document.body.classList.contains('charListGrid') ? 'grid' : 'list';
+    if (img.closest('#HotSwapWrapper')) return 'fav';
+    if (img.closest('#chat')) return 'chat';
+    return null;
+}
+
+function rememberPicture(img, url) {
+    const spot = pictureSpot(img);
+    const info = img.dataset.stmuiThumb ? thumbInfo(img.dataset.stmuiThumb) : null;
+    if (spot && info) pictures.last.set(`${spot}|${info.type}|${info.file}`, url);
+}
+
+/**
+ * SillyTavern redraws its lists from scratch, with thumbnails. When this spot
+ * already showed a sharp picture, put it straight back (this runs before the
+ * page is drawn), so nothing flashes from blurry to sharp.
+ */
+function restoreKnownPicture(img) {
+    const src = img.getAttribute('src') ?? '';
+    const info = thumbInfo(src);
+    const spot = info && pictureSpot(img);
+    const url = spot && pictures.last.get(`${spot}|${info.type}|${info.file}`);
+    if (!url) return false;
+    img.dataset.stmuiThumb = src;
+    img.setAttribute('src', url);
+    return true;
+}
+
+/**
+ * Puts in new picture sources together, so the page restyles once and a list
+ * turns sharp in one go instead of picture by picture. Pictures made within
+ * about 100 ms of each other go in on the same frame.
+ */
 function swapPicture(img, url) {
     pictures.swaps.set(img, url);
     if (pictures.swapFrame) return;
-    pictures.swapFrame = requestAnimationFrame(() => {
+    pictures.swapFrame = -1;
+    window.setTimeout(() => requestAnimationFrame(() => {
         pictures.swapFrame = 0;
+        if (!pictures.swaps.size) return;
         const swaps = [...pictures.swaps];
         pictures.swaps.clear();
         for (const [image, src] of swaps) {
-            if (image.isConnected && (image.getAttribute('src') === image.dataset.stmuiThumb || thumbInfo(image.getAttribute('src') ?? ''))) image.setAttribute('src', src);
+            if (image.isConnected && (image.getAttribute('src') === image.dataset.stmuiThumb || thumbInfo(image.getAttribute('src') ?? ''))) {
+                image.setAttribute('src', src);
+                rememberPicture(image, src);
+            }
         }
-    });
+    }), 100);
 }
 
 function thumbInfo(src) {
@@ -4110,6 +4167,7 @@ function upgradePicture(img) {
     const animated = info.type === 'avatar' && settings.animatedPictures ? animatedPictureFor(info.file) : null;
     if (animated) {
         if (current !== animated) img.setAttribute('src', animated);
+        rememberPicture(img, animated);
         return;
     }
     if (!settings.sharpPictures) {
@@ -4158,6 +4216,7 @@ function scanPictures(root = document) {
     const images = root.matches?.('img') ? [root] : root.querySelectorAll?.('img') ?? [];
     for (const img of images) {
         const src = img.getAttribute('src') ?? '';
+        if (thumbInfo(src)) restoreKnownPicture(img);
         if (thumbInfo(src) || img.dataset.stmuiThumb) watchPicture(img);
     }
 }
@@ -4172,7 +4231,7 @@ function syncPictures() {
         pictures.seen = null;
         pictures.near.clear();
         pictures.swaps.clear();
-        cancelAnimationFrame(pictures.swapFrame);
+        pictures.last.clear();
         pictures.swapFrame = 0;
         // Put SillyTavern's own thumbnails back.
         for (const img of document.querySelectorAll('img[data-stmui-thumb]')) {
@@ -4204,6 +4263,7 @@ function syncPictures() {
                     // SillyTavern put a thumbnail back (re-render): upgrade again.
                     if (thumbInfo(img.getAttribute('src') ?? '')) {
                         img.dataset.stmuiThumb = img.getAttribute('src');
+                        if (restoreKnownPicture(img)) continue;
                         if (img.dataset.stmuiWatched) {
                             pictures.seen?.unobserve(img);
                             pictures.seen?.observe(img);
@@ -4488,6 +4548,34 @@ function onSwipedEvent(event) {
 
 const LONG_MESSAGE = 2500;
 
+/**
+ * "Faster long chats" skips drawing messages that are off screen and guesses
+ * their height until they are drawn. Scrolling up into a message drawn for the
+ * first time then changed its height, and the chat moved under your finger.
+ * So after a chat opens (or its messages change size) every message is drawn
+ * once, for one frame; the browser remembers each real height from then on.
+ */
+const fastChat = { timer: 0, width: 0 };
+
+function primeChatSizes(delay = 0) {
+    window.clearTimeout(fastChat.timer);
+    fastChat.timer = window.setTimeout(() => {
+        const chat = document.getElementById('chat');
+        if (!active || !settings.fastChat || !chat) return;
+        chat.classList.add('stmui-fast-prime');
+        // Drawn in the next frame (heights are remembered then), skipped again after it.
+        requestAnimationFrame(() => requestAnimationFrame(() => chat.classList.remove('stmui-fast-prime')));
+    }, delay);
+}
+
+function onChatWidthChange() {
+    const width = document.getElementById('chat')?.clientWidth ?? 0;
+    if (!width || width === fastChat.width) return;
+    fastChat.width = width;
+    // A new width wraps every message differently.
+    primeChatSizes(250);
+}
+
 function foldLongMessages() {
     if (!active || !settings.chatStyle || !settings.foldLong) {
         document.querySelectorAll('#chat .mes.stmui-long, #chat .mes.stmui-long-open').forEach(mes => mes.classList.remove('stmui-long', 'stmui-long-open'));
@@ -4495,10 +4583,12 @@ function foldLongMessages() {
         return;
     }
     const chat = ctx().chat ?? [];
+    let changed = false;
     for (const mes of document.querySelectorAll('#chat > .mes')) {
         const message = chat[Number(mes.getAttribute('mesid'))];
         const text = message?.extra?.display_text ?? message?.mes ?? '';
         const long = text.length > LONG_MESSAGE && !mes.classList.contains('last_mes') && !mes.querySelector('#curEditTextarea');
+        if (mes.classList.contains('stmui-long') !== long) changed = true;
         mes.classList.toggle('stmui-long', long);
         let button = mes.querySelector('.stmui-more-btn');
         if (long && !button) {
@@ -4517,6 +4607,8 @@ function foldLongMessages() {
             mes.classList.remove('stmui-long-open');
         }
     }
+    // Folding changes heights; let the browser remember the new ones.
+    if (changed) primeChatSizes();
 }
 
 // -- chat: search inside the chat
@@ -5449,7 +5541,15 @@ function syncExtras() {
     syncEditorState();
     syncServerWatch();
     syncManifest();
-    document.documentElement.classList.toggle('stmui-fast-chat', active && settings.fastChat);
+    const fastOn = active && settings.fastChat;
+    if (fastOn && !document.documentElement.classList.contains('stmui-fast-chat')) primeChatSizes();
+    document.documentElement.classList.toggle('stmui-fast-chat', fastOn);
+    if (fastOn) window.addEventListener('resize', onChatWidthChange);
+    else {
+        window.removeEventListener('resize', onChatWidthChange);
+        window.clearTimeout(fastChat.timer);
+        document.getElementById('chat')?.classList.remove('stmui-fast-prime');
+    }
     syncJumpButton();
     syncPersonaTabs();
     syncPromptNameBox();
@@ -5758,7 +5858,10 @@ function init() {
         restoreDraft();
         // A new chat starts at the bottom; hide the jump button until you scroll up.
         setTimeout(onChatScroll, 300);
+        // After the messages (and folding, 200 ms) are in.
+        primeChatSizes(400);
     });
+    if (event_types.MORE_MESSAGES_LOADED) eventSource?.on?.(event_types.MORE_MESSAGES_LOADED, () => primeChatSizes(400));
     if (event_types.MESSAGE_SENT) eventSource?.on?.(event_types.MESSAGE_SENT, clearDraft);
     // Reply buttons and folded messages follow whatever changes in the chat.
     let chatTimer = 0;
