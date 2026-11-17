@@ -1,5 +1,5 @@
 /**
- * Mobile UI themes.
+ * Pocket Tavern themes.
  *
  * A theme overrides SillyTavern's own --SmartTheme* colors (and our --stmui-*
  * tokens) with !important stylesheet rules, so the whole interface changes

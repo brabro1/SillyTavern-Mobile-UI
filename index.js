@@ -1,5 +1,5 @@
 /**
- * Mobile UI for SillyTavern
+ * Pocket Tavern for SillyTavern
  *
  * Turns SillyTavern on a phone into an app-style interface: a top app bar, a
  * bottom tab bar, full-screen pages that the Android back gesture closes, a
@@ -23,7 +23,7 @@ import { CHANGES, VERSION } from './changelog.js';
 
 const MODULE = 'mobileUI';
 const MODE_KEY = 'stmui_mode';
-const LOG = '[Mobile UI]';
+const LOG = '[Pocket Tavern]';
 
 const DEFAULTS = Object.freeze({
     enabled: true,
@@ -1604,7 +1604,7 @@ function openMoreSheet() {
                 }, !inChat),
                 isStandalone() ? null : row('download', 'Install as an app', () => installApp()),
                 row('star', "What's new", () => openWhatsNew()),
-                row('phone', 'Mobile UI settings', () => {
+                row('phone', 'Pocket Tavern settings', () => {
                     closeSheet(true);
                     openMobileSettings();
                 }),
@@ -3186,7 +3186,7 @@ async function showOriginal() {
 function setAutoTranslate(on) {
     settings.autoTranslate = on;
     saveSettings();
-    // Mobile UI translates new messages itself (faster); keep SillyTavern's own auto mode off so it is not done twice.
+    // Pocket Tavern translates new messages itself (faster); keep SillyTavern's own auto mode off so it is not done twice.
     const options = translateSettings();
     if (options && options.auto_mode !== 'none') {
         options.auto_mode = 'none';
@@ -3223,7 +3223,7 @@ function quickTranslate() {
 
 /**
  * SillyTavern's own "Translate Chat" in the ✨ menu translates one message at a
- * time. While Mobile UI is on, that item does the same one-tap translate as the
+ * time. While Pocket Tavern is on, that item does the same one-tap translate as the
  * button in the top bar.
  */
 function onWandTranslateClick(event) {
@@ -3423,7 +3423,7 @@ function buildCharToolbar() {
         shieldFromDrawerAutoClose(bar);
         top.prepend(bar);
     }
-    // SillyTavern's search box moves into the row (it goes back when Mobile UI is turned off).
+    // SillyTavern's search box moves into the row (it goes back when Pocket Tavern is turned off).
     const slot = bar.querySelector('.stmui-ctool-search');
     if (search.parentElement !== slot) slot.append(search);
     updateCharToolbar();
@@ -4234,7 +4234,7 @@ let pendingAnimated = null;
 
 /**
  * SillyTavern's own picture picker (tap the character's picture). If the file
- * is animated, Mobile UI keeps the moving version next to the still card
+ * is animated, Pocket Tavern keeps the moving version next to the still card
  * picture SillyTavern saves; a still picture replaces any earlier animation.
  */
 async function onAvatarPicked(event) {
@@ -5260,7 +5260,7 @@ function isStandalone() {
     return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
 }
 
-/** Points Chrome at a manifest with a proper home-screen icon while Mobile UI is on. */
+/** Points Chrome at a manifest with a proper home-screen icon while Pocket Tavern is on. */
 function syncManifest() {
     const link = document.querySelector('link[rel="manifest"]');
     if (!link) return;
@@ -5307,7 +5307,7 @@ function openWhatsNew(since) {
     const entries = CHANGES.filter(entry => !since || compareVersions(entry.version, since) > 0);
     showSheet(new MenuSheet({
         title: t("What's new"),
-        subtitle: t('Mobile UI {version}', { version: VERSION }),
+        subtitle: t('Pocket Tavern {version}', { version: VERSION }),
         fill: body => {
             for (const entry of (entries.length ? entries : CHANGES.slice(0, 1))) {
                 body.append(h('p', { class: 'stmui-menu-heading', text: entry.version }));
@@ -5500,7 +5500,7 @@ function updateStatusLine() {
     if (!settings.enabled) text = 'Off. The original interface is shown.';
     else if (mode === 'never') text = 'Turned off on this device. The original interface is shown.';
     else if (mode === 'always') text = 'Always on for this device.';
-    else text = detectPhone() ? 'Phone detected. Mobile UI is on.' : 'Not a phone, so the original interface is shown.';
+    else text = detectPhone() ? 'Phone detected. Pocket Tavern is on.' : 'Not a phone, so the original interface is shown.';
     line.textContent = text;
     line.classList.toggle('stmui-status-active', active);
 }
@@ -5527,11 +5527,11 @@ function buildSettings() {
     const panel = h('div', { id: 'stmui_settings', class: 'stmui-settings extension_container' }, [
         h('div', { class: 'inline-drawer' }, [
             h('div', { class: 'inline-drawer-toggle inline-drawer-header' }, [
-                h('b', { text: 'Mobile UI' }),
+                h('b', { text: 'Pocket Tavern' }),
                 h('div', { class: 'inline-drawer-icon fa-solid fa-circle-chevron-down down' }),
             ]),
             h('div', { class: 'inline-drawer-content' }, [
-                check('stmui_enabled', 'Enable Mobile UI', 'Off brings back the original interface.'),
+                check('stmui_enabled', 'Enable Pocket Tavern', 'Off brings back the original interface.'),
                 h('p', { id: 'stmui_status', class: 'stmui-status-line' }),
                 h('label', { class: 'stmui-field', for: 'stmui_mode' }, [
                     h('span', { class: 'stmui-field-label', text: 'Use it on this device' }),

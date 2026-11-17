@@ -1,0 +1,48 @@
+name: Bug report
+description: Something looks wrong or doesn't work.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping! Pocket Tavern is in alpha, so bug reports are really useful.
+        Please don't paste private chats, API keys or personal data.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or video
+      description: Drag a screenshot here. It helps the most.
+  - type: input
+    id: version
+    attributes:
+      label: Pocket Tavern version
+      description: Shown under More → What's new.
+      placeholder: "2.10.0"
+    validations:
+      required: true
+  - type: input
+    id: st
+    attributes:
+      label: SillyTavern version
+      placeholder: "1.19.0"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Phone and browser
+      placeholder: "Pixel 7, Chrome 142, SillyTavern running in Termux"
+    validations:
+      required: true
+  - type: textarea
+    id: extensions
+    attributes:
+      label: Other extensions you use
+      description: Optional. Some extensions change the same parts of the page.

@@ -1,7 +1,7 @@
 {
     "name": "SillyTavern",
     "short_name": "SillyTavern",
-    "description": "SillyTavern with the Mobile UI app layout.",
+    "description": "SillyTavern with the Pocket Tavern app layout.",
     "id": "/",
     "start_url": "/",
     "scope": "/",

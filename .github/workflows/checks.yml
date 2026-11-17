@@ -39,10 +39,10 @@ jobs:
         working-directory: st
         run: npm ci --no-audit --no-fund
 
-      - name: Add Mobile UI to SillyTavern
+      - name: Add Pocket Tavern to SillyTavern
         run: |
-          mkdir -p st/public/scripts/extensions/third-party/SillyTavern-Mobile-UI
-          rsync -a --exclude .git --exclude tests extension/ st/public/scripts/extensions/third-party/SillyTavern-Mobile-UI/
+          mkdir -p st/public/scripts/extensions/third-party/SillyTavern-PocketTavern
+          rsync -a --exclude .git --exclude tests extension/ st/public/scripts/extensions/third-party/SillyTavern-PocketTavern/
 
       - name: Start SillyTavern
         working-directory: st

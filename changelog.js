@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.10.0',
+        items: [
+            "Mobile UI has a new name: Pocket Tavern. Same extension, same settings, nothing to do.",
+            "A new logo and home-screen icon.",
+        ],
+    },
+    {
         version: '2.9.0',
         items: [
             "One-tap translate: tap the translate button to show the chat in your language, tap again for the original. Hold it to pick another language. A small tag on the button shows which language.",

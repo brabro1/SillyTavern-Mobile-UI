@@ -19,6 +19,7 @@ PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 SHORTCUTS="$HOME/.shortcuts"
 BOOT_DIR="$HOME/.termux/boot"
 BASHRC="$HOME/.bashrc"
+# The markers keep the old name so --remove also finds blocks written by older versions.
 MARK_BEGIN="# >>> SillyTavern autostart (Mobile UI) >>>"
 MARK_END="# <<< SillyTavern autostart (Mobile UI) <<<"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -124,7 +125,7 @@ mkdir -p "$SHORTCUTS/icons"
 
 cat > "$SHORTCUTS/SillyTavern" <<EOF
 #!$PREFIX/bin/bash
-# Start SillyTavern if it is not running, then open it. Made by Mobile UI's setup.sh.
+# Start SillyTavern if it is not running, then open it. Made by Pocket Tavern's setup.sh.
 ST_DIR="$ST_DIR"
 EOF
 cat >> "$SHORTCUTS/SillyTavern" <<'EOF'
@@ -172,7 +173,7 @@ EOF
 
 cat > "$SHORTCUTS/Stop SillyTavern" <<EOF
 #!$PREFIX/bin/bash
-# Stop SillyTavern. Made by Mobile UI's setup.sh.
+# Stop SillyTavern. Made by Pocket Tavern's setup.sh.
 if pkill -f "node server.js"; then echo "SillyTavern stopped."; else echo "SillyTavern was not running."; fi
 command -v termux-wake-unlock > /dev/null 2>&1 && termux-wake-unlock
 sleep 1
@@ -183,12 +184,12 @@ ok "Added the 'SillyTavern' and 'Stop SillyTavern' shortcuts"
 
 # The icon: next to this script, inside SillyTavern's extensions, or from GitHub.
 ICON=""
-for candidate in "$HERE/../assets/icon-192.png"     "$ST_DIR"/data/*/extensions/*Mobile-UI*/assets/icon-192.png     "$ST_DIR"/public/scripts/extensions/third-party/*Mobile-UI*/assets/icon-192.png; do
+for candidate in "$HERE/../assets/icon-192.png"     "$ST_DIR"/data/*/extensions/*PocketTavern*/assets/icon-192.png     "$ST_DIR"/data/*/extensions/*Mobile-UI*/assets/icon-192.png     "$ST_DIR"/public/scripts/extensions/third-party/*PocketTavern*/assets/icon-192.png     "$ST_DIR"/public/scripts/extensions/third-party/*Mobile-UI*/assets/icon-192.png; do
     if [ -f "$candidate" ]; then ICON="$candidate"; break; fi
 done
 if [ -n "$ICON" ]; then
     cp "$ICON" "$SHORTCUTS/icons/SillyTavern.png"
-elif ! curl -fsSL -m 20 -o "$SHORTCUTS/icons/SillyTavern.png" "https://raw.githubusercontent.com/brabro1/SillyTavern-Mobile-UI/main/assets/icon-192.png"; then
+elif ! curl -fsSL -m 20 -o "$SHORTCUTS/icons/SillyTavern.png" "https://raw.githubusercontent.com/brabro1/SillyTavern-PocketTavern/main/assets/icon-192.png"; then
     rm -f "$SHORTCUTS/icons/SillyTavern.png"
 fi
 [ -f "$SHORTCUTS/icons/SillyTavern.png" ] && ok "Added the SillyTavern icon for the shortcut"
@@ -215,7 +216,7 @@ if ask "Also start SillyTavern when the phone turns on? (needs the Termux:Boot a
     mkdir -p "$BOOT_DIR"
     cat > "$BOOT_DIR/start-sillytavern" <<EOF
 #!$PREFIX/bin/bash
-# Start SillyTavern at boot. Made by Mobile UI's setup.sh.
+# Start SillyTavern at boot. Made by Pocket Tavern's setup.sh.
 termux-wake-lock
 cd "$ST_DIR" && nohup node server.js --browserLaunchEnabled false > "\$HOME/sillytavern.log" 2>&1 &
 EOF

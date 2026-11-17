@@ -1,5 +1,5 @@
 /**
- * Translations for Mobile UI's own labels. The English text is the key, so a
+ * Translations for Pocket Tavern's own labels. The English text is the key, so a
  * missing translation simply shows English. SillyTavern's own interface is
  * translated by SillyTavern.
  */

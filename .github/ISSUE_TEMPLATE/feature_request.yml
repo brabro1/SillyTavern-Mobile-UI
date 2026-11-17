@@ -1,0 +1,16 @@
+name: Idea or feature request
+description: Suggest something that would make SillyTavern nicer on a phone.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What would you like, and what would it help with?
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: Optional. A sketch, a screenshot or another app that does it well.

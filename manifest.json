@@ -1,12 +1,12 @@
 {
-    "display_name": "Mobile UI",
+    "display_name": "Pocket Tavern",
     "loading_order": 50,
     "requires": [],
     "optional": [],
     "js": "index.js",
     "css": "style.css",
     "author": "brabro1",
-    "version": "2.9.0",
-    "homePage": "https://github.com/brabro1/SillyTavern-Mobile-UI",
+    "version": "2.10.0",
+    "homePage": "https://github.com/brabro1/SillyTavern-PocketTavern",
     "auto_update": false
 }

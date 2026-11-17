@@ -1,5 +1,5 @@
-// Opens SillyTavern as a phone (Pixel 7) and walks through Mobile UI's main
-// features. Needs a running SillyTavern with Mobile UI installed:
+// Opens SillyTavern as a phone (Pixel 7) and walks through Pocket Tavern's main
+// features. Needs a running SillyTavern with Pocket Tavern installed:
 //   ST_URL=http://127.0.0.1:8000 node phone.mjs
 // Set CHROME_CHANNEL=chrome to use an installed Chrome instead of Playwright's.
 import { chromium, devices } from 'playwright';
@@ -12,7 +12,7 @@ const page = await context.newPage();
 
 const extensionErrors = [];
 page.on('pageerror', error => {
-    if (/Mobile-UI|ST-Mobile-UI|stmui/i.test(`${error.stack ?? ''} ${error.message}`)) extensionErrors.push(error.message);
+    if (/Mobile-UI|PocketTavern|stmui/i.test(`${error.stack ?? ''} ${error.message}`)) extensionErrors.push(error.message);
 });
 
 let failed = 0;
@@ -46,9 +46,9 @@ const dismissPopups = async () => {
     }
 };
 
-console.log(`Mobile UI phone test on ${ST_URL}\n`);
+console.log(`Pocket Tavern phone test on ${ST_URL}\n`);
 
-await step('Mobile UI turns on for a phone', async () => {
+await step('Pocket Tavern turns on for a phone', async () => {
     await page.goto(ST_URL, { waitUntil: 'domcontentloaded' });
     await until(() => document.documentElement.classList.contains('stmui-on'), null, 60000);
     await page.waitForTimeout(2500);
@@ -189,7 +189,7 @@ await step('banner shows when the server stops answering', async () => {
     await until(() => !document.querySelector('.stmui-banner:not(.stmui-banner-ok)'));
 });
 
-await step('turning Mobile UI off leaves nothing behind, and on again works', async () => {
+await step('turning Pocket Tavern off leaves nothing behind, and on again works', async () => {
     const off = await page.evaluate(async () => {
         document.getElementById('stmui_enabled').click();
         await new Promise(resolve => setTimeout(resolve, 600));
@@ -202,7 +202,7 @@ await step('turning Mobile UI off leaves nothing behind, and on again works', as
     await until(() => document.documentElement.classList.contains('stmui-on'));
 });
 
-await step('no errors from Mobile UI', async () => {
+await step('no errors from Pocket Tavern', async () => {
     if (extensionErrors.length) throw new Error(extensionErrors.join(' | '));
 });
 

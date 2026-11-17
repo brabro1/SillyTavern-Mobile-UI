@@ -1,217 +1,172 @@
-# Mobile UI for SillyTavern
+<a href="https://github.com/brabro1/SillyTavern-PocketTavern"><img src="docs/brand/banner.png" alt="Pocket Tavern: SillyTavern, made for your phone" width="100%"></a>
 
-Makes SillyTavern on your phone look and feel like a real app: tabs at the bottom, your character at the top, big readable text, and buttons sized for your thumb.
+# Pocket Tavern
 
-| Before | After |
-| :---: | :---: |
-| ![SillyTavern on a phone without Mobile UI](docs/screenshots/before.jpg) | ![The same chat with Mobile UI](docs/screenshots/chat.jpg) |
+[![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbrabro1%2FSillyTavern-PocketTavern%2Fmain%2Fmanifest.json&query=%24.version&label=alpha&color=E8783A)](CHANGELOG.md)
+[![SillyTavern](https://img.shields.io/badge/SillyTavern-1.19%2B-6c4bd8)](https://github.com/SillyTavern/SillyTavern)
+[![Platform](https://img.shields.io/badge/made%20for-Android%20%C2%B7%20Termux-3ddc84)](#requirements)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-It only turns on for phones. On your computer SillyTavern looks the same as always.
+**Pocket Tavern makes SillyTavern on your phone look and feel like a real app.** Tabs at the bottom, your character at the top, big readable text, and buttons sized for your thumb. It's a SillyTavern extension that only switches on for phones. On your computer SillyTavern stays exactly as it is.
 
-## What you get
+> [!WARNING]
+> **Pocket Tavern is in alpha.** It's still being built, so things can change at any time, without notice. Expect bugs, rough edges and features that may move, change or disappear between updates. Your characters, chats and lorebooks are never changed, but please keep your own backups and don't rely on it as if it were finished. If something breaks, [tell me](#feedback-and-bug-reports).
 
-**Tabs at the bottom.** Chat, Characters, Lorebooks and Presets are one tap away. Everything else (API, Personas, Formatting, Settings, Backgrounds, Extensions) is under **More**.
+> [!IMPORTANT]
+> After installing or updating, **reload the SillyTavern page**. If the old look is still there, reload once more.
 
-**Your character at the top.** See who you're talking to and whether you're connected. Tap the name to open the character card. Buttons on the right open your chat history or start a new chat.
+## Screenshots
 
-**The back gesture works.** Swiping back closes whatever is open (a menu, a popup, a page) instead of leaving SillyTavern.
-
-**A cleaner chat.** Messages sit in soft cards with bigger text. The message box is rounded and the send button is easy to hit. While you type, the tabs step aside so you get more room.
-
-**Pages that fit your screen.** Every panel opens full-screen with a clear title and a back arrow. Settings are grouped into cards, sliders are full-width with the number beside them, and nothing spills off the side of the screen.
-
-**Menus and popups that come up from the bottom.** The ☰ menu, confirm boxes and chat history slide up from the bottom of the screen, within reach of your thumb.
-
-**Easy lorebook picking.** Pick lorebooks from a searchable list with big checkboxes instead of the tiny two-line box. Remove one with the ✕ on its chip. It works for global, character, chat and persona lorebooks.
-
-**Picking a character opens their chat.** Tap someone in the Characters list and you're in the conversation.
-
-**A Characters page made for your thumb.**
-- One tidy row at the top: search, **Sort**, **Grid/List**, and a **＋** button for new characters, imports, groups and selecting several.
-- Your favorites sit in a row above it, with their names.
-- An A–Z strip on the right jumps straight to a letter (slide your finger along it).
-- Grid view shows everyone as full picture cards with the name on the picture; list view is a calm list like your contacts.
-
-**Sharp pictures, even animated ones.** Character pictures show in full quality instead of SillyTavern's small blurry thumbnails. Only the pictures on your screen load, scaled to fit, so long lists stay fast. Want a moving picture? Change a character's picture the usual way (tap the picture on the character card) and choose a GIF or an animated WebP. Mobile UI notices it's animated and plays it in the list, in the chat and in the top bar. To go back, pick a normal picture the same way.
-
-**Character cards that are easy to edit.** Opening a character shows a big picture with the name under it. Below are labeled buttons (Favorite, Advanced, Lore, Chat lore, Personas, Export, Duplicate, Delete) and three tabs: **Description**, **First message**, and **Notes & tags**. Each tab gives its text the whole page, so you don't have to scroll past everything else.
-
-**Search everything.** The 🔍 on the start screen (or the search bar at the top of **More**) finds characters, chats (by name or last message), lorebooks and settings in one place.
-
-**12 themes to choose from.** Midnight, AMOLED, Mocha, Ocean, Forest, Sakura, Ember, Nord and Neon are dark. Paper, Cloud and Lavender are light. Each one recolors all of SillyTavern, and the new look spreads out from where you tap. Pick **Your theme** to keep your own SillyTavern colors. Your saved SillyTavern theme is never changed.
-
-**New icons everywhere.** A matching set of rounded line icons replaces SillyTavern's mixed icons in the tabs, menus and every settings page.
-
-**Smooth, light animations.** Pages slide in, the tab highlight glides between tabs, sheets spring up, and new messages fade in. Only cheap effects are used, so they stay smooth on a phone. Pick **Light** or **Off** if your phone is older or you prefer less motion.
-
-**A send button with a little launch.** Tap send and the paper plane shoots off with a ripple, then lands back in the button.
-
-**Edit messages on a full page.** Tap ✎ and the message opens full screen with a big text box. The tools sit in one row, and Cancel and a big Save sit at the bottom, right above the keyboard. The back gesture saves your changes.
-
-**Switch things in two taps.** The ⚡ button at the top opens Quick switch, where you can change your persona, connection profile, model or preset without digging through pages. Hold the avatar in the top bar to switch persona straight away.
-
-**Find any setting.** On the Presets, API, Formatting, Settings and Extensions pages, the 🔍 at the top searches every option by name. Tap a result and it scrolls there and lights up.
-
-**Translate the chat.** Tap the translate button at the top of a chat and the whole chat switches to your language. Tap it again for the original. Hold the button (or use **More → Translate chat**) to pick the language; a small tag on the button shows which one a tap gives. **Translate Chat** in SillyTavern's ✨ menu does the same. There are over 100, with search and your recent picks at the top. Even a long chat changes in about a second, starting with the messages on screen, and bold, italics and line breaks are kept. It sends the text straight from your phone to Google Translate, so no account or key is needed. Your original messages are kept. Turn on **Translate new replies too** to get every new reply in that language. (It uses SillyTavern's built-in Chat Translation, so you can switch to DeepL or another service there.)
-
-**Know when Termux stopped.** If SillyTavern stops answering, for example because Android closed Termux, a banner says so. It goes away by itself when the server is back.
-
-**Install it like an app.** **More → Install as an app** puts SillyTavern on your home screen with its own icon. It then opens full screen, without the browser bar.
-
-**Back to your recent chats in one tap.** The 🏠 button at the top left of a chat (or **More → Recent chats**) takes you to the start screen with all your recent chats.
-
-**Full-screen pictures.** Tap an avatar in the chat to see the picture full screen and full size. Pinch or double-tap to zoom, drag to look around, rotate, open it in a new tab or save it. Pull down or use the back gesture to close.
-
-**Clear notifications.** Messages and errors show as cards with an icon and a color: green for done, blue for info, orange for warnings, red for errors. Swipe one sideways to dismiss it.
-
-**Recent chats that are easy to read.** On the start screen each chat is a card: the character, the chat's name, the date, the last message, and pin, rename and delete buttons. Search your chats from the box at the top. Pinned chats get their own section. Swipe a chat right to pin it, or left to delete it (SillyTavern asks first).
-
-**Chat history by date.** The chat history list is grouped into Today, Yesterday, This week and earlier months.
-
-**Personas on two tabs.** **All personas** to pick who you are, **Edit** to change the current one, with its picture and name at the top. No more scrolling past the whole list to reach the description.
-
-**Quick buttons after a reply.** Regenerate, Continue and Another version sit right above the message box when the character has answered. Or drag the last reply to the left for another version, and to the right to go back.
-
-**Search inside a chat.** **More → Search this chat** finds any word in the conversation, even in older messages, and jumps between the matches.
-
-**See how full the context is.** A thin line under the top bar fills up as the chat uses more of the model's memory. **Quick switch** shows the exact numbers.
-
-**Long messages fold up.** Very long older messages show the start and a **Show more** button. If you scroll up while a reply is coming in, a **New text** button takes you back down.
-
-**Pick your chat look.** **More → Themes → Chat look**: Cards, Bubbles (your messages on the right, like a messenger) or Flat.
-
-**Lorebook entries as cards.** Each entry shows its switch, its title and its keywords as small chips. Tap one and it opens on its own page; back closes it.
-
-**Easier presets.** Sliders have − and + buttons for small changes, prompt triggers are chips you tap, and the handles for reordering prompts are bigger.
-
-**A prompt editor that fits.** Editing a prompt in Presets opens a full page. Long names wrap onto several lines, and Close, Reset and a big Save button stay at the bottom. The back arrow and the back gesture close it.
-
-**Phone features** (under **More → Phone features**):
-
-- **Reply buttons**, **Drag to swipe**, **Fold long messages** and **Context meter:** the chat helpers above, each one can be switched off.
-- **Lorebook entry cards:** switch off to get SillyTavern's own lorebook entries back.
-- **Long-press for message menu:** hold a message to open its menu. Turn it off if you'd rather long-press to select text.
-- **Connection check:** the banner when SillyTavern stops answering.
-- **Faster long chats:** messages far off screen aren't drawn until you scroll to them.
-- **Message menu:** tap ⋯ on a message for every action with its name: copy, edit, branch, translate, delete and more.
-- **Jump to latest:** a round button takes you back to the newest message when you scroll up.
-- **Keep unsent messages:** what you type is kept for each chat, even if the browser reloads.
-- **Keep screen on while replying:** the screen doesn't turn off while a reply is being written.
-- **Chat text size:** Small, Normal, Large or Extra large.
-- **Picture viewer** and **Nicer notifications:** switch these off to get SillyTavern's originals back.
-- **Vibration:** a short buzz on send and tab taps.
-
-| Character card | Message editor | Translated chat | Recent chats | Prompt editor | Personas |
-| :---: | :---: | :---: | :---: | :---: | :---: |
-| ![Character card](docs/screenshots/card.jpg) | ![Message editor](docs/screenshots/editor.jpg) | ![Chat translated to Spanish](docs/screenshots/translate.jpg) | ![Recent chats on the start screen](docs/screenshots/recent.jpg) | ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) |
-
-| Themes | Midnight | Paper |
+| Chat | Characters | Character card |
 | :---: | :---: | :---: |
-| ![Theme picker](docs/screenshots/themes.jpg) | ![Midnight theme](docs/screenshots/midnight.jpg) | ![Paper theme](docs/screenshots/light.jpg) |
+| ![Chat with the top bar and bottom tabs](docs/screenshots/chat.jpg) | ![Characters as picture cards with the A–Z strip](docs/screenshots/characters.jpg) | ![Character card with tabs](docs/screenshots/card.jpg) |
+| **Themes** | **Translated chat** | **More** |
+| ![Theme picker](docs/screenshots/themes.jpg) | ![Chat translated to Spanish](docs/screenshots/translate.jpg) | ![More menu](docs/screenshots/more.jpg) |
 
-| Characters (grid) | More | Lorebooks |
+<details>
+<summary>More screenshots</summary>
+
+| Before (no Pocket Tavern) | Recent chats | Message editor |
 | :---: | :---: | :---: |
-| ![Characters as picture cards with the A–Z strip](docs/screenshots/characters.jpg) | ![More menu](docs/screenshots/more.jpg) | ![Lorebook picker](docs/screenshots/lorebooks.jpg) |
+| ![SillyTavern on a phone without Pocket Tavern](docs/screenshots/before.jpg) | ![Recent chats on the start screen](docs/screenshots/recent.jpg) | ![Message editor](docs/screenshots/editor.jpg) |
+| **Lorebooks** | **Presets** | **Prompt editor** |
+| ![Lorebook picker](docs/screenshots/lorebooks.jpg) | ![Presets page](docs/screenshots/presets.jpg) | ![Prompt editor](docs/screenshots/prompt-editor.jpg) |
+| **Personas** | **Midnight theme** | **Paper theme** |
+| ![Personas](docs/screenshots/personas.jpg) | ![Midnight theme](docs/screenshots/midnight.jpg) | ![Paper theme](docs/screenshots/light.jpg) |
 
-| Presets | ☰ menu |
-| :---: | :---: |
-| ![Presets page](docs/screenshots/presets.jpg) | ![Options menu](docs/screenshots/menu.jpg) |
+</details>
 
-## Install
+## Highlights ✨
+
+### Feels like an app
+- **Tabs at the bottom:** Chat, Characters, Lorebooks and Presets are one tap away. Everything else is under **More**.
+- **Your character at the top:** see who you're talking to and whether you're connected. Tap the name for the character card.
+- **The back gesture works:** swiping back closes the open menu, popup or page instead of leaving SillyTavern.
+- **Pages that fit:** every panel opens full screen with a title and a back arrow. Menus and popups slide up from the bottom, within reach of your thumb.
+- **Install it like an app:** **More → Install as an app** puts SillyTavern on your home screen, full screen without the browser bar.
+
+### Chatting
+- **A cleaner chat:** soft message cards (or bubbles, or flat), bigger text and a rounded message box.
+- **Reply buttons:** Regenerate, Continue and Another version right above the message box. Or drag the last reply sideways to swipe.
+- **Edit on a full page:** tap ✎ and the message opens full screen, with Save right above the keyboard.
+- **Search this chat:** find any word in the conversation and jump between matches.
+- **Context meter:** a thin line under the top bar shows how full the model's memory is.
+- **One-tap translate:** tap the translate button to see the chat in your language, tap again for the original. Hold it to pick a language. Even long chats change in about a second.
+- **Full-screen pictures:** tap an avatar to see it full size. Pinch to zoom, rotate or save.
+
+### Characters, lorebooks and presets
+- **Characters page made for your thumb:** search, sort, grid or list, favorites on top and an A–Z strip for jumping.
+- **Sharp pictures, even animated ones:** full-quality pictures instead of blurry thumbnails, and GIF or animated WebP pictures that move.
+- **Character cards with tabs:** Description, First message and Notes & tags, each with the whole page.
+- **Easy lorebook picking:** a searchable list with big checkboxes. Lorebook entries show as cards with keyword chips.
+- **Easier presets:** − and + buttons on sliders, prompt triggers as chips and a prompt editor that fits the screen.
+
+### Everything else
+- **12 themes:** 9 dark and 3 light, or keep your own SillyTavern colors. New rounded icons and smooth, light animations.
+- **Quick switch (⚡):** change persona, connection profile, model or preset in two taps.
+- **Search everything:** characters, chats, lorebooks and settings in one search box. On settings pages, 🔍 finds any option by name.
+- **Know when Termux stopped:** a banner shows when SillyTavern stops answering and goes away when it's back.
+- **Your language:** Pocket Tavern's menus come in English, Spanish, Portuguese, Russian, Chinese, Japanese and Arabic.
+
+Every helper can be switched off under **More → Phone features**. The full list of changes is in [CHANGELOG.md](CHANGELOG.md).
+
+## Requirements
+
+- **SillyTavern 1.19** or newer.
+- **A phone browser.** It's built and checked with Chrome on Android. Other up-to-date phone browsers should work but get less testing.
+- **Git** if you install from Termux (`pkg install git`).
+
+## Installation
 
 1. Open SillyTavern on your phone.
-2. Tap the **Extensions** icon (the stacked cubes in the top bar), then **Install extension**.
+2. Tap the **Extensions** icon (the stacked cubes), then **Install extension**.
 3. Paste this link and tap install:
    ```
-   https://github.com/brabro1/SillyTavern-Mobile-UI
+   https://github.com/brabro1/SillyTavern-PocketTavern
    ```
 4. Reload the page.
 
-**Or from Termux:**
+<details>
+<summary>Install from Termux instead</summary>
 
 ```bash
 cd ~/SillyTavern/data/default-user/extensions
-git clone https://github.com/brabro1/SillyTavern-Mobile-UI
+git clone https://github.com/brabro1/SillyTavern-PocketTavern
 ```
 
-Then reload SillyTavern in your browser. (Need git? Run `pkg install git` first.)
+Then reload SillyTavern in your browser.
+
+</details>
+
+**Phone not detected?** Open **More → Pocket Tavern settings** and set "Use it on this device" to **Always on**.
+
+### Updating
+
+**More → Extensions → Manage extensions**, then tap update next to Pocket Tavern. Reload the page afterwards. After an update a short **What's new** list shows once.
+
+### Turning it off or uninstalling
+
+To pause it, untick **Enable Pocket Tavern** in its settings and you get the normal SillyTavern back. To remove it, go to **More → Extensions → Manage extensions** and delete Pocket Tavern.
 
 ## Start SillyTavern with one tap (Android)
 
-Tired of opening Termux and typing `cd SillyTavern` and `node server.js` every time? Set this up once and you get a SillyTavern icon on your home screen. Tap it and SillyTavern starts (if it isn't running yet) and opens in your browser as soon as it's ready.
+Set this up once and you get a SillyTavern icon on your home screen. Tap it and SillyTavern starts in Termux (if it isn't running yet) and opens in your browser when it's ready.
 
-1. Install **Termux:Widget** from the same place you got Termux (for example F-Droid). Termux and Termux:Widget must come from the same store.
-2. In Termux, run this once:
+1. Install **Termux:Widget** from the same place you got Termux (for example F-Droid).
+2. In Termux, run this once (use the folder name you see in your extensions folder):
    ```bash
-   bash ~/SillyTavern/data/default-user/extensions/SillyTavern-Mobile-UI/termux/setup.sh
+   bash ~/SillyTavern/data/default-user/extensions/SillyTavern-PocketTavern/termux/setup.sh
    ```
-   It asks two questions:
-   - **Start SillyTavern whenever you open Termux?** Yes is a good choice.
-   - **Start it when the phone turns on?** This needs the Termux:Boot app.
-3. Long-press an empty spot on your home screen, pick **Widgets → Termux:Widget**, and choose **SillyTavern**. (Or long-press the Termux:Widget icon and drag the SillyTavern shortcut out.)
+   It asks whether to start SillyTavern whenever you open Termux, and when the phone turns on (that needs Termux:Boot).
+3. Long-press your home screen, pick **Widgets → Termux:Widget**, and choose **SillyTavern**.
 
-There's also a **Stop SillyTavern** shortcut. In Android's settings, set Termux's battery use to **Unrestricted** so Android doesn't close it in the background.
-
-If you installed SillyTavern somewhere else, add `--dir` and the folder, for example `--dir ~/ST`. To undo everything, run the same command with `--remove` at the end.
-
-## Update
-
-In SillyTavern: **More → Extensions → Manage extensions**, then tap update next to Mobile UI.
-
-Or in Termux:
-
-```bash
-cd ~/SillyTavern/data/default-user/extensions/SillyTavern-Mobile-UI
-git pull
-```
-
-Reload the page afterwards. If you still see the old look, reload once more. Chrome sometimes keeps the old files for a moment.
-
-## Themes
-
-Tap **More → Themes**. Tap any theme to switch right away. Below the themes you can also choose:
-
-- **Theme background**: use the theme's backdrop, or keep your own chat background picture.
-- **Modern font**: use your phone's own crisp system font.
-- **New icons**: the rounded line icons, or SillyTavern's originals.
-- **Animations**: **Smooth** (everything), **Light** (quick fades, no blur, faster on older phones) or **Off**.
-
-## Phone features
-
-Tap **More → Phone features** to choose the chat text size and switch each helper on or off. All of them are on to start with.
+There's also a **Stop SillyTavern** shortcut. In Android's settings, set Termux's battery use to **Unrestricted** so Android doesn't close it in the background. Installed SillyTavern somewhere else? Add `--dir ~/your-folder`. To undo everything, run the same command with `--remove`.
 
 ## Settings
 
-Find them under **More → Mobile UI settings**. Each part can be switched on or off:
+- **More → Themes:** theme, chat look (Cards, Bubbles, Flat), theme background, modern font, new icons and animations (Smooth, Light or Off).
+- **More → Phone features:** chat text size and every helper, one switch each.
+- **More → Pocket Tavern settings:** turn it all on or off, choose when it switches on (Automatic, Always on, Off) and the bigger building blocks like the bottom tabs and touch-friendly panels.
 
-| Setting | What it does |
+## Compatibility
+
+| | Status |
 | --- | --- |
-| Enable Mobile UI | Turns everything on or off. Off gives you the normal SillyTavern back. |
-| Use it on this device | **Automatic** (phones only), **Always on** or **Off**. This is saved per device. |
-| Theme, Animations, Theme background, Modern font, New icons | Same choices as in **More → Themes**. |
-| Chat text size, Reply buttons, Drag to swipe, Fold long messages, Context meter, Lorebook entry cards, Sharp character pictures, Animated pictures, New character pages, Chat list helpers, Long-press for message menu, Connection check, Faster long chats, Message menu, Jump to latest, Keep unsent messages, Keep screen on while replying, Picture viewer, Nicer notifications, Send animation, Vibration | Same choices as in **More → Phone features**. |
-| App navigation | The top bar and the bottom tabs. |
-| Modern chat look | Message cards, bigger text, rounded message box. |
-| Touch-friendly panels | Bigger buttons and sliders, roomier settings, menus from the bottom. |
-| Back gesture closes panels | Android back closes the open page, popup or menu first. |
-| Easy lorebook picker | The searchable lorebook list. |
-| Lorebooks shortcut in the ✨ menu | Opens the lorebook list from the chat. |
-| Searchable long dropdowns | Experimental: long dropdowns (models, presets) get the same searchable list. Off by default. |
+| SillyTavern 1.19 | ✅ Built and tested |
+| Older SillyTavern | Not supported |
+| Chrome on Android (also with Termux) | ✅ Main target |
+| Other phone browsers | Should work, less tested |
+| Computers and tablets | Stays off, unless you choose **Always on** |
+| Other extensions | Work alongside it. Extensions with their own panels show up under **More**. |
 
-**Phone not detected?** Set "Use it on this device" to **Always on**.
+## Privacy and your data
 
-## Good to know
+- Pocket Tavern only changes how SillyTavern looks and where buttons are. Your characters, chats, lorebooks and saved SillyTavern theme are never changed.
+- Its settings are saved with your SillyTavern settings. Unsent messages are kept in your browser.
+- **Translate** sends the chat text from your phone to Google Translate, or to the service you picked in SillyTavern's Chat Translation. Nothing else is sent anywhere.
 
-- Your characters, chats and lorebooks are never changed. Mobile UI only changes how things look and where buttons are.
-- It works alongside your other extensions. Extensions that add their own panels show up under **More**.
-- Made for SillyTavern 1.19. Use an up-to-date browser; it was built and checked with Chrome.
-- Mobile UI's own menus follow SillyTavern's language: English, Spanish, Portuguese, Russian, Chinese, Japanese or Arabic (right to left). SillyTavern's own pages are translated by SillyTavern.
-- After an update, a short **What's new** list appears once. You can open it again from **More**. The full list of changes is in [CHANGELOG.md](CHANGELOG.md).
+## Status and roadmap
 
-## Uninstall
+Pocket Tavern is in **alpha**: the main pages are in place, but parts are still being reworked and tested on more phones. Ideas are welcome.
 
-**More → Extensions → Manage extensions**, then delete Mobile UI. To just pause it, untick **Enable Mobile UI**.
+## Feedback and bug reports
+
+Found a bug or have an idea? [Open an issue](https://github.com/brabro1/SillyTavern-PocketTavern/issues/new/choose). A screenshot, your phone and browser, and your SillyTavern version help a lot.
+
+## Contributing
+
+Pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to run the checks.
+
+## Credits
+
+- **[SillyTavern](https://github.com/SillyTavern/SillyTavern)** (AGPL-3.0): the app Pocket Tavern is built for.
+- **[Lucide](https://lucide.dev)** (ISC): the style of the icon set. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- Translation uses SillyTavern's built-in **Chat Translation** and Google Translate.
+
+## AI usage
+
+Pocket Tavern is written with the help of AI coding tools (Claude Code). Every change is tested on a phone layout before it's released.
 
 ## License
 
-MIT. The icon style follows [Lucide](https://lucide.dev) (ISC); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+[MIT](LICENSE)

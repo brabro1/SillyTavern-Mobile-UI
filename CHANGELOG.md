@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.10.0
+
+- **New name: Pocket Tavern.** Mobile UI is now called Pocket Tavern, and the GitHub repository moved to [brabro1/SillyTavern-PocketTavern](https://github.com/brabro1/SillyTavern-PocketTavern). The old link keeps working, updates keep coming, and all your settings stay as they are.
+- A new logo and home-screen icon: a chat bubble tucked into a pocket.
+- The README is shorter and clearer, says plainly that the project is in alpha, and there are issue forms for bugs and ideas.
+
 ## 2.9.0
 
 - **One-tap translate**: tapping the translate button in the top bar now translates the chat straight away into the language you used last, and tapping it again shows the original. Tapping while it is translating stops it. Hold the button to open the language list. A small tag on the button (like AR or JA) shows the language one tap gives. The first time, with no language picked yet, a tap opens the list.

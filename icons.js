@@ -1,5 +1,5 @@
 /**
- * Mobile UI icon set: rounded line icons on a 24px grid (Lucide style, ISC
+ * Pocket Tavern icon set: rounded line icons on a 24px grid (Lucide style, ISC
  * license, see THIRD_PARTY_NOTICES.md).
  *
  * Used two ways:
