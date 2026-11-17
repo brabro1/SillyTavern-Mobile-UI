@@ -296,6 +296,25 @@ const STRINGS = {
     'Show the full prompt': ['Ver el prompt completo', 'Ver o prompt completo', 'Показать весь промпт', '查看完整提示词', 'プロンプト全体を表示', 'عرض الموجّه كاملًا'],
     'Change context size': ['Cambiar el tamaño del contexto', 'Mudar o tamanho do contexto', 'Изменить размер контекста', '修改上下文大小', 'コンテキストサイズを変更', 'تغيير حجم السياق'],
     'Counted from the last reply in this chat.': ['Contado a partir de la última respuesta de este chat.', 'Contado a partir da última resposta deste chat.', 'Подсчитано по последнему ответу в этом чате.', '根据这个聊天的上一次回复统计。', 'このチャットの最後の返信から集計しています。', 'محسوب من آخر رد في هذه الدردشة.'],
+    // Persona sheet, quick persona editor, grouped recent chats
+    'Your persona': ['Tu persona', 'Sua persona', 'Ваша персона', '你的用户角色', 'あなたのペルソナ', 'شخصيتك'],
+    'No name': ['Sin nombre', 'Sem nome', 'Без имени', '未命名', '名前なし', 'بلا اسم'],
+    'No description yet.': ['Aún sin descripción.', 'Ainda sem descrição.', 'Описания пока нет.', '还没有描述。', 'まだ説明がありません。', 'لا يوجد وصف بعد.'],
+    'Switch to': ['Cambiar a', 'Trocar para', 'Переключиться на', '切换到', '切り替え先', 'التبديل إلى'],
+    'All persona settings': ['Todos los ajustes de persona', 'Todas as configurações de persona', 'Все настройки персон', '全部用户角色设置', 'ペルソナのすべての設定', 'كل إعدادات الشخصية'],
+    'Name': ['Nombre', 'Nome', 'Имя', '名字', '名前', 'الاسم'],
+    'Who are you? Looks, personality, anything the character should know about you.': ['¿Quién eres? Aspecto, personalidad, todo lo que el personaje debería saber de ti.', 'Quem é você? Aparência, personalidade, tudo o que o personagem deve saber sobre você.', 'Кто вы? Внешность, характер, всё, что персонаж должен о вас знать.', '你是谁？外貌、性格，以及角色应该知道的关于你的一切。', 'あなたは誰？見た目、性格など、キャラクターに知っておいてほしいこと。', 'من أنت؟ المظهر والشخصية وكل ما يجب أن تعرفه الشخصية عنك.'],
+    '{count} tokens': ['{count} tokens', '{count} tokens', '{count} токенов', '{count} 个 token', '{count} トークン', '{count} رمز'],
+    'Give your persona a name.': ['Ponle un nombre a tu persona.', 'Dê um nome à sua persona.', 'Дайте персоне имя.', '给你的用户角色起个名字。', 'ペルソナに名前を付けてください。', 'امنح شخصيتك اسمًا.'],
+    'Persona saved': ['Persona guardada', 'Persona salva', 'Персона сохранена', '用户角色已保存', 'ペルソナを保存しました', 'تم حفظ الشخصية'],
+    'Open Personas to edit it instead.': ['Abre Personas para editarla allí.', 'Abra Personas para editá-la por lá.', 'Откройте «Персоны», чтобы изменить её там.', '请打开“用户角色”页面来编辑。', 'ペルソナのページを開いて編集してください。', 'افتح صفحة الشخصيات لتعديلها من هناك.'],
+    'Could not save the persona': ['No se pudo guardar la persona', 'Não foi possível salvar a persona', 'Не удалось сохранить персону', '无法保存用户角色', 'ペルソナを保存できませんでした', 'تعذّر حفظ الشخصية'],
+    'Edit persona': ['Editar persona', 'Editar persona', 'Изменить персону', '编辑用户角色', 'ペルソナを編集', 'تعديل الشخصية'],
+    'Name and description': ['Nombre y descripción', 'Nome e descrição', 'Имя и описание', '名字和描述', '名前と説明', 'الاسم والوصف'],
+    '1 chat': ['1 chat', '1 chat', '1 чат', '1 个聊天', '1 件のチャット', 'دردشة واحدة'],
+    '{count} chats': ['{count} chats', '{count} chats', 'Чатов: {count}', '{count} 个聊天', '{count} 件のチャット', '{count} دردشات'],
+    'Open the latest chat with {name}': ['Abrir el último chat con {name}', 'Abrir o último chat com {name}', 'Открыть последний чат с {name}', '打开与 {name} 的最新聊天', '{name} との最新のチャットを開く', 'فتح آخر دردشة مع {name}'],
+    'Show {count} more': ['Ver {count} más', 'Ver mais {count}', 'Показать ещё {count}', '再显示 {count} 个', 'さらに {count} 件表示', 'عرض {count} أخرى'],
 };
 
 LANGS.forEach((code, column) => {

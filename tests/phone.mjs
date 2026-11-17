@@ -143,9 +143,19 @@ await step('message box: persona button, context ring and Context page; search t
     await page.locator('.stmui-ctx-ring').click();
     await until(() => document.querySelector('#stmui-sheet .stmui-ctx-hero'));
     await closeSheet();
-    await page.locator('.stmui-persona-chip').click();
-    await until(() => document.querySelectorAll('#stmui-sheet .stmui-choice').length > 0);
-    await closeSheet();
+    // Your persona: edit the description quickly, check it saved, then put it back.
+    const before = await page.evaluate(() => SillyTavern.getContext().powerUserSettings.persona_description ?? '');
+    for (const text of ['Pocket Tavern test description', before]) {
+        await page.locator('.stmui-persona-chip').click();
+        await until(() => document.querySelector('#stmui-sheet .stmui-persona-card-edit'));
+        await page.locator('#stmui-sheet .stmui-persona-card-edit').click();
+        await until(() => document.querySelector('#stmui-sheet .stmui-pe-text'));
+        await page.locator('#stmui-sheet .stmui-pe-text').fill(text);
+        await page.locator('#stmui-sheet .stmui-pe-save').click();
+        await until(() => !document.getElementById('stmui-sheet'));
+        const saved = await page.evaluate(() => SillyTavern.getContext().powerUserSettings.persona_description ?? '');
+        if (saved !== text) throw new Error(`persona description not saved (got "${saved.slice(0, 30)}")`);
+    }
     await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="more"]').click());
     await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Search this chat' }).click();
     await until(() => document.querySelector('.stmui-chat-finder input'));
@@ -154,6 +164,16 @@ await step('message box: persona button, context ring and Context page; search t
     await until(() => document.querySelectorAll('mark.stmui-find-mark').length > 0);
     await page.goBack();
     await until(() => !document.querySelector('.stmui-chat-finder') && !document.querySelector('mark.stmui-find-mark'));
+});
+
+await step('recent chats are grouped by character', async () => {
+    await page.locator('.stmui-ab-home').click();
+    await until(() => document.querySelector('#chat .welcomePanel .recentChatList'));
+    const grouped = await page.evaluate(() => {
+        const rows = document.querySelectorAll('.recentChatList .recentChat:not(:has(.recentChatPinned))').length;
+        return { rows, groups: document.querySelectorAll('.stmui-chat-group').length, loose: document.querySelectorAll('.recentChatList > .recentChat:not(:has(.recentChatPinned))').length };
+    });
+    if (grouped.rows && (!grouped.groups || grouped.loose)) throw new Error(`groups ${grouped.groups}, loose rows ${grouped.loose}`);
 });
 
 await step('find a setting searches the Settings page', async () => {

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.13.0
+
+- **Messages, redesigned for phones.** Each message is now a grid instead of SillyTavern's two columns. The text runs across the whole card instead of starting right of the picture. The header holds the picture (a bit smaller), the name with the date under it, and the ⋯ and ✎ buttons. The footer holds the message number, time and token count (when SillyTavern shows them) on the left and the swipe arrows with a small counter pill on the right. Messages that can't be swiped no longer keep an empty row for the hidden arrows. Cards sit closer to the screen edges. Works with Cards, Bubbles and Flat. The full-screen editor keeps SillyTavern's own layout while you edit.
+- **The model's thinking** folds into a rounded box with a ✦ and "Thought for…". Tap to open it; the thoughts show in smaller, muted text with their own scroll, and the title breathes while the model is still thinking.
+- **Recent chats grouped by character.** The start screen shows one card per character (or group chat): the picture, the name, how many chats and when you last chatted. Tap it to open the latest chat. Under it are that character's chats, newest first, joined by a thin thread line, each with its name, date, last line and the pin, rename and delete buttons; swiping a chat still pins or deletes it. After two chats, "Show N more" opens the rest. Pinned chats stay in their own section on top, and search goes through all chats and character names. SillyTavern's own rows are moved into the groups, so everything they do keeps working.
+- **Edit your persona quickly.** Tapping your persona in the message box opens a "Your persona" sheet: your current persona as a card with an **Edit** button, the other personas to switch to, and a link to all persona settings. **Edit** opens a small editor for the name and description, with a live token count, and saves the same way SillyTavern's Personas page does.
+- Fixed: searching recent chats could match chats SillyTavern had folded away and still leave them invisible.
+
 ## 2.12.0
 
 - **A new message box.** One floating rounded box: the text gets the whole width on top, and the tools sit in a row along the bottom (your persona, SillyTavern's ☰ and ✨, any extension buttons, the context ring and Send). The square strip behind it is gone, and the typed-text hint starts on the left like your text.

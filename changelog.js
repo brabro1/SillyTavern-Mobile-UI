@@ -1,6 +1,15 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.13.0',
+        items: [
+            "Messages are redesigned for phones: the text runs across the whole card, with the picture, name and date in a small header.",
+            "The model's thinking now folds into a neat box you can open, and swipes sit in a quiet footer.",
+            "Recent chats are grouped by character: one card per character with your chats with them inside.",
+            "Tap your persona in the message box and then Edit to change its name and description right there.",
+        ],
+    },
+    {
         version: '2.12.0',
         items: [
             "A new message box: one floating box with your text on top and the tools in a row underneath, without the square strip behind it.",

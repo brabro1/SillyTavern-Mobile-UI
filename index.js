@@ -1710,7 +1710,7 @@ function toastIconCss() {
         .map(([type, name]) => `html.stmui-toasts #toast-container > .toast-${type} { --stmui-t-icon: ${iconUrl(name)}; }`)
         .join(' ')
         // A grey magnifier drawn inside search boxes.
-        + ` html.stmui-on { --stmui-search-icon: ${iconUrl('search').replace('%23000', '%23909090')}; }`;
+        + ` html.stmui-on { --stmui-search-icon: ${iconUrl('search').replace('%23000', '%23909090')}; --stmui-think-icon: ${iconUrl('sparkles')}; }`;
 }
 
 function applyAppearance() {
@@ -3646,6 +3646,14 @@ function syncWelcome() {
     if (!want) {
         welcome.observer?.disconnect();
         welcome.observer = null;
+        for (const group of document.querySelectorAll('.stmui-chat-group')) {
+            group.querySelectorAll('.recentChat').forEach(card => {
+                card.classList.remove('stmui-group-extra');
+                group.before(card);
+            });
+            group.remove();
+        }
+        document.querySelectorAll('.showMoreChats.stmui-native-hidden').forEach(node => node.classList.remove('stmui-native-hidden'));
         document.querySelectorAll('.stmui-recent-search, .stmui-recent-heading, .stmui-recent-empty, .stmui-swipe-hint').forEach(node => node.remove());
         document.querySelectorAll('.recentChat.stmui-match, .recentChat.stmui-nomatch').forEach(node => node.classList.remove('stmui-match', 'stmui-nomatch'));
         document.querySelectorAll('.welcomePanel[data-stmui]').forEach(node => delete node.dataset.stmui);
@@ -3666,12 +3674,28 @@ function enhanceWelcome() {
     panel.dataset.stmui = '1';
     const cards = Array.from(list.querySelectorAll('.recentChat'));
 
-    // Pinned chats first under their own heading, then the rest.
+    // Pinned chats first under their own heading, as they are.
     const pinned = cards.filter(card => card.querySelector('.recentChatPinned'));
-    if (pinned.length && pinned.length < cards.length) {
-        pinned[0].before(h('p', { class: 'stmui-recent-heading', text: 'Pinned' }));
-        cards.find(card => !card.querySelector('.recentChatPinned'))?.before(h('p', { class: 'stmui-recent-heading', text: 'Recent' }));
+    const rest = cards.filter(card => !pinned.includes(card));
+    if (pinned.length) pinned[0].before(h('p', { class: 'stmui-recent-heading', text: 'Pinned' }));
+
+    // The rest grouped by character (or group chat): one card each, newest first.
+    const groups = new Map();
+    for (const card of rest) {
+        const key = card.dataset.group ? `g:${card.dataset.group}` : `c:${card.dataset.avatar}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(card);
     }
+    if (groups.size) {
+        // A placeholder marks the spot: the rows themselves move into the groups.
+        const spot = document.createComment('stmui-groups');
+        rest[0].before(spot);
+        if (pinned.length) spot.before(h('p', { class: 'stmui-recent-heading', text: 'Recent' }));
+        for (const chats of groups.values()) spot.before(buildChatGroup(chats));
+        spot.remove();
+    }
+    // SillyTavern's own "show more" folds chats away; the groups show them all.
+    list.querySelector('.showMoreChats')?.classList.add('stmui-native-hidden');
 
     if (cards.length > 3) {
         const empty = h('p', { class: 'stmui-recent-empty', text: 'No chat matches that.', hidden: true });
@@ -3680,11 +3704,16 @@ function enhanceWelcome() {
             const words = normalizeText(search.value).split(/\s+/).filter(Boolean);
             let shown = 0;
             for (const card of cards) {
-                const text = normalizeText(card.textContent);
+                // A chat matches by its own text or its character's name.
+                const group = card.closest('.stmui-chat-group');
+                const text = normalizeText(`${card.textContent} ${group?.dataset.name ?? ''}`);
                 const match = !words.length || words.every(word => text.includes(word));
                 card.classList.toggle('stmui-match', words.length > 0 && match);
                 card.classList.toggle('stmui-nomatch', !match);
                 if (match) shown++;
+            }
+            for (const group of list.querySelectorAll('.stmui-chat-group')) {
+                group.hidden = words.length > 0 && !group.querySelector('.recentChat:not(.stmui-nomatch)');
             }
             list.classList.toggle('stmui-searching', words.length > 0);
             empty.hidden = shown > 0;
@@ -3693,7 +3722,62 @@ function enhanceWelcome() {
         list.append(empty);
     }
 
-    for (const card of cards) wireSwipe(card, list);
+    for (const card of cards) wireSwipe(card, card.parentElement);
+}
+
+/** How many chats a group shows before "Show more". */
+const GROUP_VISIBLE = 2;
+
+/**
+ * One character's recent chats as a single card: the character on top (tap to
+ * open the latest chat), then each chat under it. SillyTavern's own chat rows
+ * are moved in, so tapping, renaming, pinning and deleting work as before.
+ */
+function buildChatGroup(chats) {
+    const latest = chats[0];
+    const name = latest.querySelector('.characterName')?.textContent.trim() ?? '';
+    const head = h('button', {
+        type: 'button',
+        class: 'stmui-group-head',
+        onclick: () => {
+            buzz(6);
+            latest.click();
+        },
+    });
+    const picture = latest.querySelector(':scope > .avatar')?.cloneNode(true);
+    if (picture) {
+        picture.classList.add('stmui-group-avatar');
+        picture.removeAttribute('title');
+        head.append(picture);
+    }
+    const title = h('b', { class: 'stmui-group-name' });
+    title.textContent = name;
+    const when = h('small', { class: 'stmui-group-when' });
+    when.textContent = latest.querySelector('.chatDate')?.textContent.trim() ?? '';
+    head.append(
+        h('span', { class: 'stmui-group-text' }, [title, h('small', { class: 'stmui-group-count', text: chats.length === 1 ? t('1 chat') : t('{count} chats', { count: chats.length }) })]),
+        when,
+        ui('chevron-right', 'stmui-group-go'),
+    );
+    head.setAttribute('aria-label', t('Open the latest chat with {name}', { name }));
+    const body = h('div', { class: 'stmui-group-chats' }, chats);
+    const group = h('section', { class: 'stmui-chat-group', 'data-name': name }, [head, body]);
+    if (latest.classList.contains('group')) group.classList.add('stmui-chat-group-group');
+    if (chats.length > GROUP_VISIBLE) {
+        chats.slice(GROUP_VISIBLE).forEach(card => card.classList.add('stmui-group-extra'));
+        const more = h('button', {
+            type: 'button',
+            class: 'stmui-group-more',
+            onclick: () => {
+                const open = group.classList.toggle('stmui-group-open');
+                more.querySelector('span').textContent = open ? t('Show less') : t('Show {count} more', { count: chats.length - GROUP_VISIBLE });
+                more.setAttribute('aria-expanded', String(open));
+            },
+        }, [h('span', { text: t('Show {count} more', { count: chats.length - GROUP_VISIBLE }) }), ui('chevron-down')]);
+        more.setAttribute('aria-expanded', 'false');
+        group.append(more);
+    }
+    return group;
 }
 
 /** Swipe a recent chat right to pin or unpin it, left to delete it (SillyTavern asks first). */
@@ -5537,14 +5621,165 @@ async function choosePersona(avatar) {
     }
 }
 
-function openPersonaChooser() {
-    openChoiceSheet({
-        title: t('Switch persona'),
+/**
+ * Your persona: the current one as a card with an Edit button, then the others
+ * to switch to, then a way to all persona settings.
+ */
+async function openPersonaChooser() {
+    const module = await loadPersonasModule();
+    const current = module?.user_avatar || currentPersona();
+    const all = personaChoices();
+    showSheet(new MenuSheet({
+        title: t('Your persona'),
         subtitle: t('Who you are in the chat'),
-        options: personaChoices(),
-        current: currentPersona(),
-        onPick: choosePersona,
+        fill: body => {
+            const description = ctx().powerUserSettings?.persona_descriptions?.[current]?.description ?? '';
+            const name = h('b', { class: 'stmui-persona-card-name' });
+            name.textContent = personaName(current) || t('No name');
+            const note = h('small', { class: 'stmui-persona-card-desc' });
+            note.textContent = description.replace(/\s+/g, ' ').trim() || t('No description yet.');
+            body.append(h('div', { class: 'stmui-persona-card' }, [
+                h('img', { class: 'stmui-persona-card-img', src: personaPicture(current), alt: '' }),
+                h('span', { class: 'stmui-persona-card-text' }, [name, note]),
+                h('button', {
+                    type: 'button',
+                    class: 'stmui-persona-card-edit',
+                    onclick: () => {
+                        buzz(6);
+                        openPersonaEditor(current);
+                    },
+                }, [ui('pencil'), h('span', { text: 'Edit' })]),
+            ]));
+            const others = all.filter(option => option.value !== current);
+            if (others.length) {
+                body.append(h('p', { class: 'stmui-menu-heading', text: t('Switch to') }));
+                const rows = others.map(option => h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row stmui-choice',
+                    'data-search': normalizeText(`${option.label} ${option.note ?? ''}`),
+                    onclick: () => {
+                        closeSheet(true);
+                        choosePersona(option.value);
+                    },
+                }, [
+                    h('img', { class: 'stmui-choice-img', src: option.image, alt: '', loading: 'lazy' }),
+                    h('span', { class: 'stmui-row-text' }, [h('span', { text: option.label }), option.note ? h('small', { text: option.note }) : null]),
+                ]));
+                if (others.length > 8) {
+                    const search = h('input', { type: 'search', class: 'text_pole stmui-choice-search', placeholder: t('Search'), 'aria-label': t('Search') });
+                    search.addEventListener('input', () => {
+                        const words = normalizeText(search.value).split(/\s+/).filter(Boolean);
+                        for (const row of rows) row.hidden = !words.every(word => row.dataset.search.includes(word));
+                    });
+                    body.append(search);
+                }
+                body.append(h('div', { class: 'stmui-menu-list' }, rows));
+            }
+            body.append(h('div', { class: 'stmui-menu-list' }, [h('button', {
+                type: 'button',
+                class: 'stmui-menu-row',
+                onclick: () => {
+                    closeSheet(true);
+                    document.querySelector('#persona-management-button > .drawer-toggle')?.click();
+                },
+            }, [ui('settings', 'stmui-menu-row-icon'), h('span', { text: 'All persona settings' }), ui('chevron-right', 'stmui-menu-row-go')])]));
+        },
+    }));
+}
+
+/** A quick editor for the current persona: its name and description. */
+function openPersonaEditor(avatar) {
+    const power = ctx().powerUserSettings ?? {};
+    const startName = power.personas?.[avatar] ?? '';
+    const startText = power.persona_descriptions?.[avatar]?.description ?? (avatar === currentPersona() ? power.persona_description ?? '' : '');
+    const nameInput = h('input', { type: 'text', class: 'text_pole stmui-pe-name', 'aria-label': t('Name'), maxlength: '100', enterkeyhint: 'next' });
+    nameInput.value = startName;
+    const textInput = h('textarea', { class: 'text_pole stmui-pe-text', rows: '8', 'aria-label': t('Description'), placeholder: t('Who are you? Looks, personality, anything the character should know about you.') });
+    textInput.value = startText;
+    const count = h('small', { class: 'stmui-pe-count' });
+    let countTimer = 0;
+    const recount = () => {
+        window.clearTimeout(countTimer);
+        countTimer = window.setTimeout(async () => {
+            try {
+                const tokens = await ctx().getTokenCountAsync?.(textInput.value);
+                if (typeof tokens === 'number') count.textContent = t('{count} tokens', { count: tokens.toLocaleString() });
+            } catch {
+                count.textContent = '';
+            }
+        }, 300);
+    };
+    textInput.addEventListener('input', () => {
+        fitTextarea(textInput);
+        recount();
     });
+    const save = async () => {
+        const newName = nameInput.value.trim();
+        if (!newName) {
+            globalThis.toastr?.warning(t('Give your persona a name.'));
+            nameInput.focus();
+            return;
+        }
+        try {
+            await savePersonaEdits(avatar, { name: newName, nameChanged: newName !== startName, text: textInput.value, textChanged: textInput.value !== startText });
+            closeSheet();
+            globalThis.toastr?.success(newName, t('Persona saved'), { timeOut: 1800 });
+        } catch (error) {
+            console.warn(LOG, 'Could not save the persona', error);
+            globalThis.toastr?.error(t('Open Personas to edit it instead.'), t('Could not save the persona'));
+        }
+    };
+    showSheet(new MenuSheet({
+        title: t('Edit persona'),
+        subtitle: t('Name and description'),
+        fill: body => {
+            body.append(h('div', { class: 'stmui-pe' }, [
+                h('div', { class: 'stmui-pe-top' }, [
+                    h('img', { class: 'stmui-persona-card-img', src: personaPicture(avatar), alt: '' }),
+                    h('label', { class: 'stmui-pe-field' }, [h('small', { text: 'Name' }), nameInput]),
+                ]),
+                h('label', { class: 'stmui-pe-field' }, [h('span', { class: 'stmui-pe-label' }, [h('small', { text: 'Description' }), count]), textInput]),
+                h('div', { class: 'stmui-pe-actions' }, [
+                    h('button', { type: 'button', class: 'stmui-pe-btn', onclick: () => closeSheet() }, [h('span', { text: 'Cancel' })]),
+                    h('button', { type: 'button', class: 'stmui-pe-btn stmui-pe-save', onclick: save }, [ui('check'), h('span', { text: 'Save' })]),
+                ]),
+            ]));
+            requestAnimationFrame(() => fitTextarea(textInput));
+            recount();
+        },
+    }));
+}
+
+/** Writes the edits the same way SillyTavern's Personas page does. */
+async function savePersonaEdits(avatar, { name, nameChanged, text, textChanged }) {
+    const context = ctx();
+    const power = context.powerUserSettings;
+    const personas = await loadPersonasModule();
+    const isCurrent = (personas?.user_avatar || currentPersona()) === avatar;
+    if (textChanged) {
+        if (isCurrent) {
+            // SillyTavern's own description box saves it (and its token count) on input.
+            const box = document.getElementById('persona_description');
+            if (!box) throw new Error('No persona description box');
+            box.value = text;
+            box.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+            power.persona_descriptions[avatar] = { ...(power.persona_descriptions[avatar] ?? {}), description: text };
+        }
+    }
+    if (nameChanged) {
+        const oldName = power.personas[avatar];
+        power.personas[avatar] = name;
+        if (isCurrent) {
+            const script = await import('/script.js');
+            script.setUserName?.(name, { toastPersonaNameChange: false });
+        }
+        await context.eventSource?.emit?.(context.eventTypes?.PERSONA_RENAMED ?? 'persona_renamed', { avatarId: avatar, oldName, newName: name });
+    }
+    context.saveSettingsDebounced?.();
+    await personas?.getUserAvatars?.(true, avatar);
+    personas?.setPersonaDescription?.();
+    updatePersonaButton();
 }
 
 function openQuickSwitch() {
