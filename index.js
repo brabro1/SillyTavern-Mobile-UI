@@ -4802,34 +4802,53 @@ function syncTriggerChips() {
 
 // -- sliders: − and + beside the number
 
+function stepButton(input, direction) {
+    const onclick = () => {
+        const before = input.value;
+        try {
+            if (direction > 0) input.stepUp();
+            else input.stepDown();
+        } catch {
+            const size = Number(input.step) || 1;
+            input.value = String(Number(input.value || 0) + direction * size);
+        }
+        if (input.value === before) return;
+        buzz(4);
+        // Move the slider itself, the way SillyTavern does after typing a number.
+        const master = input.dataset.for ? document.getElementById(input.dataset.for) : null;
+        if (master) $j()(master).val(input.value).trigger('input', { forced: true });
+        else $j()(input).trigger('input').trigger('change');
+    };
+    return direction > 0
+        ? h('button', { type: 'button', class: 'stmui-step stmui-step-up', 'aria-label': 'More', onclick }, ['+'])
+        : h('button', { type: 'button', class: 'stmui-step stmui-step-down', 'aria-label': 'Less', onclick }, ['−']);
+}
+
 function addSliderSteppers(root = document) {
     if (!active || !settings.touchSizing) return;
+    // Chat Completion sliders keep their number in a .range-block-counter box.
     for (const counter of root.querySelectorAll('.range-block-counter')) {
         const input = counter.querySelector('input[type="number"]');
         if (!input || counter.querySelector('.stmui-step')) continue;
-        const step = direction => () => {
-            const before = input.value;
-            try {
-                if (direction > 0) input.stepUp();
-                else input.stepDown();
-            } catch {
-                const size = Number(input.step) || 1;
-                input.value = String(Number(input.value || 0) + direction * size);
-            }
-            if (input.value === before) return;
-            buzz(4);
-            // Move the slider itself, the way SillyTavern does after typing a number.
-            const master = input.dataset.for ? document.getElementById(input.dataset.for) : null;
-            if (master) $j()(master).val(input.value).trigger('input', { forced: true });
-            else $j()(input).trigger('input').trigger('change');
-        };
         counter.classList.add('stmui-stepper');
-        counter.prepend(h('button', { type: 'button', class: 'stmui-step stmui-step-down', 'aria-label': 'Less', onclick: step(-1) }, ['−']));
-        counter.append(h('button', { type: 'button', class: 'stmui-step stmui-step-up', 'aria-label': 'More', onclick: step(1) }, ['+']));
+        counter.prepend(stepButton(input, -1));
+        counter.append(stepButton(input, 1));
+    }
+    // Text Completion, KoboldAI and NovelAI sliders have a bare number box; wrap it.
+    for (const input of root.querySelectorAll('input.neo-range-input[type="number"]')) {
+        if (input.closest('.range-block-counter, .stmui-step-wrap')) continue;
+        const wrap = h('span', { class: 'stmui-step-wrap' });
+        input.before(wrap);
+        wrap.append(stepButton(input, -1), input, stepButton(input, 1));
     }
 }
 
 function removeSliderSteppers() {
+    document.querySelectorAll('.stmui-step-wrap').forEach(wrap => {
+        const input = wrap.querySelector('input');
+        if (input) wrap.before(input);
+        wrap.remove();
+    });
     document.querySelectorAll('.stmui-step').forEach(node => node.remove());
     document.querySelectorAll('.range-block-counter.stmui-stepper').forEach(node => node.classList.remove('stmui-stepper'));
 }

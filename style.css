@@ -1106,6 +1106,13 @@ html.stmui-shell .stmui-appbar {
     flex: 0 0 auto;
 }
 
+/* Small phones: slimmer buttons so the character's name still fits next to them. */
+@media (max-width: 400px) {
+    .stmui-ab-btn {
+        width: 38px;
+    }
+}
+
 .stmui-ab-actions[hidden],
 .stmui-ab-page .stmui-ab-actions {
     display: none;
@@ -1812,6 +1819,30 @@ html.stmui-touch .drawer-content .flex-container.flexFlowColumn:has(> .neo-range
     grid-column: 2;
     grid-row: 1;
     width: 88px;
+}
+
+/* With − and + around the number. */
+html.stmui-touch .drawer-content .flex-container.flexFlowColumn:has(> .neo-range-slider) > .stmui-step-wrap,
+html.stmui-touch .drawer-content .flex-container.flexFlowColumn:has(> .neo-range-slider) > div:has(> .stmui-step-wrap) {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+}
+
+.stmui-step-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+html.stmui-touch .stmui-step-wrap > .neo-range-input,
+html.stmui-touch .drawer-content .flexFlowColumn:has(> .neo-range-slider) .stmui-step-wrap > .neo-range-input {
+    flex: 0 0 auto;
+    width: 4.6em !important;
+    min-width: 4.6em;
+    padding-inline: 2px !important;
+    text-align: center;
 }
 
 html.stmui-touch .drawer-content .flexFlowColumn:has(> .neo-range-slider) .neo-range-input {
@@ -5493,6 +5524,39 @@ html.stmui-charpage .rm_tag_filter .tag.actionable {
     height: 32px;
     padding: 0;
     justify-content: center;
+}
+
+/* SillyTavern colors its filter buttons with fixed see-through colors and dims
+   them, which is muddy on light themes and dull on dark ones. Use the theme's
+   own colors: plain when off, the accent when on, red when excluded. */
+html.stmui-touch .rm_tag_filter .tag.actionable {
+    background-color: var(--stmui-raised) !important;
+    border-color: var(--stmui-line) !important;
+    color: var(--stmui-text) !important;
+    opacity: 1;
+    filter: none;
+}
+
+html.stmui-touch .rm_tag_filter .tag.actionable.selected {
+    background-color: var(--stmui-accent-soft) !important;
+    border-color: var(--stmui-accent) !important;
+    color: var(--stmui-accent) !important;
+}
+
+html.stmui-touch .rm_tag_filter .tag.actionable.excluded {
+    background-color: rgba(220, 60, 60, 0.14) !important;
+    border-color: #d94848 !important;
+    color: #d94848 !important;
+}
+
+/* Your own tags keep their colors but are no longer darkened. */
+html.stmui-touch .rm_tag_filter .tag:not(.actionable) {
+    opacity: 0.8;
+    filter: none;
+}
+
+html.stmui-touch .rm_tag_filter .tag:not(.actionable).selected {
+    opacity: 1;
 }
 
 html.stmui-charpage body.charListGrid #rm_print_characters_block > :is(.character_select, .group_select, .bogus_folder_select) {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.10.1
+
+- **− and + for every slider**: they only showed for Chat Completion presets. Text Completion, KoboldAI and NovelAI sliders keep their number in a different box, which now gets the buttons too.
+- **Filter buttons in theme colors**: SillyTavern colors the Favorites, Groups, Folders and Tags buttons above the character list with fixed see-through colors and dims them. That was muddy and hard to see in the light themes. They now use the theme's colors: plain when off, the accent color when on and red when excluded.
+- **The name fits in the top bar**: with six buttons in a chat, a name like "Seraphina" was cut to "Seraphi…" on small phones. The buttons are a little slimmer on screens up to 400 px wide.
+- **New screenshots and banner**: every README picture is retaken (now sharper), including new ones for the Bubbles look and lorebook entry cards. `tests/screenshots.mjs` retakes them in one go.
+
 ## 2.10.0
 
 - **New name: Pocket Tavern.** Mobile UI is now called Pocket Tavern, and the GitHub repository moved to [brabro1/SillyTavern-PocketTavern](https://github.com/brabro1/SillyTavern-PocketTavern). The old link keeps working, updates keep coming, and all your settings stay as they are.

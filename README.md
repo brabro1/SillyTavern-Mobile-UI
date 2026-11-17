@@ -29,10 +29,12 @@
 | Before (no Pocket Tavern) | Recent chats | Message editor |
 | :---: | :---: | :---: |
 | ![SillyTavern on a phone without Pocket Tavern](docs/screenshots/before.jpg) | ![Recent chats on the start screen](docs/screenshots/recent.jpg) | ![Message editor](docs/screenshots/editor.jpg) |
-| **Lorebooks** | **Presets** | **Prompt editor** |
-| ![Lorebook picker](docs/screenshots/lorebooks.jpg) | ![Presets page](docs/screenshots/presets.jpg) | ![Prompt editor](docs/screenshots/prompt-editor.jpg) |
-| **Personas** | **Midnight theme** | **Paper theme** |
-| ![Personas](docs/screenshots/personas.jpg) | ![Midnight theme](docs/screenshots/midnight.jpg) | ![Paper theme](docs/screenshots/light.jpg) |
+| **Bubbles look** | **Midnight theme** | **Paper theme** |
+| ![Chat in the Bubbles look](docs/screenshots/bubbles.jpg) | ![Midnight theme](docs/screenshots/midnight.jpg) | ![Paper theme](docs/screenshots/light.jpg) |
+| **Lorebook picker** | **Lorebook entries** | **Presets** |
+| ![Lorebook picker](docs/screenshots/lorebooks.jpg) | ![Lorebook entries as cards with keyword chips](docs/screenshots/lorebook-entries.jpg) | ![Presets with − and + beside each slider](docs/screenshots/presets.jpg) |
+| **Prompt editor** | **Personas** | |
+| ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) | |
 
 </details>
 

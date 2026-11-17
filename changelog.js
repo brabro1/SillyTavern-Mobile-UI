@@ -1,6 +1,14 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.10.1',
+        items: [
+            "The − and + buttons now sit beside every slider, also for Text Completion and KoboldAI presets.",
+            "The filter buttons above the character list use your theme's colors, so they are easy to see in light themes too.",
+            "On small phones the character's name fits in the top bar again.",
+        ],
+    },
+    {
         version: '2.10.0',
         items: [
             "Mobile UI has a new name: Pocket Tavern. Same extension, same settings, nothing to do.",

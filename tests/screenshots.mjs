@@ -1,0 +1,220 @@
+// Retakes the README screenshots in docs/screenshots. Run it whenever the look
+// changes, then redraw the banner (docs/brand/banner.html) the same way.
+// Needs a running SillyTavern with Pocket Tavern installed and only test data
+// (never your own chats): the test instance has the Seraphina demo chat and
+// sample lorebooks.
+//   ST_URL=http://127.0.0.1:8000 CHROME_CHANNEL=chrome node screenshots.mjs [name ...]
+// With names, only those screenshots are taken. prompt-editor.jpg needs a Chat
+// Completion API and is not retaken here.
+import { chromium, devices } from 'playwright';
+import { fileURLToPath } from 'node:url';
+
+const ST_URL = process.env.ST_URL ?? 'http://127.0.0.1:8000';
+const OUT = fileURLToPath(new URL('../docs/screenshots/', import.meta.url));
+const only = new Set(process.argv.slice(2));
+const want = name => !only.size || only.has(name);
+
+const browser = await chromium.launch({ channel: process.env.CHROME_CHANNEL || undefined });
+const context = await browser.newContext({ ...devices['Pixel 7'], viewport: { width: 375, height: 812 }, deviceScaleFactor: 2 });
+const page = await context.newPage();
+
+const until = (fn, arg, timeout = 15000) => page.waitForFunction(fn, arg, { timeout });
+const settle = async (ms = 700) => {
+    await page.waitForTimeout(ms);
+    await page.evaluate(() => document.getAnimations().forEach(animation => { try { animation.finish(); } catch { /* ignore */ } }));
+    await page.waitForTimeout(150);
+};
+const shot = async name => {
+    await settle();
+    await page.screenshot({ path: `${OUT}${name}.jpg`, type: 'jpeg', quality: 85 });
+    console.log(`  ✓ ${name}.jpg`);
+};
+const closeSheet = async () => {
+    await page.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+    await until(() => !document.getElementById('stmui-sheet'));
+    await settle(300);
+};
+const tab = async id => {
+    await page.evaluate(want => document.querySelector(`.stmui-tab[data-tab="${want}"]`).click(), id);
+    if (id === 'chat') await until(() => !document.documentElement.dataset.stmuiPage);
+    else if (id !== 'more') await until(want => document.documentElement.dataset.stmuiPage === want, id);
+    await settle();
+};
+const openThemes = async () => {
+    await tab('more');
+    await page.locator('#stmui-sheet .stmui-menu-row-theme').click();
+    await settle();
+};
+const setTheme = async theme => {
+    await openThemes();
+    await page.locator(`#stmui-sheet .stmui-theme-card[data-theme="${theme}"]`).click();
+    await settle(1000);
+    await closeSheet();
+};
+const setLook = async label => {
+    await openThemes();
+    await page.locator('#stmui-sheet .stmui-look-seg .stmui-seg', { hasText: label }).click();
+    await settle();
+    await closeSheet();
+};
+const openDemoChat = async () => {
+    await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        const index = context.characters.findIndex(character => character.name === 'Seraphina');
+        if (index < 0) throw new Error('The Seraphina demo character is missing');
+        if (String(context.characterId) !== String(index)) await context.selectCharacterById(String(index));
+    });
+    await until(() => document.querySelectorAll('#chat .mes').length > 1);
+    await page.evaluate(() => document.getElementById('chat').scrollTo(0, 1e9));
+    await settle(1200);
+};
+
+console.log(`Taking screenshots from ${ST_URL}\n`);
+await page.goto(ST_URL, { waitUntil: 'domcontentloaded' });
+await until(() => document.documentElement.classList.contains('stmui-on'), null, 90000);
+await page.waitForTimeout(3000);
+await page.evaluate(() => document.querySelectorAll('dialog.popup[open] .popup-button-cancel').forEach(button => button.click()));
+if (await page.locator('#stmui-sheet').count()) await closeSheet();
+
+// A known starting point: SillyTavern's own colors and the Cards look.
+await setTheme('st');
+await setLook('Cards');
+await openDemoChat();
+
+if (want('chat')) {
+    await until(() => document.querySelector('.stmui-reply-actions:not([hidden])')).catch(() => {});
+    await shot('chat');
+}
+
+if (want('bubbles')) {
+    await setLook('Bubbles');
+    await shot('bubbles');
+    await setLook('Cards');
+}
+
+if (want('translate')) {
+    // Hold the translate button to pick Spanish, then tap it again afterwards for the original.
+    const button = page.locator('.stmui-ab-translate');
+    await button.dispatchEvent('pointerdown');
+    await page.waitForTimeout(700);
+    await button.dispatchEvent('pointerup');
+    await page.locator('#stmui-sheet .stmui-choice', { hasText: /^Spanish$/ }).first().click();
+    await until(() => SillyTavern.getContext().chat.some(message => message.extra?.stmui_lang === 'es'), null, 30000);
+    await page.waitForTimeout(2600);
+    await page.evaluate(() => document.getElementById('chat').scrollTo(0, 1e9));
+    await shot('translate');
+    await button.click();
+    await until(() => !SillyTavern.getContext().chat.some(message => message.extra?.display_text));
+    await settle(2200);
+}
+
+if (want('editor')) {
+    await page.evaluate(() => [...document.querySelectorAll('#chat .mes:not([is_user="true"]) .mes_edit')].pop()?.click());
+    await until(() => document.documentElement.classList.contains('stmui-editing'));
+    await shot('editor');
+    await page.evaluate(() => document.querySelector('#chat .mes:has(#curEditTextarea) .mes_edit_cancel')?.click());
+    await until(() => !document.documentElement.classList.contains('stmui-editing'));
+    await settle(1200);
+}
+
+if (want('card')) {
+    await page.evaluate(() => document.querySelector('.stmui-ab-who').click());
+    await until(() => document.documentElement.dataset.stmuiPage === 'rightNavHolder' && document.getElementById('stmui_card_tabs'));
+    await shot('card');
+    await tab('chat');
+}
+
+if (want('characters')) {
+    await tab('rightNavHolder');
+    await page.evaluate(() => document.getElementById('rm_button_characters')?.click());
+    await until(() => document.querySelector('#rm_print_characters_block .character_select'));
+    await page.evaluate(() => document.querySelector('#rm_characters_block')?.scrollTo(0, 0));
+    await shot('characters');
+    await tab('chat');
+}
+
+if (want('more')) {
+    await tab('more');
+    await shot('more');
+    await closeSheet();
+}
+
+if (want('themes')) {
+    await openThemes();
+    await shot('themes');
+    await closeSheet();
+}
+
+if (want('lorebooks')) {
+    await tab('WI-SP-button');
+    await page.evaluate(() => document.querySelector('#WorldInfo .stmui-open')?.click());
+    await until(() => document.getElementById('stmui-sheet'));
+    await shot('lorebooks');
+    await closeSheet();
+    await tab('chat');
+}
+
+if (want('lorebook-entries')) {
+    await tab('WI-SP-button');
+    await page.evaluate(() => {
+        const select = document.getElementById('world_editor_select');
+        const option = [...select.options].find(item => item.textContent.trim() === 'Eldoria');
+        if (option) window.jQuery(select).val(option.value).trigger('change');
+    });
+    await until(() => document.querySelectorAll('#world_popup_entries_list .world_entry').length > 0);
+    await settle(1200);
+    await page.evaluate(() => document.getElementById('world_popup_entries_list').scrollIntoView({ block: 'start' }));
+    await page.evaluate(() => document.querySelector('#WorldInfo .drawer-content, #WorldInfo')?.scrollBy?.(0, -70));
+    await shot('lorebook-entries');
+    await tab('chat');
+}
+
+if (want('presets')) {
+    await tab('ai-config-button');
+    await page.evaluate(() => {
+        const first = [...document.querySelectorAll('.stmui-step-wrap, .range-block-counter.stmui-stepper')].find(el => el.offsetParent);
+        first?.closest('.flex-container, .range-block')?.scrollIntoView({ block: 'start' });
+    });
+    await shot('presets');
+    await tab('chat');
+}
+
+if (want('personas')) {
+    await page.evaluate(() => document.querySelector('#persona-management-button > .drawer-toggle')?.click());
+    await until(() => document.documentElement.dataset.stmuiPage === 'persona-management-button');
+    await shot('personas');
+    await tab('chat');
+}
+
+if (want('midnight')) {
+    await setTheme('midnight');
+    await openDemoChat();
+    await shot('midnight');
+}
+
+if (want('light')) {
+    await setTheme('paper');
+    await openDemoChat();
+    await shot('light');
+}
+
+await setTheme('st');
+
+if (want('recent')) {
+    await page.locator('.stmui-ab-home').click();
+    await until(() => document.querySelector('.recentChat'));
+    await shot('recent');
+}
+
+if (want('before')) {
+    await openDemoChat();
+    await page.evaluate(() => document.getElementById('stmui_enabled').click());
+    await until(() => !document.documentElement.classList.contains('stmui-on'));
+    await page.evaluate(() => document.getElementById('chat').scrollTo(0, 1e9));
+    await shot('before');
+    await page.evaluate(() => document.getElementById('stmui_enabled').click());
+    await until(() => document.documentElement.classList.contains('stmui-on'));
+}
+
+await browser.close();
+console.log('\nDone. Check the pictures, then redraw docs/brand/banner.png if chat, characters or themes changed.');
