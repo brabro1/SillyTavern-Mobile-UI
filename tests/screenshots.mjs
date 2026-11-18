@@ -259,5 +259,29 @@ if (want('before')) {
     await until(() => document.documentElement.classList.contains('stmui-on'));
 }
 
+if (want('desktop')) {
+    // The desktop layout: a computer with Pocket Tavern set to "Always on".
+    const desk = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await desk.addInitScript(() => localStorage.setItem('stmui_mode', 'always'));
+    const tabPage = await desk.newPage();
+    await tabPage.goto(ST_URL, { waitUntil: 'domcontentloaded' });
+    await tabPage.waitForFunction(() => document.documentElement.classList.contains('stmui-wide'), null, { timeout: 120000 });
+    await tabPage.waitForTimeout(2500);
+    await tabPage.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+    await tabPage.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        await context.selectCharacterById(String(context.characters.findIndex(item => item.name === 'Seraphina')));
+    });
+    await tabPage.waitForTimeout(2000);
+    await tabPage.locator('.stmui-tab[data-tab="ai-config-button"]').click();
+    await tabPage.waitForTimeout(1200);
+    await tabPage.evaluate(() => document.getElementById('chat').scrollTo(0, 1e9));
+    await tabPage.evaluate(() => document.getAnimations().forEach(animation => { try { animation.finish(); } catch {} }));
+    await tabPage.waitForTimeout(400);
+    await tabPage.screenshot({ path: `${OUT}desktop.jpg`, type: 'jpeg', quality: 85 });
+    console.log('  ✓ desktop.jpg');
+    await desk.close();
+}
+
 await browser.close();
 console.log('\nDone. Check the pictures, then run node brand.mjs to redraw the banner if chat, settings or characters changed.');

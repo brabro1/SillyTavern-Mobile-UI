@@ -7996,3 +7996,266 @@ html.stmui-touch .inline-drawer-header > .stmui-ext-note {
 .stmui-menu-row-danger .stmui-row-text > small {
     color: var(--stmui-muted);
 }
+
+/* ==========================================================================
+   Desktop layout (html.stmui-wide): a computer or a tablet held sideways.
+   Tabs become a rail on the left, a page opens as a panel beside the chat and
+   stays open while you chat, the chat is a centred column, and sheets and
+   popups are dialogs in the middle of the screen.
+   ========================================================================== */
+
+html.stmui-wide {
+    --stmui-rail-w: 88px;
+    --stmui-panel-w: clamp(380px, 30vw, 460px);
+    --stmui-bottom: 0px;
+    --stmui-left: var(--stmui-rail-w);
+    --stmui-page-h: calc(100dvh - var(--topBarBlockSize));
+    --stmui-avail: calc(100vw - var(--stmui-left));
+    --stmui-col: min(max(var(--sheldWidth, 50vw), 560px), calc(var(--stmui-avail) - 48px));
+}
+
+html.stmui-wide.stmui-page-open {
+    --stmui-left: calc(var(--stmui-rail-w) + var(--stmui-panel-w));
+}
+
+/* -- The rail ------------------------------------------------------------- */
+
+html.stmui-wide .stmui-tabbar {
+    inset: var(--topBarBlockSize) auto 0 0;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: var(--stmui-rail-w);
+    height: auto;
+    padding: 12px 0;
+    border-top: 0;
+    border-right: 1px solid var(--stmui-line);
+}
+
+html.stmui-wide .stmui-tab {
+    flex: 0 0 72px;
+    gap: 4px;
+    padding: 0 4px;
+}
+
+html.stmui-wide .stmui-tab-indicator {
+    top: 12px;
+    left: 0;
+    width: 100%;
+    height: 72px;
+    transform: translateY(calc(var(--stmui-tab-index, 0) * 72px));
+}
+
+html.stmui-wide .stmui-tab-indicator::before {
+    width: 56px;
+    height: 32px;
+    margin-top: 11px;
+}
+
+/* -- The chat: a centred column in the space beside the rail and the panel -- */
+
+html.stmui-wide #sheld {
+    left: calc(var(--stmui-left) + (var(--stmui-avail) - var(--stmui-col)) / 2) !important;
+    right: auto !important;
+    width: var(--stmui-col) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: var(--stmui-page-h) !important;
+    max-height: var(--stmui-page-h) !important;
+    margin: 0 !important;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Search this chat sits over the chat column. */
+html.stmui-wide .stmui-chat-finder {
+    left: var(--stmui-left);
+}
+
+/* -- Pages: a panel beside the rail ---------------------------------------- */
+
+html.stmui-wide #top-settings-holder .drawer-content.openDrawer {
+    position: fixed !important;
+    left: var(--stmui-rail-w) !important;
+    width: var(--stmui-panel-w) !important;
+    min-width: var(--stmui-panel-w) !important;
+    max-width: var(--stmui-panel-w) !important;
+    border-right: 1px solid var(--stmui-line);
+    animation: stmui-panel-in 0.2s var(--stmui-ease);
+}
+
+/* Slides in from the rail, under "Smooth" animations too. */
+html.stmui-wide.stmui-motion-full.stmui-shell #top-settings-holder .drawer-content.openDrawer {
+    animation: stmui-panel-in 0.24s var(--stmui-ease);
+}
+
+/* SillyTavern lays some pages out in two or three columns on a computer; the panel is one column. */
+html.stmui-wide #user-settings-block-content,
+html.stmui-wide #rm_api_block > div,
+html.stmui-wide #extensions_settings_block,
+html.stmui-wide .drawer-content.openDrawer .flex-container.spaceEvenly {
+    flex-direction: column;
+    flex-wrap: nowrap;
+}
+
+html.stmui-wide #user-settings-block-content > *,
+html.stmui-wide .drawer-content.openDrawer .flex-container.spaceEvenly > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: 0 0 auto !important;
+}
+
+@keyframes stmui-panel-in {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+}
+
+/* Lorebook entries and the prompt editor fill the panel they belong to. */
+html.stmui-wide.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open {
+    inset: var(--topBarBlockSize) auto 0 var(--stmui-rail-w);
+    width: var(--stmui-panel-w);
+}
+
+html.stmui-wide #completion_prompt_manager_popup {
+    left: var(--stmui-rail-w) !important;
+    right: auto !important;
+    width: var(--stmui-panel-w) !important;
+    border-right: 1px solid var(--stmui-line) !important;
+}
+
+/* SillyTavern's bigger panels (advanced definitions, the lorebook editor) take the space right of the rail. */
+html.stmui-wide #character_popup,
+html.stmui-wide #world_popup {
+    left: var(--stmui-rail-w) !important;
+    right: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+}
+
+/* -- The message editor fills the chat column ----------------------------- */
+
+html.stmui-wide.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) {
+    inset: var(--topBarBlockSize) auto 0 calc(var(--stmui-left) + (var(--stmui-avail) - var(--stmui-col)) / 2);
+    width: var(--stmui-col);
+    padding: 16px 16px 0;
+}
+
+/* -- Sheets and popups: dialogs in the middle ------------------------------ */
+
+html.stmui-wide dialog.stmui-sheet {
+    align-items: center;
+}
+
+html.stmui-wide .stmui-panel {
+    max-width: 560px;
+    max-height: min(84vh, 760px);
+    border-bottom: 1px solid var(--stmui-line);
+    border-radius: 16px;
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    transition: transform 0.16s ease-in, opacity 0.16s ease-in;
+}
+
+html.stmui-wide .stmui-sheet-open .stmui-panel {
+    opacity: 1;
+    transform: none;
+    transition: transform 0.22s var(--stmui-ease-sheet), opacity 0.18s ease-out;
+}
+
+html.stmui-wide .stmui-grab {
+    display: none;
+}
+
+html.stmui-wide .stmui-head {
+    padding-top: 12px;
+}
+
+html.stmui-wide.stmui-touch dialog.popup:not(.transparent_dialogue_popup) {
+    width: min(640px, calc(100vw - 48px)) !important;
+    max-width: min(640px, calc(100vw - 48px)) !important;
+    max-height: min(86vh, 900px) !important;
+    margin: auto !important;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--stmui-line);
+    border-radius: 16px;
+}
+
+html.stmui-wide.stmui-touch dialog.popup:not(.transparent_dialogue_popup)::before {
+    display: none;
+}
+
+html.stmui-wide.stmui-touch dialog.popup.wide_dialogue_popup,
+html.stmui-wide.stmui-touch dialog.popup.large_dialogue_popup {
+    width: min(1040px, calc(100vw - 48px)) !important;
+    max-width: min(1040px, calc(100vw - 48px)) !important;
+    height: min(86vh, 900px) !important;
+}
+
+html.stmui-wide.stmui-touch dialog.popup[opening] {
+    animation: stmui-dialog-in var(--popup-animation-speed, 0.2s) var(--stmui-ease);
+}
+
+html.stmui-wide.stmui-touch dialog.popup[closing] {
+    animation: stmui-dialog-out var(--popup-animation-speed, 0.15s) ease-in;
+}
+
+@keyframes stmui-dialog-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+}
+
+@keyframes stmui-dialog-out {
+    to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+}
+
+/* Chat history is a dialog too. */
+html.stmui-wide.stmui-touch #shadow_select_chat_popup #select_chat_popup {
+    width: min(720px, calc(100vw - 48px)) !important;
+    max-width: min(720px, calc(100vw - 48px)) !important;
+    height: min(86vh, 900px) !important;
+    max-height: min(86vh, 900px) !important;
+    margin: auto !important;
+    border-bottom: 1px solid var(--stmui-line);
+    border-radius: 16px;
+}
+
+/* -- Toasts and the server banner: top right, not across the screen -------- */
+
+html.stmui-wide.stmui-on body #toast-container {
+    left: auto !important;
+    right: 16px !important;
+    width: 380px !important;
+}
+
+html.stmui-wide .stmui-banner {
+    left: auto;
+    right: 16px;
+    width: 420px;
+}
+
+/* -- Hover: a mouse gets the same feedback a tap gets ---------------------- */
+
+@media (hover: hover) {
+    html.stmui-wide :is(.stmui-menu-row, .stmui-tile, .stmui-theme-card, .stmui-search-field, .stmui-ab-btn, .stmui-ab-who:not([disabled]), .stmui-done, .stmui-step, .stmui-seg):hover {
+        background: var(--stmui-raised-2);
+    }
+
+    html.stmui-wide .stmui-tab:not(.stmui-tab-on):hover {
+        color: var(--stmui-text);
+    }
+
+    html.stmui-wide .stmui-tab:not(.stmui-tab-on):hover .stmui-tab-icon {
+        background: var(--stmui-raised-2);
+    }
+
+    html.stmui-wide .welcomeRecent .recentChat:hover {
+        border-color: color-mix(in srgb, var(--stmui-text) 22%, transparent);
+    }
+}

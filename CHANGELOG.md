@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.17.0
+
+A desktop layout, so Pocket Tavern works on a computer too. Phones are unchanged.
+
+- **How to get it:** on a computer, open **More → Pocket Tavern settings** (or Extensions → Pocket Tavern) and set "Use it on this device" to **Always on**. Pocket Tavern still stays off on computers unless you choose that. Any screen at least 960px wide and 560px tall gets the desktop layout, including a tablet held sideways; a phone held sideways keeps the phone layout.
+- **Tabs as a rail.** Chat, Characters, Lorebooks, Presets and More sit in a slim rail on the left, with the same sliding highlight as on the phone.
+- **Pages beside the chat.** A page opens as a panel next to the rail, not over the whole screen, and the chat moves over to make room. The panel stays open while you type and click in the chat (SillyTavern normally closes it), so you can change a preset or a setting and keep chatting. Back, tapping the tab again or **Escape** closes it, and Escape steps back out of a Settings section first. SillyTavern's pages that use two or three columns on a computer are one column in the panel.
+- **The chat is a centred column** that follows SillyTavern's own **Chat width** setting (Settings → Look), at least 560px wide and never wider than the space beside the panel.
+- **Menus and popups are dialogs** in the middle of the screen: More, Themes, Chat options, Tools, Quick switch, SillyTavern's popups and the chat history. The message editor fills the chat column; lorebook entries and the prompt editor fill the panel.
+- **Hover.** Rows, tiles, tabs and buttons light up under the mouse.
+- Toasts and the "server not answering" banner sit at the top right.
+- The phone test now also checks the desktop layout.
+
 ## 2.16.0
 
 A redesign of the settings and menus, so they feel like a phone app.

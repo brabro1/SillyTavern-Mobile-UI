@@ -81,7 +81,16 @@ Multiples of 4: `4, 8, 12, 16, 24`. Page gutter is 16px on every page, including
 
 - No drop shadows. Separation comes from `--stmui-raised`, `--stmui-line` and the sheet scrim. One exception, asked for by the owner: the floating message box has a soft shadow so it sits clearly above the chat. Don't add others.
 - Motion answers a tap (sheet opens, row expands, toggle flips). 120–250ms, `--stmui-ease` / `--stmui-ease-sheet`. `--stmui-ease-pop` only for small confirmations.
-- No entrance animation that plays on its own, no hover effects (this is a phone), and everything respects `prefers-reduced-motion` and the **Light** animations setting.
+- No entrance animation that plays on its own, no hover effects on the phone layout, and everything respects `prefers-reduced-motion` and the **Light** animations setting. The desktop layout gives rows, tiles, tabs and buttons a `--stmui-raised-2` hover, the same feedback a tap gets.
+
+## Desktop layout (`html.stmui-wide`)
+
+On only when Pocket Tavern is on (on a computer, that means **Always on**) and the screen is at least 960 × 560 px; a sideways phone is short and keeps the phone layout. Everything is an override under `html.stmui-wide`, so the phone layout never changes because of it.
+
+- **Rail:** the tab bar is a vertical rail on the left (`--stmui-rail-w`), 72px per tab, same active pill.
+- **Panel:** a page opens beside the rail (`--stmui-panel-w`, 380–460px), one column, and stays open while the chat is used. Back, the tab or Escape closes it.
+- **Chat column:** centred in the space right of the rail and panel, `--stmui-col` wide (SillyTavern's chat width, 560px at least). The composer, the message editor and search follow it.
+- **Sheets and popups:** dialogs in the middle (560px, popups 640px, wide popups 1040px), all corners 16px, no grab handle; they fade and rise 12px.
 
 ## Themes (`themes.js`)
 

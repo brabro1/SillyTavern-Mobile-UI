@@ -1,6 +1,14 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.17.0',
+        items: [
+            "New: a desktop layout. Set Pocket Tavern to Always on on a computer and the tabs become a rail on the left, pages open beside the chat, and menus are dialogs.",
+            "On a computer a page stays open while you chat, so you can change a preset or a setting and keep going. Back, the tab again or Escape closes it.",
+            "Phones are unchanged, and computers still stay off unless you pick Always on.",
+        ],
+    },
+    {
         version: '2.16.0',
         items: [
             "Settings opens on a short list of sections (Look, Display, Chat, Characters and more), each with a line on what is inside.",

@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/brabro)
 
-**Pocket Tavern makes SillyTavern on your phone look and feel like a real app.** Tabs at the bottom, your character at the top, big readable text, and buttons sized for your thumb. It's a SillyTavern extension that only switches on for phones. On your computer SillyTavern stays exactly as it is.
+**Pocket Tavern makes SillyTavern on your phone look and feel like a real app.** Tabs at the bottom, your character at the top, big readable text, and buttons sized for your thumb. It's a SillyTavern extension that switches on for phones. On your computer SillyTavern stays exactly as it is, unless you want Pocket Tavern there too: then it gets a desktop layout of its own.
 
 > [!WARNING]
 > **Pocket Tavern is in alpha.** It's still being built, so things can change at any time, without notice. Expect bugs, rough edges and features that may move, change or disappear between updates. Your characters, chats and lorebooks are never changed, but please keep your own backups and don't rely on it as if it were finished. If something breaks, [tell me](#feedback-and-bug-reports).
@@ -23,6 +23,10 @@
 | ![Chat with the top bar and bottom tabs](docs/screenshots/chat.jpg) | ![Characters as picture cards with the A–Z strip](docs/screenshots/characters.jpg) | ![Character card with tabs](docs/screenshots/card.jpg) |
 | **Themes** | **Translated chat** | **Context** |
 | ![Theme picker](docs/screenshots/themes.jpg) | ![Chat translated to Spanish](docs/screenshots/translate.jpg) | ![The Context page: how full the context is and what filled it](docs/screenshots/context.jpg) |
+
+**On a computer** (optional): tabs become a rail, and pages open beside the chat.
+
+![Pocket Tavern on a computer: tabs as a rail, Presets beside the chat](docs/screenshots/desktop.jpg)
 
 <details>
 <summary>More screenshots</summary>
@@ -50,6 +54,7 @@
 - **Pages that fit:** every panel opens full screen with a title and a back arrow. Menus and popups slide up from the bottom, within reach of your thumb.
 - **Settings that make sense:** SillyTavern's Settings page opens on a short list of sections (Look, Display, Chat, Characters and more), like your phone's own Settings app. Every option says what it does in a line under it, and every switch sits on the right.
 - **Menus that explain themselves:** ☰ opens Chat options grouped into Reply, This chat and Chats, and the wand opens Tools. Each item has a line on what it does.
+- **On your computer too, if you like:** set it to **Always on** and wide screens get a desktop layout. Tabs become a rail on the left, pages open as a panel beside the chat and stay open while you chat, and menus are dialogs in the middle.
 - **Install it like an app:** **More → Install as an app** puts SillyTavern on your home screen, full screen without the browser bar.
 - **Light on your phone:** typing, scrolling and pages are measured on a phone-speed CPU and kept smooth, even in long chats. Older phone? Pick **Light** animations under **More → Themes**.
 
@@ -107,7 +112,7 @@ Then reload SillyTavern in your browser.
 
 </details>
 
-**Phone not detected?** Open **More → Pocket Tavern settings** and set "Use it on this device" to **Always on**.
+**Phone not detected, or want it on your computer?** Open **More → Pocket Tavern settings** (on a computer: Extensions → Pocket Tavern) and set "Use it on this device" to **Always on**.
 
 ### Updating
 
@@ -145,7 +150,7 @@ There's also a **Stop SillyTavern** shortcut. In Android's settings, set Termux'
 | Older SillyTavern | Not supported |
 | Chrome on Android (also with Termux) | ✅ Main target |
 | Other phone browsers | Should work, less tested |
-| Computers and tablets | Stays off, unless you choose **Always on** |
+| Computers and tablets | Stays off, unless you choose **Always on**: then wide screens get the desktop layout |
 | Other extensions | Work alongside it. Extensions with their own panels show up under **More**. |
 
 ## Privacy and your data

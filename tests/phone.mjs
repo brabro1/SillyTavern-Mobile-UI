@@ -339,6 +339,43 @@ await step('turning Pocket Tavern off leaves nothing behind, and on again works'
     await until(() => document.documentElement.classList.contains('stmui-on'));
 });
 
+await step('desktop layout: tabs as a rail, pages beside the chat that stay open', async () => {
+    const desk = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await desk.addInitScript(() => localStorage.setItem('stmui_mode', 'always'));
+    const tab = await desk.newPage();
+    tab.on('pageerror', error => {
+        if (/Mobile-UI|PocketTavern|stmui/i.test(`${error.stack ?? ''} ${error.message}`)) extensionErrors.push(`desktop: ${error.message}`);
+    });
+    try {
+        await tab.goto(ST_URL, { waitUntil: 'domcontentloaded' });
+        await tab.waitForFunction(() => document.documentElement.classList.contains('stmui-wide'), null, { timeout: 120000 });
+        await tab.waitForTimeout(2500);
+        await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+        const rail = await tab.evaluate(() => { const r = document.querySelector('.stmui-tabbar').getBoundingClientRect(); return { w: r.width, h: r.height }; });
+        if (rail.w > 120 || rail.h < 300) throw new Error(`tabs are not a rail: ${JSON.stringify(rail)}`);
+        await tab.locator('.stmui-tab[data-tab="ai-config-button"]').click();
+        await tab.waitForFunction(() => document.documentElement.dataset.stmuiPage === 'ai-config-button');
+        const layout = await tab.evaluate(() => {
+            const panel = document.querySelector('#ai-config-button > .drawer-content').getBoundingClientRect();
+            const chat = document.getElementById('sheld').getBoundingClientRect();
+            return { panelRight: panel.right, panelWidth: panel.width, chatLeft: chat.left };
+        });
+        if (layout.panelWidth > 520 || layout.chatLeft < layout.panelRight) throw new Error(`page is not a panel beside the chat: ${JSON.stringify(layout)}`);
+        await tab.locator('#send_textarea').click();
+        await tab.mouse.click(1400, 450);
+        await tab.waitForTimeout(400);
+        if (await tab.evaluate(() => document.documentElement.dataset.stmuiPage) !== 'ai-config-button') throw new Error('the page closed when the chat was clicked');
+        await tab.keyboard.press('Escape');
+        await tab.waitForFunction(() => !document.documentElement.dataset.stmuiPage);
+        await tab.locator('.stmui-tab[data-tab="more"]').click();
+        await tab.waitForFunction(() => !!document.getElementById('stmui-sheet'));
+        const box = await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-panel').getBoundingClientRect());
+        if (box.bottom > 880) throw new Error('More is not a centred dialog');
+    } finally {
+        await desk.close();
+    }
+});
+
 await step('no errors from Pocket Tavern', async () => {
     if (extensionErrors.length) throw new Error(extensionErrors.join(' | '));
 });

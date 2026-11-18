@@ -193,6 +193,12 @@ const MORE_ORDER = [
 const LONG_SELECT_MIN_OPTIONS = 14;
 /** Visible height (px) below which the sheet drops secondary chrome: landscape or keyboard open. */
 const COMPACT_BELOW = 520;
+/**
+ * Wide screens (a computer, a tablet held sideways) get the desktop layout: tabs
+ * as a rail on the left, pages as a panel beside the chat, sheets as dialogs.
+ * A sideways phone is wide but short, so it keeps the phone layout.
+ */
+const WIDE_QUERY = '(min-width: 960px) and (min-height: 560px)';
 const LONG_SELECT_EXCLUDE = '.stmui-native-hidden, .template_element select, #stmui-sheet select, .select2-hidden-accessible, select[multiple]';
 
 /** @type {Map<HTMLSelectElement, Picker>} */
@@ -1443,6 +1449,11 @@ class Shell {
 
     /** Hides the tab bar while the on-screen keyboard is up (the layout shrinks with it). */
     checkKeyboard() {
+        if (document.documentElement.classList.contains('stmui-wide')) {
+            document.documentElement.classList.remove('stmui-keyboard');
+            this.lastHeight = window.innerHeight;
+            return;
+        }
         const width = window.innerWidth;
         const height = window.innerHeight;
         if (Math.abs(width - this.keyboardBase.width) > 40) this.keyboardBase = { width, height };
@@ -6837,6 +6848,12 @@ function syncExtras() {
     }
     // Capture phase: runs before SillyTavern's own delegated handlers.
     document.addEventListener('pointerdown', onSendPointerDown, true);
+    document.body.addEventListener('mousedown', onChatMouseDown);
+    document.addEventListener('keydown', onWideKeyDown);
+    matchMedia(WIDE_QUERY).addEventListener?.('change', () => {
+        setFeatureClasses();
+        scheduleHistorySync();
+    });
     document.addEventListener('click', onSendClick, true);
     document.addEventListener('click', onMenuButtonClick, true);
     document.addEventListener('click', onMessageMenuClick, true);
@@ -6909,6 +6926,25 @@ function setFeatureClasses() {
     root.classList.toggle('stmui-touch', active && settings.touchSizing);
     root.classList.toggle('stmui-shell', active && settings.appShell);
     root.classList.toggle('stmui-chat', active && settings.chatStyle);
+    root.classList.toggle('stmui-wide', active && settings.appShell && matchMedia(WIDE_QUERY).matches);
+}
+
+/** On the desktop layout a page stays open beside the chat while you use the chat. */
+function onChatMouseDown(event) {
+    const root = document.documentElement;
+    if (!root.classList.contains('stmui-wide') || !root.classList.contains('stmui-page-open')) return;
+    // SillyTavern closes open panels on any mousedown that reaches <html>; stop it at <body>.
+    // Back, the tab again, or Escape still close the page.
+    if (!event.target.closest?.('.drawer-content')) event.stopPropagation();
+}
+
+/** Escape on the desktop layout: back one step (a settings section, then the page). */
+function onWideKeyDown(event) {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    if (!document.documentElement.classList.contains('stmui-wide')) return;
+    // Open sheets and SillyTavern's popups close themselves on Escape.
+    if (sheet || viewer || document.querySelector('dialog[open]') || editorOpen() || openOverlays().length) return;
+    if (closeSettingsSection() || (currentPageId() && (closePages(), true))) event.preventDefault();
 }
 
 function applyState() {
@@ -6970,7 +7006,7 @@ function buildSettings() {
 
     const modeSelect = h('select', { id: 'stmui_mode', class: 'text_pole' }, [
         h('option', { value: 'auto', text: 'Automatic: phones only' }),
-        h('option', { value: 'always', text: 'Always on (this device)' }),
+        h('option', { value: 'always', text: 'Always on (this device, phone or computer)' }),
         h('option', { value: 'never', text: 'Off (this device)' }),
     ]);
 
@@ -6987,7 +7023,7 @@ function buildSettings() {
                     h('span', { class: 'stmui-field-label', text: 'Use it on this device' }),
                     modeSelect,
                 ]),
-                h('small', { class: 'stmui-note', text: 'Pick "Always on" if your phone is not detected.' }),
+                h('small', { class: 'stmui-note', text: 'Pick "Always on" if your phone is not detected, or to use Pocket Tavern on a computer. Wide screens get a desktop layout.' }),
                 h('hr'),
                 h('label', { class: 'stmui-field', for: 'stmui_theme' }, [
                     h('span', { class: 'stmui-field-label', text: 'Theme' }),
