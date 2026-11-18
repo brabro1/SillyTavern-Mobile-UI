@@ -390,6 +390,28 @@ const STRINGS = {
     'What the last message describes': ['Lo que describe el último mensaje', 'O que a última mensagem descreve', 'То, что описано в последнем сообщении', '最后一条消息描述的内容', '最後のメッセージが描写するもの', 'ما تصفه الرسالة الأخيرة'],
     'The last message, word for word': ['El último mensaje, palabra por palabra', 'A última mensagem, palavra por palavra', 'Последнее сообщение, слово в слово', '最后一条消息，逐字使用', '最後のメッセージをそのまま', 'الرسالة الأخيرة حرفيًا'],
     'A background for this chat': ['Un fondo para este chat', 'Um fundo para este chat', 'Фон для этого чата', '此聊天的背景', 'このチャットの背景', 'خلفية لهذه الدردشة'],
+    // 2.18: size, message box, tucked tabs, computers
+    'Size': ['Tamaño', 'Tamanho', 'Размер', '尺寸', 'サイズ', 'الحجم'],
+    'Automatic': ['Automático', 'Automático', 'Автоматически', '自动', '自動', 'تلقائي'],
+    'Comfortable': ['Cómodo', 'Confortável', 'Просторно', '宽松', 'ゆったり', 'مريح'],
+    'Compact': ['Compacto', 'Compacto', 'Компактно', '紧凑', 'コンパクト', 'مضغوط'],
+    'Compact on small phones, comfortable on the rest.': ['Compacto en teléfonos pequeños, cómodo en los demás.', 'Compacto em celulares pequenos, confortável nos outros.', 'Компактно на маленьких телефонах, просторно на остальных.', '小屏手机上紧凑，其他设备上宽松。', '小さなスマホではコンパクト、それ以外ではゆったり。', 'مضغوط على الهواتف الصغيرة، ومريح على غيرها.'],
+    'Roomy cards and bars.': ['Tarjetas y barras amplias.', 'Cartões e barras espaçosos.', 'Просторные карточки и панели.', '宽松的卡片和栏。', 'ゆとりのあるカードとバー。', 'بطاقات وأشرطة واسعة.'],
+    'Slimmer bars and tighter cards, so more of the chat fits.': ['Barras más finas y tarjetas más juntas, para que quepa más chat.', 'Barras mais finas e cartões mais justos, para caber mais conversa.', 'Тоньше панели и плотнее карточки, чтобы помещалось больше чата.', '更细的栏和更紧凑的卡片，可以显示更多聊天内容。', 'バーを細く、カードを詰めて、チャットをより多く表示します。', 'أشرطة أنحف وبطاقات أضيق، ليظهر جزء أكبر من الدردشة.'],
+    'Message box': ['Cuadro de mensaje', 'Caixa de mensagem', 'Поле сообщения', '消息框', 'メッセージ欄', 'مربع الرسالة'],
+    'Floating': ['Flotante', 'Flutuante', 'Плавающее', '悬浮', 'フローティング', 'عائم'],
+    'Docked': ['Fijo abajo', 'Fixa embaixo', 'Внизу', '固定在底部', '下部に固定', 'مثبت بالأسفل'],
+    'The message box floats over the chat.': ['El cuadro de mensaje flota sobre el chat.', 'A caixa de mensagem flutua sobre a conversa.', 'Поле сообщения парит над чатом.', '消息框悬浮在聊天上方。', 'メッセージ欄がチャットの上に浮かびます。', 'يطفو مربع الرسالة فوق الدردشة.'],
+    'The message box sits flat along the bottom edge, like a messaging app.': ['El cuadro de mensaje queda plano en el borde inferior, como en una app de mensajes.', 'A caixa de mensagem fica rente à borda de baixo, como num app de mensagens.', 'Поле сообщения лежит вдоль нижнего края, как в мессенджере.', '消息框平贴在屏幕底部，就像聊天应用一样。', 'メッセージアプリのように、メッセージ欄が画面下端に沿って表示されます。', 'يستقر مربع الرسالة على الحافة السفلية، مثل تطبيقات المراسلة.'],
+    'Hide tabs in a chat': ['Ocultar pestañas en un chat', 'Ocultar abas em uma conversa', 'Скрывать вкладки в чате', '在聊天中隐藏标签栏', 'チャット中はタブを隠す', 'إخفاء الألسنة داخل الدردشة'],
+    'More room for the chat, and no tabs right under the message box. Tap the arrow in the message box to show them.': ['Más espacio para el chat y sin pestañas justo debajo del cuadro de mensaje. Toca la flecha del cuadro para mostrarlas.', 'Mais espaço para a conversa e nada de abas logo abaixo da caixa de mensagem. Toque na seta da caixa para mostrá-las.', 'Больше места для чата и никаких вкладок прямо под полем сообщения. Нажмите стрелку в поле, чтобы показать их.', '给聊天更多空间，消息框下方不再紧挨着标签栏。点按消息框里的箭头即可显示。', 'チャットが広くなり、メッセージ欄のすぐ下にタブがなくなります。メッセージ欄の矢印をタップすると表示されます。', 'مساحة أكبر للدردشة، ولا ألسنة أسفل مربع الرسالة مباشرة. اضغط السهم في مربع الرسالة لإظهارها.'],
+    'Show tabs': ['Mostrar pestañas', 'Mostrar abas', 'Показать вкладки', '显示标签栏', 'タブを表示', 'إظهار الألسنة'],
+    'Hide tabs': ['Ocultar pestañas', 'Ocultar abas', 'Скрыть вкладки', '隐藏标签栏', 'タブを隠す', 'إخفاء الألسنة'],
+    'Pocket Tavern is on here too': ['Pocket Tavern también está activo aquí', 'O Pocket Tavern também está ativo aqui', 'Pocket Tavern включён и здесь', 'Pocket Tavern 在这里也已开启', 'Pocket Tavern はここでもオンです', 'Pocket Tavern يعمل هنا أيضًا'],
+    'It now switches on by itself on computers and tablets. Wide screens get the desktop layout.': ['Ahora se activa solo en ordenadores y tabletas. Las pantallas anchas usan el diseño de escritorio.', 'Agora ele liga sozinho em computadores e tablets. Telas largas usam o layout de desktop.', 'Теперь он сам включается на компьютерах и планшетах. На широких экранах — раскладка для компьютера.', '它现在会在电脑和平板上自动开启。宽屏使用桌面布局。', 'パソコンやタブレットでも自動でオンになるようになりました。横長の画面ではデスクトップ用レイアウトになります。', 'أصبح يعمل تلقائيًا على الحواسيب والأجهزة اللوحية. الشاشات العريضة تحصل على تخطيط سطح المكتب.'],
+    'Keep it on': ['Dejarlo activo', 'Manter ativo', 'Оставить включённым', '保持开启', 'オンのままにする', 'إبقاؤه مفعّلًا'],
+    'Use it on phones only': ['Usarlo solo en teléfonos', 'Usar só em celulares', 'Только на телефонах', '仅在手机上使用', 'スマホだけで使う', 'استخدامه على الهواتف فقط'],
+    'You can change this any time in Extensions → Pocket Tavern.': ['Puedes cambiarlo cuando quieras en Extensiones → Pocket Tavern.', 'Você pode mudar isso quando quiser em Extensões → Pocket Tavern.', 'Это можно изменить в любой момент: Расширения → Pocket Tavern.', '你可以随时在 扩展 → Pocket Tavern 中更改。', 'いつでも 拡張機能 → Pocket Tavern で変更できます。', 'يمكنك تغيير ذلك في أي وقت من الإضافات ← Pocket Tavern.'],
 };
 
 LANGS.forEach((code, column) => {

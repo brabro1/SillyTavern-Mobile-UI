@@ -65,12 +65,32 @@ const DEFAULTS = Object.freeze({
     sharpPictures: true,
     animatedPictures: true,
     recentTools: true,
+    /** 'auto' (compact on small phones) | 'comfortable' | 'compact' */
+    uiSize: 'auto',
+    /** 'floating' | 'docked' */
+    composerStyle: 'floating',
+    /** In a chat the bottom tabs tuck away; a button in the message box brings them back. */
+    hideTabsInChat: true,
+    desktopNoticeSeen: false,
 });
+
+const SIZES = { auto: 'Automatic', comfortable: 'Comfortable', compact: 'Compact' };
+const SIZE_NOTES = {
+    auto: 'Compact on small phones, comfortable on the rest.',
+    comfortable: 'Roomy cards and bars.',
+    compact: 'Slimmer bars and tighter cards, so more of the chat fits.',
+};
+const COMPOSER_STYLES = { floating: 'Floating', docked: 'Docked' };
+const COMPOSER_NOTES = {
+    floating: 'The message box floats over the chat.',
+    docked: 'The message box sits flat along the bottom edge, like a messaging app.',
+};
 
 const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extra large' };
 
 /** Phone features shown as switches in More → Phone features and in the settings panel. */
 const EXTRAS = [
+    { key: 'hideTabsInChat', id: 'stmui_tucktabs', label: 'Hide tabs in a chat', hint: 'More room for the chat, and no tabs right under the message box. Tap the arrow in the message box to show them.' },
     { key: 'messageMenu', id: 'stmui_msgmenu', label: 'Message menu', hint: 'Tap ⋯ on a message for a full list of actions with names.' },
     { key: 'dragSwipe', id: 'stmui_dragswipe', label: 'Drag to swipe', hint: 'Drag the last reply left for another version, right for the previous one.' },
     { key: 'foldLong', id: 'stmui_foldlong', label: 'Fold long messages', hint: 'Very long older messages get a Show more button.' },
@@ -199,6 +219,8 @@ const COMPACT_BELOW = 520;
  * A sideways phone is wide but short, so it keeps the phone layout.
  */
 const WIDE_QUERY = '(min-width: 960px) and (min-height: 560px)';
+/** Phones narrower than this (most 360px Androids, foldable cover screens) get the compact size on Automatic. */
+const SMALL_PHONE_BELOW = 380;
 const LONG_SELECT_EXCLUDE = '.stmui-native-hidden, .template_element select, #stmui-sheet select, .select2-hidden-accessible, select[multiple]';
 
 /** @type {Map<HTMLSelectElement, Picker>} */
@@ -279,7 +301,8 @@ function shieldFromDrawerAutoClose(element) {
 function readMode() {
     try {
         const value = localStorage.getItem(MODE_KEY);
-        return value === 'always' || value === 'never' ? value : 'auto';
+        // "always" was the old way to use it on a computer; automatic does that now.
+        return value === 'phone' || value === 'never' ? value : 'auto';
     } catch {
         return 'auto';
     }
@@ -314,12 +337,16 @@ function detectPhone() {
     return (coarse && shortSide <= 500) || uaPhone;
 }
 
+/**
+ * Automatic means on everywhere: phones get the phone layout and wide screens
+ * the desktop layout. "Phones only" keeps a computer on the original interface.
+ */
 function shouldBeActive() {
     if (!settings.enabled) return false;
     const mode = readMode();
     if (mode === 'never') return false;
-    if (mode === 'always') return true;
-    return detectPhone();
+    if (mode === 'phone') return detectPhone();
+    return true;
 }
 
 // ------------------------------------------------------------ picker model
@@ -1286,7 +1313,22 @@ class Shell {
         this.lastHeight = window.innerHeight;
         this.onFocusIn = event => {
             if (isTypingField(event.target)) setTimeout(() => this.checkKeyboard(), 400);
+            // Writing a message: the tabs go away again.
+            if (event.target?.id === 'send_textarea') this.tuckAgain();
         };
+        this.tabsOut = false;
+        this.inChat = false;
+        this.touchY = null;
+        // Scrolling the chat with a finger or the wheel tucks the tabs away again
+        // (not the chat moving by itself while a reply streams in).
+        this.onChatTouchStart = event => {
+            this.touchY = event.touches[0]?.clientY ?? null;
+        };
+        this.onChatTouchMove = event => {
+            if (this.touchY === null || !this.tabsOut) return;
+            if (Math.abs((event.touches[0]?.clientY ?? this.touchY) - this.touchY) > 24) this.tuckAgain();
+        };
+        this.onChatWheel = () => this.tuckAgain();
         this.onFocusOut = () => setTimeout(() => this.checkKeyboard(), 0);
         this.build();
     }
@@ -1428,8 +1470,57 @@ class Shell {
         window.addEventListener('resize', this.onResize);
         document.addEventListener('focusin', this.onFocusIn);
         document.addEventListener('focusout', this.onFocusOut);
+        const chat = document.getElementById('chat');
+        chat?.addEventListener('touchstart', this.onChatTouchStart, { passive: true });
+        chat?.addEventListener('touchmove', this.onChatTouchMove, { passive: true });
+        chat?.addEventListener('wheel', this.onChatWheel, { passive: true });
         this.checkKeyboard();
         this.update();
+    }
+
+    /**
+     * In a chat the tab bar tucks away: it sat right under the message box and
+     * caught taps meant for it. The arrow in the message box brings it back.
+     */
+    syncTuck(animate = false) {
+        const root = document.documentElement;
+        const can = this.inChat && tabsTuckable();
+        if (!can) this.tabsOut = false;
+        root.classList.toggle('stmui-tabs-tuckable', can);
+        this.setTucked(can && !this.tabsOut, animate);
+        syncTabsButton();
+    }
+
+    setTucked(on, animate) {
+        const root = document.documentElement;
+        if (root.classList.contains('stmui-tabs-tucked') === on) return;
+        const form = document.getElementById('form_sheld');
+        const chat = document.getElementById('chat');
+        const atBottom = !!chat && chat.scrollHeight - chat.scrollTop - chat.clientHeight < 40;
+        const glide = animate && motionAllowed() && form && !root.classList.contains('stmui-keyboard');
+        const before = glide ? form.getBoundingClientRect().top : 0;
+        root.classList.toggle('stmui-tabs-tucked', on);
+        if (atBottom) chat.scrollTop = chat.scrollHeight;
+        if (!glide) return;
+        // The message box (and the newest message above it) glide to their new place with the tabs.
+        const shift = form.getBoundingClientRect().top - before;
+        if (Math.abs(shift) < 4) return;
+        const frames = [{ transform: `translate3d(0, ${-shift}px, 0)` }, { transform: 'none' }];
+        const timing = { duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' };
+        form.animate(frames, timing);
+        if (atBottom) chat.animate(frames, timing);
+    }
+
+    /** The arrow in the message box: show the tabs, or put them away again. */
+    toggleTabs() {
+        this.tabsOut = document.documentElement.classList.contains('stmui-tabs-tucked');
+        this.syncTuck(true);
+    }
+
+    tuckAgain() {
+        if (!this.tabsOut) return;
+        this.tabsOut = false;
+        this.syncTuck(true);
     }
 
     destroy() {
@@ -1439,11 +1530,16 @@ class Shell {
         window.removeEventListener('resize', this.onResize);
         document.removeEventListener('focusin', this.onFocusIn);
         document.removeEventListener('focusout', this.onFocusOut);
+        const chat = document.getElementById('chat');
+        chat?.removeEventListener('touchstart', this.onChatTouchStart);
+        chat?.removeEventListener('touchmove', this.onChatTouchMove);
+        chat?.removeEventListener('wheel', this.onChatWheel);
         cancelAnimationFrame(this.resizeFrame);
         this.appbar.remove();
         this.tabbar.remove();
         const root = document.documentElement;
-        root.classList.remove('stmui-page-open', 'stmui-keyboard', 'stmui-prompt-editor');
+        root.classList.remove('stmui-page-open', 'stmui-keyboard', 'stmui-prompt-editor', 'stmui-tabs-tucked', 'stmui-tabs-tuckable');
+        syncTabsButton();
         delete root.dataset.stmuiPage;
     }
 
@@ -1475,7 +1571,7 @@ class Shell {
         // only), so it follows the keyboard instead of jumping.
         const form = document.getElementById('form_sheld');
         if (!form || !motionAllowed() || keyboard === was) return;
-        const tab = this.tabH || 0;
+        const tab = root.classList.contains('stmui-tabs-tucked') ? 0 : (this.tabH || 0);
         const shift = (height - (keyboard ? 0 : tab)) - (before - (was ? 0 : tab));
         if (Math.abs(shift) < 8) return;
         form.animate([{ transform: `translate3d(0, ${-shift}px, 0)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
@@ -1489,7 +1585,8 @@ class Shell {
         }
         if (sheet) closeSheet(true);
         if (id === 'chat') {
-            closePages();
+            if (!currentPageId() && this.tabsOut) this.tuckAgain();
+            else closePages();
             return;
         }
         const open = currentPageId();
@@ -1509,6 +1606,7 @@ class Shell {
     onChatChanged() {
         if (this.jumpAt && Date.now() - this.jumpAt < 4000 && currentPageId() === 'rightNavHolder') closePages();
         this.jumpAt = 0;
+        this.tabsOut = false;
         this.update();
     }
 
@@ -1619,6 +1717,8 @@ class Shell {
             this.avatar.classList.add('stmui-ab-avatar-icon');
             this.who.disabled = true;
             this.appbar.classList.add('stmui-ab-page');
+            this.inChat = false;
+            this.syncTuck();
             return;
         }
 
@@ -1661,7 +1761,25 @@ class Shell {
         this.translateBadge.hidden = !next;
         this.translateBtn.setAttribute('aria-label', shownIn ? t('Show original') : (next ? t('Translate to {lang}', { lang: languageName(next) }) : t('Translate chat')));
         this.home.hidden = !hasChat;
+        this.inChat = hasChat;
+        this.syncTuck();
     }
+}
+
+function tabsTuckable() {
+    const root = document.documentElement;
+    return active && settings.appShell && settings.chatStyle && settings.hideTabsInChat && !root.classList.contains('stmui-wide');
+}
+
+function syncTabsButton() {
+    const button = composer.tabs;
+    if (!button) return;
+    const tucked = document.documentElement.classList.contains('stmui-tabs-tucked');
+    const label = t(tucked ? 'Show tabs' : 'Hide tabs');
+    button.setAttribute('aria-expanded', String(!tucked));
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    button.classList.toggle('stmui-tabs-btn-out', !tucked);
 }
 
 function openMoreSheet() {
@@ -1918,7 +2036,7 @@ function setAppearance(key, value, origin) {
         syncSettingsInputs();
         shell?.update();
         // Switches already show their new state; re-render only what depends on the choice.
-        if (sheet && !sheet.picker && ['theme', 'motion', 'textSize', 'chatLook'].includes(key)) sheet.refresh();
+        if (sheet && !sheet.picker && ['theme', 'motion', 'textSize', 'chatLook', 'uiSize', 'composerStyle'].includes(key)) sheet.refresh();
     };
     if (key === 'theme') revealChange(origin, change);
     else change();
@@ -1993,6 +2111,17 @@ function motionControl() {
         }, [names[level]])));
 }
 
+/** A row of choices for one setting, like Size or Message box. */
+function choiceControl(key, names, label) {
+    return h('div', { class: 'stmui-segmented stmui-look-seg', role: 'group', 'aria-label': label },
+        Object.entries(names).map(([value, text]) => h('button', {
+            type: 'button',
+            class: `stmui-seg ${settings[key] === value ? 'stmui-seg-on' : ''}`,
+            'aria-pressed': String(settings[key] === value),
+            onclick: () => setAppearance(key, value),
+        }, [text])));
+}
+
 function openThemeSheet() {
     showSheet(new MenuSheet({
         title: 'Themes',
@@ -2007,6 +2136,12 @@ function openThemeSheet() {
             ]));
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Chat look' }));
             body.append(chatLookControl());
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'Size' }));
+            body.append(choiceControl('uiSize', SIZES, 'Size'));
+            body.append(h('p', { class: 'stmui-menu-foot', text: SIZE_NOTES[settings.uiSize] ?? '' }));
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'Message box' }));
+            body.append(choiceControl('composerStyle', COMPOSER_STYLES, 'Message box'));
+            body.append(h('p', { class: 'stmui-menu-foot', text: COMPOSER_NOTES[settings.composerStyle] ?? '' }));
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Animations' }));
             body.append(motionControl());
             body.append(h('p', { class: 'stmui-menu-foot', text: MOTION_LABELS[settings.motion] }));
@@ -3702,8 +3837,17 @@ function openCharActions() {
 function updateCharPaging() {
     const holder = document.getElementById('rm_characters_block');
     if (!holder) return;
-    const pages = document.querySelectorAll('#rm_print_characters_pagination .paginationjs-pages li.paginationjs-page').length;
-    holder.classList.toggle('stmui-one-page', pages <= 1);
+    const box = document.getElementById('rm_print_characters_pagination');
+    // SillyTavern shows no page numbers here, only ‹ › and "1-25 .. 40", so look at those.
+    const can = selector => {
+        const item = box?.querySelector(selector);
+        return !!item && !item.classList.contains('disabled');
+    };
+    const numbers = (box?.querySelector('.paginationjs-nav')?.textContent ?? '').match(/\d+/g)?.map(Number) ?? [];
+    const many = box?.querySelectorAll('li.paginationjs-page').length > 1
+        || can('.paginationjs-prev') || can('.paginationjs-next')
+        || (numbers.length >= 3 && numbers[1] < numbers[2]);
+    holder.classList.toggle('stmui-one-page', !many);
 }
 
 function setCardTab(key, scroll = true) {
@@ -4756,7 +4900,7 @@ function applyPendingAnimated() {
  * persona (picture and name, tap to switch) and a ring that fills as the
  * context fills (tap it for what is in there).
  */
-const composer = { persona: null, ring: null, personas: null, formObserver: null };
+const composer = { persona: null, ring: null, tabs: null, personas: null, formObserver: null };
 
 /** SillyTavern's personas module, loaded once; it knows the current persona. */
 function loadPersonasModule() {
@@ -4837,6 +4981,10 @@ function syncComposer() {
         composer.ring?.remove();
         composer.ring = null;
     }
+    if (!want || !settings.appShell || !settings.hideTabsInChat) {
+        composer.tabs?.remove();
+        composer.tabs = null;
+    }
     if (!want) {
         composer.persona?.remove();
         composer.persona = null;
@@ -4854,6 +5002,22 @@ function syncComposer() {
             },
         }, [h('img', { class: 'stmui-persona-img', alt: '' }), h('span', { class: 'stmui-persona-name' })]);
         left.prepend(composer.persona);
+    }
+    if (settings.appShell && settings.hideTabsInChat) {
+        if (!composer.tabs || !composer.tabs.isConnected) {
+            composer.tabs?.remove();
+            composer.tabs = h('button', {
+                type: 'button',
+                class: 'stmui-tabs-btn',
+                'aria-controls': 'stmui-tabbar',
+                onclick: () => {
+                    buzz(6);
+                    shell?.toggleTabs();
+                },
+            }, [ui('chevron-up')]);
+        }
+        if (left.firstElementChild !== composer.tabs) left.prepend(composer.tabs);
+        syncTabsButton();
     }
     if (settings.contextMeter && (!composer.ring || !composer.ring.isConnected)) {
         composer.ring?.remove();
@@ -6761,6 +6925,48 @@ function openWhatsNew(since) {
     }));
 }
 
+/**
+ * Automatic used to mean phones only. The first time Pocket Tavern turns on by
+ * itself on a computer or tablet, say so once and offer the way back.
+ */
+function maybeShowDesktopNotice() {
+    if (!active || settings.desktopNoticeSeen || readMode() !== 'auto' || detectPhone()) return false;
+    settings.desktopNoticeSeen = true;
+    settings.lastSeenVersion = VERSION;
+    saveSettings();
+    setTimeout(() => showSheet(new MenuSheet({
+        title: 'Pocket Tavern is on here too',
+        subtitle: 'It now switches on by itself on computers and tablets. Wide screens get the desktop layout.',
+        fill: body => {
+            body.append(h('div', { class: 'stmui-menu-list' }, [
+                h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row',
+                    onclick: () => closeSheet(),
+                }, [ui('check', 'stmui-menu-row-icon'), h('span', { text: 'Keep it on' })]),
+                h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row',
+                    onclick: () => {
+                        writeMode('phone');
+                        closeSheet(true);
+                        applyState();
+                        syncSettingsMode();
+                    },
+                }, [ui('phone', 'stmui-menu-row-icon'), h('span', { text: 'Use it on phones only' })]),
+            ]));
+            body.append(h('p', { class: 'stmui-menu-foot', text: 'You can change this any time in Extensions → Pocket Tavern.' }));
+        },
+    })), 1200);
+    return true;
+}
+
+function syncSettingsMode() {
+    const select = document.getElementById('stmui_mode');
+    if (select) select.value = readMode();
+    updateStatusLine();
+}
+
 function maybeShowWhatsNew() {
     if (!active) return;
     const seen = settings.lastSeenVersion;
@@ -6791,9 +6997,25 @@ function applyTextSize() {
     else delete root.dataset.stmuiText;
 }
 
+function isCompact() {
+    if (settings.uiSize === 'compact') return true;
+    if (settings.uiSize !== 'auto') return false;
+    const sides = [screen.width, screen.height].filter(n => n > 0);
+    return sides.length > 0 && Math.min(...sides) < SMALL_PHONE_BELOW;
+}
+
+/** Size (compact or comfortable), the message box style and the tucked tabs. */
+function applyLayoutPrefs() {
+    const root = document.documentElement;
+    root.classList.toggle('stmui-compact', active && isCompact());
+    root.classList.toggle('stmui-docked', active && settings.chatStyle && settings.composerStyle === 'docked');
+    shell?.syncTuck();
+}
+
 function syncExtras() {
     applyTextSize();
     applyChatLook();
+    applyLayoutPrefs();
     syncComposer();
     // (Also takes the one-version marker off again when Pocket Tavern turns off.)
     syncSwipeCounters();
@@ -6852,6 +7074,8 @@ function syncExtras() {
     document.addEventListener('keydown', onWideKeyDown);
     matchMedia(WIDE_QUERY).addEventListener?.('change', () => {
         setFeatureClasses();
+        shell?.syncTuck();
+        updateStatusLine();
         scheduleHistorySync();
     });
     document.addEventListener('click', onSendClick, true);
@@ -6985,8 +7209,9 @@ function updateStatusLine() {
     let text;
     if (!settings.enabled) text = 'Off. The original interface is shown.';
     else if (mode === 'never') text = 'Turned off on this device. The original interface is shown.';
-    else if (mode === 'always') text = 'Always on for this device.';
-    else text = detectPhone() ? 'Phone detected. Pocket Tavern is on.' : 'Not a phone, so the original interface is shown.';
+    else if (mode === 'phone') text = detectPhone() ? 'Phone detected. Pocket Tavern is on.' : 'Not a phone, so the original interface is shown.';
+    else if (document.documentElement.classList.contains('stmui-wide')) text = 'On, with the desktop layout for this wide screen.';
+    else text = 'On, with the phone layout.';
     line.textContent = text;
     line.classList.toggle('stmui-status-active', active);
 }
@@ -7005,9 +7230,9 @@ function buildSettings() {
     ]);
 
     const modeSelect = h('select', { id: 'stmui_mode', class: 'text_pole' }, [
-        h('option', { value: 'auto', text: 'Automatic: phones only' }),
-        h('option', { value: 'always', text: 'Always on (this device, phone or computer)' }),
-        h('option', { value: 'never', text: 'Off (this device)' }),
+        h('option', { value: 'auto', text: 'Automatic: phones and computers' }),
+        h('option', { value: 'phone', text: 'Phones only' }),
+        h('option', { value: 'never', text: 'Off on this device' }),
     ]);
 
     const panel = h('div', { id: 'stmui_settings', class: 'stmui-settings extension_container' }, [
@@ -7023,7 +7248,7 @@ function buildSettings() {
                     h('span', { class: 'stmui-field-label', text: 'Use it on this device' }),
                     modeSelect,
                 ]),
-                h('small', { class: 'stmui-note', text: 'Pick "Always on" if your phone is not detected, or to use Pocket Tavern on a computer. Wide screens get a desktop layout.' }),
+                h('small', { class: 'stmui-note', text: 'Phones get the phone layout and wide screens the desktop layout, on their own. Pick "Phones only" to keep the original interface on this computer.' }),
                 h('hr'),
                 h('label', { class: 'stmui-field', for: 'stmui_theme' }, [
                     h('span', { class: 'stmui-field-label', text: 'Theme' }),
@@ -7039,6 +7264,14 @@ function buildSettings() {
                 check('stmui_backdrop', 'Theme background', "Use the theme's backdrop instead of your chat background."),
                 check('stmui_font', 'Modern font', "Your phone's own system font."),
                 check('stmui_icons', 'New icons', 'Rounded line icons everywhere.'),
+                h('label', { class: 'stmui-field', for: 'stmui_size' }, [
+                    h('span', { class: 'stmui-field-label', text: 'Size' }),
+                    h('select', { id: 'stmui_size', class: 'text_pole' }, Object.entries(SIZES).map(([value, text]) => h('option', { value, text }))),
+                ]),
+                h('label', { class: 'stmui-field', for: 'stmui_composer' }, [
+                    h('span', { class: 'stmui-field-label', text: 'Message box' }),
+                    h('select', { id: 'stmui_composer', class: 'text_pole' }, Object.entries(COMPOSER_STYLES).map(([value, text]) => h('option', { value, text }))),
+                ]),
                 h('label', { class: 'stmui-field', for: 'stmui_textsize' }, [
                     h('span', { class: 'stmui-field-label', text: 'Chat text size' }),
                     h('select', { id: 'stmui_textsize', class: 'text_pole' }, Object.entries(TEXT_SIZES).map(([value, text]) => h('option', { value, text }))),
@@ -7084,7 +7317,7 @@ function buildSettings() {
     bind('stmui_font', 'modernFont', true);
     bind('stmui_icons', 'customIcons', true);
     for (const extra of EXTRAS) bind(extra.id, extra.key, true);
-    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion'], ['stmui_textsize', 'textSize']]) {
+    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion'], ['stmui_textsize', 'textSize'], ['stmui_size', 'uiSize'], ['stmui_composer', 'composerStyle']]) {
         const select = document.getElementById(id);
         select.value = settings[key];
         select.addEventListener('change', () => setAppearance(key, select.value));
@@ -7106,7 +7339,7 @@ function syncSettingsInputs() {
         const input = document.getElementById(id);
         if (input) input.checked = !!settings[key];
     }
-    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion'], ['stmui_textsize', 'textSize']]) {
+    for (const [id, key] of [['stmui_theme', 'theme'], ['stmui_motion', 'motion'], ['stmui_textsize', 'textSize'], ['stmui_size', 'uiSize'], ['stmui_composer', 'composerStyle']]) {
         const select = document.getElementById(id);
         if (select) select.value = settings[key];
     }
@@ -7144,7 +7377,7 @@ function init() {
         // SillyTavern puts back the last message box text on load; sort it into the right chat.
         restoreDraft();
         applyLanguage();
-        maybeShowWhatsNew();
+        if (!maybeShowDesktopNotice()) maybeShowWhatsNew();
     });
     for (const name of ['CHARACTER_EDITED', 'CHARACTER_PAGE_LOADED']) {
         if (event_types[name]) eventSource?.on?.(event_types[name], () => applyPendingAnimated());

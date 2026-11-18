@@ -57,6 +57,22 @@ const setLook = async label => {
     await settle();
     await closeSheet();
 };
+const setPref = async (id, value) => {
+    await page.evaluate(([selectId, choice]) => {
+        const select = document.getElementById(selectId);
+        select.value = choice;
+        select.dispatchEvent(new Event('change'));
+    }, [id, value]);
+    await settle(400);
+    await page.evaluate(() => document.getElementById('chat').scrollTo(0, 1e9));
+};
+const compactShot = async name => {
+    await setPref('stmui_size', 'compact');
+    await setPref('stmui_composer', 'docked');
+    await shot(name);
+    await setPref('stmui_size', 'auto');
+    await setPref('stmui_composer', 'floating');
+};
 const openDemoChat = async () => {
     await page.evaluate(async () => {
         const context = SillyTavern.getContext();
@@ -111,6 +127,16 @@ if (want('context')) await shot('context');
 await closeSheet();
 
 if (want('chat')) await shot('chat');
+
+if (want('tabs-shown')) {
+    await page.locator('.stmui-tabs-btn').click();
+    await until(() => !document.documentElement.classList.contains('stmui-tabs-tucked'));
+    await shot('tabs-shown');
+    await page.locator('.stmui-tabs-btn').click();
+    await until(() => document.documentElement.classList.contains('stmui-tabs-tucked'));
+}
+
+if (want('compact')) await compactShot('compact');
 
 if (want('bubbles')) {
     await setLook('Bubbles');
@@ -241,6 +267,12 @@ if (want('light')) {
     await shot('light');
 }
 
+if (want('compact-light')) {
+    await setTheme('paper');
+    await openDemoChat();
+    await compactShot('compact-light');
+}
+
 await setTheme('st');
 
 if (want('recent')) {
@@ -260,9 +292,8 @@ if (want('before')) {
 }
 
 if (want('desktop')) {
-    // The desktop layout: a computer with Pocket Tavern set to "Always on".
+    // The desktop layout: a computer, where Automatic turns Pocket Tavern on by itself.
     const desk = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    await desk.addInitScript(() => localStorage.setItem('stmui_mode', 'always'));
     const tabPage = await desk.newPage();
     await tabPage.goto(ST_URL, { waitUntil: 'domcontentloaded' });
     await tabPage.waitForFunction(() => document.documentElement.classList.contains('stmui-wide'), null, { timeout: 120000 });

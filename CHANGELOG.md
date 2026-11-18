@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.18.0
+
+Fixes and changes from the first round of feedback on Reddit.
+
+- **Fixed: the Characters page hid its page buttons.** With more characters than fit on one page (50 by default), there was no way to see the rest. SillyTavern shows no page numbers there, only ‹ ›, and Pocket Tavern counted the numbers, found none and hid the buttons. The buttons now show whenever there is more than one page, and they are 44px to tap. On a narrow phone the list keeps ‹ › and drops « ». Page buttons on the Personas and lorebook pages are 44px too.
+- **The tabs tuck away in a chat.** The bottom tabs sat right under the message box, so it was easy to hit them when you meant to start typing. In a chat they now slide away and the chat gets the room. An arrow at the start of the message box's tool row brings them back, and they tuck away again when you start typing, scroll the chat, or tap Chat. Pages, the start screen and the desktop layout always show the tabs. Switch it off with **Hide tabs in a chat** under More → Phone features.
+- **Size: Automatic, Comfortable or Compact** (More → Themes, and in Pocket Tavern's settings). Compact has a slimmer top bar and tabs, smaller pictures and names in the message header, less space around and inside each message card, and a slimmer message box. Every button still has a 44px tap area. Automatic picks Compact on phones narrower than 380px (most 360px Androids and foldable cover screens) and Comfortable on the rest.
+- **Message box: Floating or Docked.** Floating is the box you know. Docked sits flat along the bottom edge, full width, like a messaging app, with your text in its own field. Your persona button is in both.
+- **Automatic now means phones and computers.** Pocket Tavern switches on by itself on any device: phones get the phone layout, and screens at least 960 × 560px get the desktop layout. The first time it turns on by itself on a computer or tablet, a short note says so and offers **Use it on phones only**. "Use it on this device" now offers **Automatic: phones and computers**, **Phones only** and **Off on this device**. If you had picked Always on, that is Automatic now and nothing changes for you.
+- **Tablets and unfolded foldables:** messages and the message box are a centred column up to 720px wide, so lines stay easy to read instead of running across the whole screen.
+- Fixed: SillyTavern capped the chat's height for its own message box, which left a gap under the chat when the tabs were hidden.
+- The phone test checks the page buttons, the tucked tabs, Compact with Docked, and that the desktop layout turns on by itself.
+
 ## 2.17.0
 
 A desktop layout, so Pocket Tavern works on a computer too. Phones are unchanged.

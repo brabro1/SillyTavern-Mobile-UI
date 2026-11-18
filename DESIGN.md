@@ -85,12 +85,19 @@ Multiples of 4: `4, 8, 12, 16, 24`. Page gutter is 16px on every page, including
 
 ## Desktop layout (`html.stmui-wide`)
 
-On only when Pocket Tavern is on (on a computer, that means **Always on**) and the screen is at least 960 × 560 px; a sideways phone is short and keeps the phone layout. Everything is an override under `html.stmui-wide`, so the phone layout never changes because of it.
+On whenever Pocket Tavern is on (Automatic covers computers; **Phones only** keeps a computer on the original interface) and the screen is at least 960 × 560 px; a sideways phone is short and keeps the phone layout. Everything is an override under `html.stmui-wide`, so the phone layout never changes because of it.
 
 - **Rail:** the tab bar is a vertical rail on the left (`--stmui-rail-w`), 72px per tab, same active pill.
 - **Panel:** a page opens beside the rail (`--stmui-panel-w`, 380–460px), one column, and stays open while the chat is used. Back, the tab or Escape closes it.
 - **Chat column:** centred in the space right of the rail and panel, `--stmui-col` wide (SillyTavern's chat width, 560px at least). The composer, the message editor and search follow it.
 - **Sheets and popups:** dialogs in the middle (560px, popups 640px, wide popups 1040px), all corners 16px, no grab handle; they fade and rise 12px.
+
+## Size, message box and tucked tabs
+
+- **Compact (`html.stmui-compact`):** top bar 48px, tab bar 52px, header picture 28px, name 14px, card padding 8 / 12px and 4px between cards, message line height 1.5. The chat text size itself does not change (that is the Chat text size setting). Every tap area stays 44px: buttons overlap the card padding with negative margins rather than shrinking. **Automatic** picks Compact when the screen's short side is under 380px (`SMALL_PHONE_BELOW`), read from `screen`, never the window, so the keyboard cannot flip it.
+- **Docked (`html.stmui-docked`):** the message box is a flat bar (hairline on top, the tab bar's surface, no radius, no shadow), and the text gets its own field (`--stmui-raised`, 12px radius) that shows the focus.
+- **Tucked tabs (`html.stmui-tabs-tucked`):** in a chat on the phone layout the tab bar slides down and is `visibility: hidden` once gone. The arrow is the first button in the message box's tool row (44px, `--stmui-muted`, `aria-expanded`, `aria-controls`), and it flips to point down while the tabs are out. They tuck again on typing, scrolling the chat by hand, tapping Chat, or changing chats. Never on pages, the start screen or the desktop layout.
+- **Medium screens (760px and up, not the desktop layout):** message cards and the floating box are a centred column, at most 720px.
 
 ## Themes (`themes.js`)
 

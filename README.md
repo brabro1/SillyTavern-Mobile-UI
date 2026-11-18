@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/brabro)
 
-**Pocket Tavern makes SillyTavern on your phone look and feel like a real app.** Tabs at the bottom, your character at the top, big readable text, and buttons sized for your thumb. It's a SillyTavern extension that switches on for phones. On your computer SillyTavern stays exactly as it is, unless you want Pocket Tavern there too: then it gets a desktop layout of its own.
+**Pocket Tavern makes SillyTavern on your phone look and feel like a real app.** Tabs at the bottom, your character at the top, big readable text, and buttons sized for your thumb. It's a SillyTavern extension that switches on by itself: phones get the phone layout, and computers get a desktop layout of their own. Prefer the original SillyTavern on your computer? Pick **Phones only** in its settings.
 
 > [!WARNING]
 > **Pocket Tavern is in alpha.** It's still being built, so things can change at any time, without notice. Expect bugs, rough edges and features that may move, change or disappear between updates. Your characters, chats and lorebooks are never changed, but please keep your own backups and don't rely on it as if it were finished. If something breaks, [tell me](#feedback-and-bug-reports).
@@ -20,11 +20,11 @@
 
 | Chat | Characters | Character card |
 | :---: | :---: | :---: |
-| ![Chat with the top bar and bottom tabs](docs/screenshots/chat.jpg) | ![Characters as picture cards with the A–Z strip](docs/screenshots/characters.jpg) | ![Character card with tabs](docs/screenshots/card.jpg) |
+| ![Chat with the top bar; in a chat the tabs tuck away](docs/screenshots/chat.jpg) | ![Characters as picture cards with the A–Z strip](docs/screenshots/characters.jpg) | ![Character card with tabs](docs/screenshots/card.jpg) |
 | **Themes** | **Translated chat** | **Context** |
 | ![Theme picker](docs/screenshots/themes.jpg) | ![Chat translated to Spanish](docs/screenshots/translate.jpg) | ![The Context page: how full the context is and what filled it](docs/screenshots/context.jpg) |
 
-**On a computer** (optional): tabs become a rail, and pages open beside the chat.
+**On a computer:** tabs become a rail, and pages open beside the chat.
 
 ![Pocket Tavern on a computer: tabs as a rail, Presets beside the chat](docs/screenshots/desktop.jpg)
 
@@ -42,25 +42,28 @@
 | ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) | ![More menu](docs/screenshots/more.jpg) |
 | **Settings** | **A settings section** | **Chat options (☰)** |
 | ![Settings as a list of sections](docs/screenshots/settings.jpg) | ![The Display section: switches on the right, a line on what each does](docs/screenshots/settings-section.jpg) | ![Chat options grouped into Reply, This chat and Chats](docs/screenshots/chat-options.jpg) |
+| **Compact size, docked box** | **Tabs shown in a chat** | **Paper theme, compact** |
+| ![Compact size with the docked message box](docs/screenshots/compact.jpg) | ![The arrow in the message box brought the tabs back](docs/screenshots/tabs-shown.jpg) | ![Paper theme with the compact size and docked message box](docs/screenshots/compact-light.jpg) |
 
 </details>
 
 ## Highlights ✨
 
 ### Feels like an app
-- **Tabs at the bottom:** Chat, Characters, Lorebooks and Presets are one tap away. Everything else is under **More**.
+- **Tabs at the bottom:** Chat, Characters, Lorebooks and Presets are one tap away. Everything else is under **More**. In a chat the tabs tuck away so they're not right under the message box; the arrow in the message box brings them back.
+- **Your size:** **Compact** fits more of the chat with slimmer bars and tighter cards, **Comfortable** is roomier. **Automatic** picks Compact on small phones.
 - **Your character at the top:** see who you're talking to and whether you're connected. Tap the name for the character card.
 - **The back gesture works:** swiping back closes the open menu, popup or page instead of leaving SillyTavern.
 - **Pages that fit:** every panel opens full screen with a title and a back arrow. Menus and popups slide up from the bottom, within reach of your thumb.
 - **Settings that make sense:** SillyTavern's Settings page opens on a short list of sections (Look, Display, Chat, Characters and more), like your phone's own Settings app. Every option says what it does in a line under it, and every switch sits on the right.
 - **Menus that explain themselves:** ☰ opens Chat options grouped into Reply, This chat and Chats, and the wand opens Tools. Each item has a line on what it does.
-- **On your computer too, if you like:** set it to **Always on** and wide screens get a desktop layout. Tabs become a rail on the left, pages open as a panel beside the chat and stay open while you chat, and menus are dialogs in the middle.
+- **On your computer too:** wide screens get a desktop layout by themselves. Tabs become a rail on the left, pages open as a panel beside the chat and stay open while you chat, and menus are dialogs in the middle. Tablets and unfolded foldables get the chat as a centred column that's easy to read.
 - **Install it like an app:** **More → Install as an app** puts SillyTavern on your home screen, full screen without the browser bar.
 - **Light on your phone:** typing, scrolling and pages are measured on a phone-speed CPU and kept smooth, even in long chats. Older phone? Pick **Light** animations under **More → Themes**.
 
 ### Chatting
 - **Messages made for a phone:** the text runs across the whole card, edge to edge. The picture, name and date sit in a small header, swipes in a small ‹ 1/3 › pill (the last one offers a new version), and the model's thinking folds into a neat box you can open. Cards, bubbles or flat. Drag the last reply sideways to swipe.
-- **A floating message box:** it floats over the chat, so messages scroll on behind it. Your text gets the whole width, with the tools in a row underneath. Your persona sits there as a little picture with your name: tap it to switch who you are, or to edit your persona's name and description on the spot.
+- **A floating or docked message box:** Floating floats over the chat, so messages scroll on behind it; Docked sits flat along the bottom edge like a messaging app. Your text gets the whole width, with the tools in a row underneath. Your persona sits there as a little picture with your name: tap it to switch who you are, or to edit your persona's name and description on the spot.
 - **Context ring:** a ring in the message box fills up as the chat uses more of the model's memory. Tap it for the Context page: what filled it (character, lorebooks, examples, chat history), how much room is left, the model and preset, and the full prompt.
 - **Edit on a full page:** tap ✎ and the message opens full screen, with Save right above the keyboard.
 - **Search this chat:** find any word in the conversation and jump between matches.
@@ -112,7 +115,7 @@ Then reload SillyTavern in your browser.
 
 </details>
 
-**Phone not detected, or want it on your computer?** Open **More → Pocket Tavern settings** (on a computer: Extensions → Pocket Tavern) and set "Use it on this device" to **Always on**.
+**Want the original SillyTavern on your computer?** Open Extensions → Pocket Tavern and set "Use it on this device" to **Phones only**. A short note offers the same the first time Pocket Tavern turns on on a computer.
 
 ### Updating
 
@@ -138,9 +141,9 @@ There's also a **Stop SillyTavern** shortcut. In Android's settings, set Termux'
 
 ## Settings
 
-- **More → Themes:** theme, chat look (Cards, Bubbles, Flat), theme background, modern font, new icons and animations (Smooth, Light or Off).
-- **More → Phone features:** chat text size and every helper, one switch each.
-- **More → Pocket Tavern settings:** turn it all on or off, choose when it switches on (Automatic, Always on, Off) and the bigger building blocks like the bottom tabs and touch-friendly panels.
+- **More → Themes:** theme, chat look (Cards, Bubbles, Flat), size (Automatic, Comfortable, Compact), message box (Floating, Docked), theme background, modern font, new icons and animations (Smooth, Light or Off).
+- **More → Phone features:** chat text size and every helper, one switch each, including **Hide tabs in a chat**.
+- **More → Pocket Tavern settings:** turn it all on or off, choose where it switches on (Automatic: phones and computers, Phones only, Off on this device) and the bigger building blocks like the bottom tabs and touch-friendly panels.
 
 ## Compatibility
 
@@ -150,7 +153,7 @@ There's also a **Stop SillyTavern** shortcut. In Android's settings, set Termux'
 | Older SillyTavern | Not supported |
 | Chrome on Android (also with Termux) | ✅ Main target |
 | Other phone browsers | Should work, less tested |
-| Computers and tablets | Stays off, unless you choose **Always on**: then wide screens get the desktop layout |
+| Computers and tablets | ✅ On by itself: wide screens get the desktop layout. **Phones only** keeps the original SillyTavern there |
 | Other extensions | Work alongside it. Extensions with their own panels show up under **More**. |
 
 ## Privacy and your data

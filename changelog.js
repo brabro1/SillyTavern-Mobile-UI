@@ -1,11 +1,21 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.18.0',
+        items: [
+            "In a chat the bottom tabs tuck away, so they are not right under the message box. Tap the arrow in the message box to bring them back.",
+            "New Size option (More → Themes): Compact has slimmer bars and tighter cards, so more of the chat fits. Automatic picks it on small phones.",
+            "New Message box option: Docked sits flat along the bottom edge, like a messaging app.",
+            "Pocket Tavern now switches on by itself on computers too, with the desktop layout. Prefer the original there? Pick Phones only.",
+            "Fixed: the Characters page hid its page buttons, so with many characters you could not see the rest.",
+        ],
+    },
+    {
         version: '2.17.0',
         items: [
-            "New: a desktop layout. Set Pocket Tavern to Always on on a computer and the tabs become a rail on the left, pages open beside the chat, and menus are dialogs.",
+            "New: a desktop layout. On a computer the tabs become a rail on the left, pages open beside the chat, and menus are dialogs.",
             "On a computer a page stays open while you chat, so you can change a preset or a setting and keep going. Back, the tab again or Escape closes it.",
-            "Phones are unchanged, and computers still stay off unless you pick Always on.",
+            "Phones are unchanged.",
         ],
     },
     {

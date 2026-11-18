@@ -33,6 +33,29 @@ const closeSheet = async () => {
     await page.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
     await until(() => !document.getElementById('stmui-sheet'));
 };
+// In a chat the tabs are tucked away; the arrow in the message box brings them back.
+const showTabs = async () => {
+    if (await page.evaluate(() => document.documentElement.classList.contains('stmui-tabs-tucked'))) {
+        await page.locator('.stmui-tabs-btn').click();
+        await until(() => !document.documentElement.classList.contains('stmui-tabs-tucked'));
+    }
+};
+const setPref = async (id, value) => {
+    await page.evaluate(([selectId, choice]) => {
+        const select = document.getElementById(selectId);
+        select.value = choice;
+        select.dispatchEvent(new Event('change'));
+    }, [id, value]);
+    await page.waitForTimeout(400);
+};
+// How far the newest message reaches under the message box (0 or less: not covered).
+const lastMessageCovered = () => page.evaluate(async () => {
+    const chat = document.getElementById('chat');
+    chat.scrollTo(0, chat.scrollHeight);
+    await new Promise(resolve => setTimeout(resolve, 400));
+    const last = [...chat.querySelectorAll('.mes')].pop();
+    return last.getBoundingClientRect().bottom - document.getElementById('send_form').getBoundingClientRect().top;
+});
 const dismissPopups = async () => {
     for (let i = 0; i < 5; i++) {
         const open = await page.evaluate(() => {
@@ -308,6 +331,7 @@ await step('search everything finds settings', async () => {
 });
 
 await step('characters page has search, labeled card tools and tabs', async () => {
+    await showTabs();
     await page.locator('.stmui-tab[data-tab="rightNavHolder"]').click();
     await until(() => document.documentElement.dataset.stmuiPage === 'rightNavHolder');
     await page.locator('#character_search_bar').waitFor({ state: 'visible' });
@@ -315,6 +339,77 @@ await step('characters page has search, labeled card tools and tabs', async () =
     if (!ready) throw new Error('card tabs or tool labels missing');
     await page.locator('.stmui-tab[data-tab="chat"]').click();
     await until(() => !document.documentElement.dataset.stmuiPage);
+});
+
+await step('character list shows its page buttons when there is more than one page', async () => {
+    await page.evaluate(async () => {
+        const { accountStorage } = await import('/scripts/util/AccountStorage.js');
+        accountStorage.setItem('Characters_PerPage', '10');
+        await (await import('/script.js')).printCharacters(true);
+    });
+    await showTabs();
+    await page.locator('.stmui-tab[data-tab="rightNavHolder"]').click();
+    await until(() => document.documentElement.dataset.stmuiPage === 'rightNavHolder');
+    try {
+        const next = page.locator('#rm_print_characters_pagination .paginationjs-next > a');
+        await next.waitFor({ state: 'visible' });
+        const size = await next.boundingBox();
+        if (size.height < 44 || size.width < 44) throw new Error(`page button is ${size.width}x${size.height}`);
+        await next.click();
+        await until(() => /^\s*11/.test(document.querySelector('#rm_print_characters_pagination .paginationjs-nav')?.textContent ?? ''));
+    } finally {
+        await page.evaluate(async () => {
+            const { accountStorage } = await import('/scripts/util/AccountStorage.js');
+            accountStorage.setItem('Characters_PerPage', '50');
+            await (await import('/script.js')).printCharacters(true);
+        });
+    }
+    await page.locator('.stmui-tab[data-tab="chat"]').click();
+    await until(() => !document.documentElement.dataset.stmuiPage);
+});
+
+await step('in a chat the tabs tuck away; the arrow brings them back and typing hides them again', async () => {
+    await until(() => document.documentElement.classList.contains('stmui-tabs-tucked'));
+    // Hidden from touch and screen readers once it has slid away (0.2s).
+    await until(() => getComputedStyle(document.querySelector('.stmui-tabbar')).visibility === 'hidden', null, 2000)
+        .catch(() => { throw new Error('the tucked tab bar can still be reached'); });
+    const arrow = page.locator('.stmui-tabs-btn');
+    if (await arrow.getAttribute('aria-expanded') !== 'false') throw new Error('the arrow does not say the tabs are hidden');
+    const box = await arrow.boundingBox();
+    if (box.width < 44 || box.height < 44) throw new Error(`the arrow is ${box.width}x${box.height}`);
+    await arrow.click();
+    await page.locator('.stmui-tab[data-tab="WI-SP-button"]').waitFor({ state: 'visible' });
+    if (await arrow.getAttribute('aria-expanded') !== 'true') throw new Error('the arrow does not say the tabs are shown');
+    await page.locator('#send_textarea').click();
+    await until(() => document.documentElement.classList.contains('stmui-tabs-tucked'));
+    await page.evaluate(() => document.activeElement?.blur());
+    const covered = await lastMessageCovered();
+    if (covered > 1) throw new Error(`the newest message is ${covered}px under the message box`);
+});
+
+await step('compact size and docked message box fit more chat and keep 44px buttons', async () => {
+    const before = await page.evaluate(() => document.querySelector('#chat .mes').getBoundingClientRect().height);
+    await setPref('stmui_size', 'compact');
+    await setPref('stmui_composer', 'docked');
+    try {
+        const state = await page.evaluate(() => ({
+            classes: document.documentElement.className,
+            bar: document.getElementById('stmui-appbar').getBoundingClientRect().height,
+            card: document.querySelector('#chat .mes').getBoundingClientRect().height,
+            small: [...document.querySelectorAll('#send_form .stmui-tabs-btn, #send_form #options_button, #chat .mes .mes_button:not([style*="none"])')]
+                .map(el => el.getBoundingClientRect())
+                .filter(rect => rect.width && (rect.width < 44 || rect.height < 44)).length,
+        }));
+        if (!state.classes.includes('stmui-compact') || !state.classes.includes('stmui-docked')) throw new Error(`classes: ${state.classes}`);
+        if (state.bar > 49) throw new Error(`top bar is ${state.bar}px`);
+        if (state.card >= before) throw new Error('message cards did not get smaller');
+        if (state.small) throw new Error(`${state.small} buttons under 44px`);
+        const covered = await lastMessageCovered();
+        if (covered > 1) throw new Error(`the newest message is ${covered}px under the message box`);
+    } finally {
+        await setPref('stmui_size', 'auto');
+        await setPref('stmui_composer', 'floating');
+    }
 });
 
 await step('banner shows when the server stops answering', async () => {
@@ -340,8 +435,14 @@ await step('turning Pocket Tavern off leaves nothing behind, and on again works'
 });
 
 await step('desktop layout: tabs as a rail, pages beside the chat that stay open', async () => {
+    // Automatic covers computers now: no setting needed. The one-time notice says so.
+    await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        context.extensionSettings.mobileUI.desktopNoticeSeen = false;
+        context.saveSettingsDebounced();
+        await new Promise(resolve => setTimeout(resolve, 2500));
+    });
     const desk = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    await desk.addInitScript(() => localStorage.setItem('stmui_mode', 'always'));
     const tab = await desk.newPage();
     tab.on('pageerror', error => {
         if (/Mobile-UI|PocketTavern|stmui/i.test(`${error.stack ?? ''} ${error.message}`)) extensionErrors.push(`desktop: ${error.message}`);
@@ -349,8 +450,9 @@ await step('desktop layout: tabs as a rail, pages beside the chat that stay open
     try {
         await tab.goto(ST_URL, { waitUntil: 'domcontentloaded' });
         await tab.waitForFunction(() => document.documentElement.classList.contains('stmui-wide'), null, { timeout: 120000 });
-        await tab.waitForTimeout(2500);
+        await tab.waitForFunction(() => /on here too/.test(document.querySelector('#stmui-sheet')?.textContent ?? ''), null, { timeout: 10000 });
         await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+        await tab.waitForTimeout(600);
         const rail = await tab.evaluate(() => { const r = document.querySelector('.stmui-tabbar').getBoundingClientRect(); return { w: r.width, h: r.height }; });
         if (rail.w > 120 || rail.h < 300) throw new Error(`tabs are not a rail: ${JSON.stringify(rail)}`);
         await tab.locator('.stmui-tab[data-tab="ai-config-button"]').click();
