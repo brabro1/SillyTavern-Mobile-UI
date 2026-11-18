@@ -30,7 +30,7 @@
 export const THEMES = [
     {
         id: 'midnight', name: 'Midnight', note: 'Deep blue, violet glow', mode: 'dark',
-        bg: '#0f1020', raised: '#1a1b33', text: '#e6e6f5', muted: '#a3a3c2', accent: '#8b7cf6', onAccent: '#ffffff', quote: '#c4b5fd',
+        bg: '#0f1020', raised: '#1a1b33', text: '#e6e6f5', muted: '#a3a3c2', accent: '#8b7cf6', onAccent: '#14102e', quote: '#c4b5fd',
         user: 'rgba(139, 124, 246, 0.16)', bot: 'rgba(255, 255, 255, 0.045)', border: 'rgba(160, 160, 255, 0.14)',
         backdrop: 'radial-gradient(120% 70% at 85% 0%, #2a2160 0%, transparent 60%), radial-gradient(90% 60% at 0% 100%, #142046 0%, transparent 65%), #0b0c18',
     },
