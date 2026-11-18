@@ -21,6 +21,8 @@
     --stmui-line: color-mix(in srgb, var(--stmui-text) 14%, transparent);
     --stmui-accent-soft: color-mix(in srgb, var(--stmui-accent) 16%, transparent);
     --stmui-on-accent: #fff;
+    /* Destructive actions. Mixed toward the text colour so it stays readable on light and dark themes. */
+    --stmui-danger: color-mix(in srgb, #e5484d 78%, var(--stmui-text));
     --stmui-tap: 48px;
     --stmui-radius: 16px;
     --stmui-radius-sm: 12px;
@@ -138,9 +140,9 @@
     align-items: stretch;
     max-width: 100%;
     min-width: 0;
-    border: 1px solid color-mix(in srgb, var(--stmui-accent) 55%, transparent);
+    border: 1px solid var(--stmui-line);
     border-radius: 999px;
-    background: var(--stmui-accent-soft);
+    background: var(--stmui-raised-2);
     color: var(--stmui-text);
     overflow: hidden;
 }
@@ -353,12 +355,19 @@ dialog.stmui-sheet.stmui-sheet-open::backdrop {
 .stmui-done {
     flex: 0 0 auto;
     min-height: 44px;
-    min-width: 84px;
-    margin: 0;
-    padding: 0 18px;
-    border-color: var(--stmui-accent);
-    border-radius: 999px;
+    min-width: 64px;
+    margin: 0 -8px 0 0;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--stmui-text);
+    font-size: 16px;
     font-weight: 600;
+}
+
+.stmui-done:active {
+    background: var(--stmui-raised-2);
 }
 
 .stmui-search {
@@ -717,8 +726,8 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     width: 44px;
     height: 44px;
     border-radius: 14px;
-    background: var(--stmui-accent-soft);
-    color: var(--stmui-accent);
+    background: var(--stmui-raised-2);
+    color: var(--stmui-text);
     font-size: 20px;
 }
 
@@ -794,7 +803,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
 
 .stmui-menu-row-icon {
     width: 22px;
-    color: var(--stmui-accent);
+    color: var(--stmui-muted);
     text-align: center;
 }
 
@@ -1059,8 +1068,8 @@ html.stmui-shell .stmui-appbar {
 
 .stmui-ab-avatar-icon {
     border-radius: 12px;
-    background: var(--stmui-accent-soft);
-    color: var(--stmui-accent);
+    background: var(--stmui-raised-2);
+    color: var(--stmui-text);
 }
 
 .stmui-ab-text {
@@ -1107,10 +1116,11 @@ html.stmui-shell .stmui-appbar {
     flex: 0 0 auto;
 }
 
-/* Small phones: slimmer buttons so the character's name still fits next to them. */
+/* Small phones: the buttons sit closer, but their tap area stays 44px. */
 @media (max-width: 400px) {
     .stmui-ab-btn {
-        width: 38px;
+        width: 44px;
+        margin: 0 -2px;
     }
 }
 
@@ -1579,9 +1589,12 @@ html.stmui-chat:not(.stmui-editing) #chat .mes .ch_name .timestamp {
 }
 
 html.stmui-chat:not(.stmui-editing) #chat .mes .mes_buttons .mes_button {
-    min-width: 36px;
-    min-height: 36px;
-    font-size: 15px;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -4px 0;
+    color: var(--stmui-muted);
+    font-size: 16px;
+    opacity: 1;
 }
 
 /* The text: the whole width of the card, a little air under the header. */
@@ -1701,6 +1714,18 @@ html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right {
     opacity: 0.85;
 }
 
+html.stmui-chat:not(.stmui-editing) #chat .mes > .swipe_left,
+html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right {
+    position: relative;
+}
+
+html.stmui-chat:not(.stmui-editing) #chat .mes > .swipe_left::after,
+html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+}
+
 html.stmui-chat:not(.stmui-editing) #chat .mes > :is(.swipe_left, .swipeRightBlock .swipe_right):active {
     background: color-mix(in srgb, var(--stmui-text) 12%, transparent);
 }
@@ -1719,13 +1744,22 @@ html.stmui-chat:not(.stmui-editing) #chat .mes .swipes-counter {
     opacity: 1;
 }
 
+/* One version only: no "1/1", just the round "new version" button. */
+html.stmui-chat:not(.stmui-editing) #chat .mes.stmui-one-swipe .swipes-counter {
+    display: none;
+}
+
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes.stmui-one-swipe > .swipeRightBlock {
+    padding: 0;
+    border-radius: 999px;
+}
+
 /* The last version: "next" makes a new one. */
 html.stmui-chat.stmui-icons:not(.stmui-editing) #chat .mes.last_swipe > .swipeRightBlock .swipe_right {
     --stmui-icon: var(--stmui-regen-icon);
 }
 
 html.stmui-chat:not(.stmui-editing) #chat .mes.last_swipe > .swipeRightBlock .swipe_right {
-    color: var(--stmui-accent);
     opacity: 1;
 }
 
@@ -1775,9 +1809,9 @@ html.stmui-chat #chat .mes .mes_reasoning_header {
 html.stmui-chat #chat .mes .mes_reasoning_header::before {
     content: '';
     flex: 0 0 auto;
-    width: 15px;
-    height: 15px;
-    background: var(--stmui-accent);
+    width: 16px;
+    height: 16px;
+    background: currentColor;
     -webkit-mask: var(--stmui-think-icon) center / contain no-repeat;
     mask: var(--stmui-think-icon) center / contain no-repeat;
 }
@@ -1862,7 +1896,7 @@ html.stmui-chat #send_form {
     border: 1px solid var(--stmui-line) !important;
     border-radius: 24px;
     background: var(--stmui-raised) !important;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1917,8 +1951,8 @@ html.stmui-chat #rightSendForm {
 html.stmui-chat #leftSendForm > div,
 html.stmui-chat #rightSendForm > div:not(.mes_stop):not(.stscript_btn),
 html.stmui-chat #options_button {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     margin: 0;
     border-radius: 50%;
     font-size: 18px;
@@ -1962,7 +1996,7 @@ html.stmui-chat #rightSendForm > #send_but {
     opacity: 1 !important;
     text-shadow: none;
     filter: none;
-    box-shadow: 0 2px 10px color-mix(in srgb, var(--stmui-accent) 35%, transparent);
+    box-shadow: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }
@@ -2232,7 +2266,8 @@ html.stmui-touch .drawer-content .flexFlowColumn:has(> .neo-range-slider) .neo-r
 
 html.stmui-touch #clickSlidersTips {
     position: static;
-    padding: 2px 32px 6px 0;
+    padding: 4px 32px 8px 12px;
+    font-size: 12px;
     text-align: left;
 }
 
@@ -2646,7 +2681,7 @@ html.stmui-touch #options .options-content i,
 html.stmui-touch #extensionsMenu .extensionsMenuExtensionButton {
     width: 24px;
     min-width: 24px;
-    color: var(--stmui-accent);
+    color: var(--stmui-muted);
     font-size: 18px;
 }
 
@@ -2858,8 +2893,8 @@ html.stmui-on .mes_text video {
     html.stmui-chat #leftSendForm > div,
     html.stmui-chat #rightSendForm > div:not(.mes_stop):not(.stscript_btn),
     html.stmui-chat #options_button {
-        width: 36px;
-        height: 36px;
+        width: 44px;
+        height: 44px;
     }
 }
 
@@ -2894,12 +2929,13 @@ html.stmui-on .mes_text video {
     gap: 7px;
     min-width: 0;
     max-width: 128px;
-    height: 34px;
+    height: 40px;
+    min-height: 40px;
     margin: 0 4px 0 1px;
-    padding: 0 11px 0 3px;
+    padding: 0 12px 0 4px;
     border: 1px solid var(--stmui-line);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--stmui-accent) 9%, transparent);
+    background: var(--stmui-raised-2);
     color: var(--stmui-text);
     font: inherit;
     font-size: 13px;
@@ -2915,11 +2951,11 @@ html.stmui-on .mes_text video {
 
 .stmui-persona-img {
     flex: 0 0 auto;
-    width: 26px;
-    height: 26px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     object-fit: cover;
-    box-shadow: 0 0 0 1.5px var(--stmui-raised), 0 0 0 3px color-mix(in srgb, var(--stmui-accent) 70%, transparent);
+    box-shadow: none;
 }
 
 .stmui-persona-name {
@@ -2942,8 +2978,8 @@ html.stmui-on .mes_text video {
     display: inline-grid;
     flex: 0 0 auto;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -2984,9 +3020,9 @@ html.stmui-on .mes_text video {
 }
 
 .stmui-ctx-ring svg {
-    inset: 4px;
-    width: 28px;
-    height: 28px;
+    inset: 3px;
+    width: 38px;
+    height: 38px;
 }
 
 .stmui-ctx-warn .stmui-ctx-fill {
@@ -3009,7 +3045,7 @@ html.stmui-on .mes_text video {
 .stmui-ctx-num {
     position: relative;
     color: var(--stmui-text);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
@@ -3201,9 +3237,9 @@ html.stmui-motion-full .stmui-sheet-open .stmui-ctx-bar > span {
     margin: 12px 14px 0;
     padding: 10px 12px;
     border-radius: 12px;
-    background: color-mix(in srgb, var(--stmui-accent) 10%, transparent);
+    background: var(--stmui-raised);
     color: var(--stmui-text);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.4;
 }
 
@@ -3255,8 +3291,8 @@ html.stmui-motion-full .stmui-sheet-open .stmui-ctx-bar > span {
     flex: 1 1 140px;
     align-items: center;
     justify-content: center;
-    gap: 7px;
-    min-height: 42px;
+    gap: 8px;
+    min-height: 44px;
     padding: 0 14px;
     border: 1px solid var(--stmui-line);
     border-radius: 999px;
@@ -3269,9 +3305,9 @@ html.stmui-motion-full .stmui-sheet-open .stmui-ctx-bar > span {
 }
 
 .stmui-ctx-btn .stmui-svg {
-    width: 17px;
-    height: 17px;
-    color: var(--stmui-accent);
+    width: 18px;
+    height: 18px;
+    color: var(--stmui-muted);
 }
 
 .stmui-ctx-btn:active {
@@ -3326,7 +3362,7 @@ html.stmui-themed.stmui-backdrop #chat {
 .stmui-menu-row .stmui-menu-row-icon {
     width: 21px;
     height: 21px;
-    color: var(--stmui-accent);
+    color: var(--stmui-muted);
 }
 
 .stmui-menu-row .stmui-menu-row-go {
@@ -3396,6 +3432,49 @@ html.stmui-touch input[type='checkbox']:not(.stmui-switch):not(.del_checkbox) {
 html.stmui-touch input[type='checkbox']:not(.stmui-switch):not(.del_checkbox):checked {
     border-color: var(--stmui-accent);
     background-color: var(--stmui-accent);
+}
+
+/* On settings pages a checkbox with a label is a pill toggle, the same as Pocket Tavern's own switches. */
+html.stmui-touch .drawer-content label.checkbox_label > input[type='checkbox']:not(.stmui-switch) {
+    position: relative;
+    flex: 0 0 auto;
+    width: 40px !important;
+    height: 24px !important;
+    min-width: 40px;
+    margin: 0;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px;
+    background-color: var(--stmui-raised-2);
+}
+
+html.stmui-touch .drawer-content label.checkbox_label > input[type='checkbox']:not(.stmui-switch)::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: none;
+    clip-path: none;
+    transform: none;
+    transition: transform 0.2s var(--stmui-ease);
+}
+
+html.stmui-touch .drawer-content label.checkbox_label > input[type='checkbox']:not(.stmui-switch):checked {
+    border-color: var(--stmui-accent);
+    background-color: var(--stmui-accent);
+}
+
+html.stmui-touch .drawer-content label.checkbox_label > input[type='checkbox']:not(.stmui-switch):checked::before {
+    transform: translateX(16px);
+}
+
+html.stmui-touch .drawer-content label.checkbox_label:has(> input[type='checkbox']) {
+    min-height: 44px;
+    align-items: center;
+    gap: 12px;
 }
 
 html.stmui-touch input[type='checkbox']:not(.stmui-switch)::before {
@@ -4133,7 +4212,7 @@ html.stmui-touch #completion_prompt_manager .prompt_manager_prompt_tokens {
     box-sizing: border-box;
     width: 42px;
     height: 42px;
-    border: 2px solid var(--stmui-accent);
+    border: 2px solid var(--stmui-line);
     border-radius: 50%;
     animation: stmui-send-ring 0.6s var(--stmui-ease) both;
 }
@@ -4345,7 +4424,7 @@ html[data-stmui-text='xl'] {
 /* Message menu: a destructive action at the end, in red. */
 .stmui-menu-row-danger,
 .stmui-menu-row-danger .stmui-menu-row-icon {
-    color: #ef6f6f;
+    color: var(--stmui-danger);
 }
 
 /* ==========================================================================
@@ -5294,7 +5373,7 @@ html.stmui-on.stmui-fast-chat #chat.stmui-fast-prime > .mes:not(.last_mes):not(:
 }
 
 .stmui-ab-quick {
-    color: var(--stmui-accent);
+    color: var(--stmui-text);
 }
 
 /* ==========================================================================
@@ -5589,7 +5668,7 @@ html.stmui-charpage #HotSwapWrapper .hotswap .avatar {
 html.stmui-charpage #HotSwapWrapper .hotswap .avatar img {
     width: 52px;
     height: 52px;
-    border: 2px solid var(--stmui-accent);
+    border: 2px solid var(--stmui-line);
     border-radius: 50%;
     object-fit: cover;
 }
@@ -5714,8 +5793,8 @@ html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block {
     display: block;
     min-width: 16px;
     padding: 1px 2px;
-    color: var(--stmui-accent);
-    font-size: 11px;
+    color: var(--stmui-muted);
+    font-size: 12px;
     font-weight: 700;
     line-height: 1.25;
     text-align: center;
@@ -5771,7 +5850,7 @@ html.stmui-charpage #avatar_div_div img {
 
 html.stmui-charpage #avatar_div_div {
     margin: 4px auto 0;
-    box-shadow: 0 0 0 3px var(--stmui-accent-soft), 0 10px 28px rgba(0, 0, 0, 0.35);
+    box-shadow: none;
 }
 
 html.stmui-charpage #avatar_div .stmui-hero-name {
@@ -5979,7 +6058,7 @@ html.stmui-chat .stmui-chat-group[hidden] {
 }
 
 html.stmui-chat .stmui-chat-group.stmui-group-open {
-    border-color: color-mix(in srgb, var(--stmui-accent) 35%, var(--stmui-line));
+    border-color: var(--stmui-line);
 }
 
 html.stmui-chat .stmui-group-head {
@@ -6022,7 +6101,7 @@ html.stmui-chat .stmui-group-face .stmui-group-avatar {
     margin: 0;
     overflow: hidden;
     border-radius: 50%;
-    box-shadow: 0 0 0 2px var(--stmui-raised), 0 0 0 3.5px color-mix(in srgb, var(--stmui-accent) 55%, transparent);
+    box-shadow: none;
 }
 
 html.stmui-chat .stmui-group-face .stmui-group-avatar img {
@@ -6042,9 +6121,9 @@ html.stmui-chat .stmui-group-badge {
     box-sizing: border-box;
     border: 2px solid var(--stmui-raised);
     border-radius: 999px;
-    background: var(--stmui-accent);
-    color: var(--stmui-on-accent);
-    font-size: 11px;
+    background: var(--stmui-raised-2);
+    color: var(--stmui-text);
+    font-size: 12px;
     font-weight: 800;
     line-height: 16px;
     text-align: center;
@@ -6115,7 +6194,7 @@ html.stmui-chat .stmui-group-toggle .stmui-svg {
 }
 
 html.stmui-chat .stmui-group-open .stmui-group-toggle {
-    color: var(--stmui-accent);
+    color: var(--stmui-text);
 }
 
 html.stmui-chat .stmui-group-open .stmui-group-toggle .stmui-svg {
@@ -6160,8 +6239,8 @@ html.stmui-chat .stmui-group-action {
     flex: 1 0 auto;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    height: 36px;
+    gap: 8px;
+    height: 44px;
     padding: 0 12px;
     border: 1px solid var(--stmui-line);
     border-radius: 999px;
@@ -6177,7 +6256,7 @@ html.stmui-chat .stmui-group-action {
 html.stmui-chat .stmui-group-action .stmui-svg {
     width: 16px;
     height: 16px;
-    color: var(--stmui-accent);
+    color: var(--stmui-muted);
 }
 
 html.stmui-chat .stmui-group-action:active {
@@ -6201,7 +6280,7 @@ html.stmui-chat .stmui-group-chats::before {
     left: 18px;
     width: 2px;
     border-radius: 2px;
-    background: color-mix(in srgb, var(--stmui-accent) 30%, transparent);
+    background: var(--stmui-line);
 }
 
 html.stmui-chat .welcomeRecent .recentChatList .stmui-group-chats .recentChat {
@@ -6247,7 +6326,7 @@ html.stmui-chat .welcomeRecent .stmui-group-chats .recentChat::before {
     height: 10px;
     border: 2px solid var(--stmui-raised);
     border-radius: 50%;
-    background: color-mix(in srgb, var(--stmui-accent) 70%, var(--stmui-raised));
+    background: var(--stmui-faint);
 }
 
 /* SillyTavern folds some chats away (and makes them invisible); inside a group they all count. */
@@ -6276,7 +6355,7 @@ html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
     padding: 14px;
     border: 1px solid var(--stmui-line);
     border-radius: 20px;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--stmui-accent) 14%, transparent), transparent 70%), var(--stmui-raised);
+    background: var(--stmui-raised);
 }
 
 .stmui-persona-card-img {
@@ -6284,7 +6363,7 @@ html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
     height: 58px;
     border-radius: 50%;
     object-fit: cover;
-    box-shadow: 0 0 0 2px var(--stmui-raised), 0 0 0 4px color-mix(in srgb, var(--stmui-accent) 70%, transparent);
+    box-shadow: none;
 }
 
 .stmui-persona-card-text {
@@ -6771,7 +6850,7 @@ html.stmui-charpage .stmui-az {
 
 html.stmui-charpage .stmui-az span {
     min-width: 18px;
-    font-size: 10.5px;
+    font-size: 12px;
 }
 
 /* The picture sets the card's height (a card made only of overlays would collapse). */
@@ -6877,8 +6956,37 @@ html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > .menu_b
 html.stmui-charpage .stmui-btn-label {
     max-width: 100%;
     overflow: hidden;
-    font-size: 10.5px;
+    font-size: 12px;
     text-overflow: ellipsis;
+}
+
+/* Delete: last in its group and quiet. Only its icon and label are red; the fill
+   belongs to the confirm that follows. */
+html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > #delete_button {
+    order: 99;
+    /* SillyTavern fills it red with !important. */
+    border-color: var(--stmui-line) !important;
+    background-color: var(--stmui-raised) !important;
+    color: var(--stmui-danger) !important;
+}
+
+/* Lore and Chat lore look like every other tile. A linked lorebook gets a small
+   dot, so the information SillyTavern showed in green is not lost. */
+html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > :is(#world_button, .chat_lorebook_button) {
+    position: relative;
+    /* SillyTavern colours a linked one green with !important. */
+    color: var(--stmui-text) !important;
+}
+
+html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > :is(#world_button, .chat_lorebook_button).world_set::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--stmui-accent);
 }
 
 
@@ -6950,7 +7058,7 @@ html.stmui-chat #chat .mes.stmui-long .stmui-more-btn {
     border: 1px solid var(--stmui-line);
     border-radius: 999px;
     background: var(--stmui-raised-2);
-    color: var(--stmui-accent);
+    color: var(--stmui-text);
     font: inherit;
     font-size: 13px;
     font-weight: 700;
@@ -7221,8 +7329,8 @@ html.stmui-lorecards #world_popup_entries_list .stmui-entry-keys[hidden] {
     height: 24px;
     padding: 0 10px;
     border-radius: 999px;
-    background: var(--stmui-accent-soft);
-    color: var(--stmui-accent);
+    background: var(--stmui-raised-2);
+    color: var(--stmui-text);
     font-size: 12.5px;
     font-weight: 600;
 }
@@ -7496,8 +7604,8 @@ html.stmui-touch .range-block-counter.stmui-stepper input {
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     border: 1px solid var(--stmui-line);
     border-radius: 50%;

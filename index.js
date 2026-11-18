@@ -167,6 +167,11 @@ const PAGES = {
     'rightNavHolder': { title: 'Characters', long: 'Characters and groups', icon: 'users' },
 };
 
+/** Subtitles on the More tiles, only where they add information. */
+const TILE_NOTES = {
+    'persona-management-button': 'Who you are in the chat',
+};
+
 const TABS = [
     { id: 'chat', label: 'Chat', icon: 'chat' },
     { id: 'rightNavHolder', label: 'Characters', icon: 'users' },
@@ -1590,7 +1595,8 @@ function openMoreSheet() {
             const status = ctx().onlineStatus;
             const tiles = drawers.map(drawer => {
                 const info = pageInfo(drawer);
-                let note = info.long ?? '';
+                // Only notes that add something: "Backgrounds / Chat backgrounds" just repeats the title.
+                let note = TILE_NOTES[drawer.id] ?? '';
                 if (drawer.id === 'sys-settings-button') note = status && status !== 'no_connection' ? 'Connected' : 'Not connected';
                 return h('button', {
                     type: 'button',
@@ -1609,7 +1615,7 @@ function openMoreSheet() {
                 type: 'button',
                 class: 'stmui-search-field',
                 onclick: () => openGlobalSearch(),
-            }, [ui('search'), h('span', { text: 'Search characters, chats, lorebooks, settings' })]));
+            }, [ui('search'), h('span', { text: 'Search everything' })]));
             body.append(h('div', { class: 'stmui-tiles' }, tiles));
 
             const context = ctx();
@@ -4850,6 +4856,21 @@ function onSwipedEvent(event) {
 const LONG_MESSAGE = 2500;
 
 /**
+ * The swipe pill shows "1/3" only when there is more than one version. With
+ * one, it is just the round "new version" button.
+ */
+function syncSwipeCounters() {
+    requestAnimationFrame(() => {
+        const chat = ctx().chat ?? [];
+        const all = document.body.classList.contains('swipeAllMessages');
+        for (const mes of document.querySelectorAll(all ? '#chat > .mes' : '#chat > .mes.last_mes, #chat > .mes.stmui-one-swipe')) {
+            const message = chat[Number(mes.getAttribute('mesid'))];
+            mes.classList.toggle('stmui-one-swipe', active && !((message?.swipes?.length ?? 0) > 1));
+        }
+    });
+}
+
+/**
  * "Faster long chats" skips drawing messages that are off screen and guesses
  * their height until they are drawn. Scrolling up into a message drawn for the
  * first time then changed its height, and the chat moved under your finger.
@@ -5198,7 +5219,7 @@ function paintRing(ring, share, empty) {
     ring.classList.toggle('stmui-ctx-warn', !empty && share > 0.85 && share <= 0.98);
     ring.classList.toggle('stmui-ctx-full', !empty && share > 0.98);
     const num = ring.querySelector('.stmui-ctx-num');
-    if (num) num.textContent = empty ? '' : String(percent);
+    if (num) num.textContent = empty ? '' : `${percent}%`;
 }
 
 function onPromptReady(data) {
@@ -6251,6 +6272,8 @@ function syncExtras() {
     applyTextSize();
     applyChatLook();
     syncComposer();
+    // (Also takes the one-version marker off again when Pocket Tavern turns off.)
+    syncSwipeCounters();
     foldLongMessages();
     syncLoreEntries();
     syncTriggerChips();
@@ -6591,6 +6614,7 @@ function init() {
     // Folded messages follow whatever changes in the chat.
     let chatTimer = 0;
     const chatChanged = () => {
+        syncSwipeCounters();
         window.clearTimeout(chatTimer);
         chatTimer = window.setTimeout(foldLongMessages, 200);
     };
