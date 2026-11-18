@@ -1,0 +1,123 @@
+# Pocket Tavern design guide
+
+Rules for any change to how Pocket Tavern looks. Read this before touching `style.css`, `themes.js`, or the markup in `index.js`. The `frontend-design` skill in `.claude/skills/` works inside these rules. Where this file is specific, this file wins.
+
+## What this is
+
+- **Subject:** a phone-first layer over SillyTavern, used for long roleplay and story chats on Android (Termux), often one-handed, often at night.
+- **Primary job:** reading and writing chat messages comfortably. Everything else (characters, lorebooks, presets, settings) is a quick detour that gets you back to the chat.
+- **Audience:** people who spend hours in one conversation and tweak settings often. They know SillyTavern. They do not want a "cute" app, they want one that disappears.
+
+## Principles
+
+1. **The chat is the hero.** Message text is the biggest, most readable thing on the screen. Chrome (bars, tabs, buttons) stays quiet.
+2. **Spend colour in one place.** One accent per theme, used only for meaning (see *Accent*). If everything is accented, nothing is.
+3. **Thumb first.** Reachable controls sit at the bottom. Nothing you tap is smaller than 44px.
+4. **Dense where you work, calm where you read.** Settings pages may be compact. Chat never is.
+5. **Every change must survive all themes.** Light and dark, translucent and opaque.
+6. **Decoration has to carry information.** Borders, dividers, badges, dots and glows exist because they tell the user something. Otherwise delete them.
+
+## Tokens
+
+Use the existing tokens in `style.css` (`:root`) and `themes.js`. Do not add a raw hex or a one-off pixel value when a token fits.
+
+### Colour roles (already defined)
+
+| Role | Token | Use |
+|---|---|---|
+| Page | `--stmui-surface`, `--stmui-solid` | App and sheet backgrounds |
+| Cards, fields | `--stmui-raised`, `--stmui-raised-2` | Two raised levels, no more |
+| Lines | `--stmui-line` | Every border and divider |
+| Text | `--stmui-text` | Body and titles |
+| Secondary | `--stmui-muted` | Narration, hints, captions |
+| Tertiary | `--stmui-faint` | Decoration only: chevrons, handles. **Never** for something you can tap |
+| Accent | `--stmui-accent`, `--stmui-accent-soft`, `--stmui-on-accent` | See below |
+
+### Accent: only for these
+
+- The one primary action on a screen (Send, Save, Add).
+- The active tab and the current selection.
+- On-state of a toggle, slider fill, focus ring.
+- A live status (connected, context ring).
+
+Not for: every row icon, every chip, every border, section titles, the A–Z strip, or dismiss buttons. Row icons use `--stmui-text` at `--stmui-muted` strength. A **Close** or **Cancel** control is never filled or accent-outlined.
+
+### Danger
+
+Destructive actions (Delete, Clear) use a dedicated danger colour. Keep the tile quiet by default (danger-coloured icon and label on a normal raised surface). Fill it only inside its confirmation. It never sits at the same weight as Favorite or Export, and it goes last in its group.
+
+Do not use SillyTavern's stock green for "Lore" or "Chat lore" tiles. Style them like every other tile.
+
+### Type scale
+
+One family: the theme's `--mainFontFamily`, falling back to `system-ui`. Sizes are multiplied by `--stmui-text-scale`. Use only these steps:
+
+| Step | Size | Use |
+|---|---|---|
+| caption | 12px | Hints, timestamps, badges. Smallest allowed. No 9–11px text |
+| small | 14px | Secondary labels, chips, field labels |
+| body | 16px | UI text, buttons, list rows |
+| chat | 17–18px (`calc(var(--mainFontSize) * var(--stmui-text-scale))`) | Message text |
+| title | 20px | Page and sheet titles |
+| display | 26px | Character name on the card, empty-state headline |
+
+Fold the existing 9 / 11 / 11.5 / 12.5 / 13 / 13.5 / 15 / 17 / 19px values into these steps when you touch them. Weights: 400 body, 600 for labels and titles. No all-caps labels, no letter-spaced eyebrows.
+
+### Radius
+
+Three values and a pill: `8px` (small inline things), `12px` (`--stmui-radius-sm`: fields, buttons, tiles), `16px` (`--stmui-radius`: cards, sheets), `999px` (pills, chips, avatars). Fold 14 / 15 / 18 / 20 / 22 / 24 into these.
+
+### Spacing
+
+Multiples of 4: `4, 8, 12, 16, 24`. Page gutter is 16px on every page, including hint text and headers. New code does not use 6px, 10px or 14px.
+
+### Touch targets
+
+- `--stmui-tap` (48px) for primary controls and list rows.
+- **44px is the floor.** Anything smaller than 44px is a bug, including −/+ steppers, icon buttons and chevrons.
+- A control can look smaller than its hit area (a 32px icon inside a 44px button). The hit area is what counts.
+
+### Elevation and motion
+
+- No drop shadows. Separation comes from `--stmui-raised`, `--stmui-line` and the sheet scrim.
+- Motion answers a tap (sheet opens, row expands, toggle flips). 120–250ms, `--stmui-ease` / `--stmui-ease-sheet`. `--stmui-ease-pop` only for small confirmations.
+- No entrance animation that plays on its own, no hover effects (this is a phone), and everything respects `prefers-reduced-motion` and the **Light** animations setting.
+
+## Themes (`themes.js`)
+
+- A theme is not a hue swap. Seven of the twelve themes currently share one recipe: tinted dark background, two radial glows, one saturated accent. A new theme must differ in structure too (surface lightness, contrast character, backdrop), or it is not added.
+- Backdrops: at most one soft glow, or flat. No two-glow gradients on new themes.
+- **Contrast is checked, not eyeballed:** text on surface ≥ 4.5:1, `onAccent` on `accent` ≥ 4.5:1, accent and icons on surface ≥ 3:1. Midnight's `onAccent` (white on `#8b7cf6`, 3.3:1) currently fails and needs a darker `onAccent` or accent.
+- Be aware of the common generated look: cream background with a terracotta accent. **Paper** (`#f7f3ec` + `#c2410c`) is exactly that, and AMOLED (black + one bright accent) is the other usual default. Keep them if you like them, but do not add more themes in those families.
+
+## Components
+
+- **Tabs:** icon above label, active state is a filled soft-accent pill. Max five.
+- **Message cards:** header (avatar, name, date), full-width text, actions in one row. Action icons ("…", edit) are real controls: use `--stmui-muted`, not `--stmui-faint`.
+- **Swipe pill:** shown only when there is more than one swipe, or when the last message offers a new one.
+- **Composer:** the border is neutral at rest and accent only while focused. The context ring shows the number with its unit or a label on tap.
+- **Sheets:** handle, title, content. Dismiss with the handle, the scrim or back. A Close button is plain text, not an outlined button.
+- **Settings rows:** label left, control right, helper text under the label. Checkboxes in Pocket Tavern pages are always the pill toggle, never the browser checkbox.
+- **Placeholder avatars:** one tonal colour derived from the theme (not a random rainbow), with the initial. No half-body silhouette.
+- **Lists of records (characters, lorebook entries):** one row, one clear title, at most two lines of metadata. Status dots always have a label or a tooltip you can reach by tap.
+
+## Writing
+
+- Sentence case. Plain verbs. "Save changes", not "Submit".
+- A subtitle exists only if it adds information. "Backgrounds / Chat backgrounds" is filler. "API / Connected" is not.
+- Errors say what happened and what to do. They do not apologise.
+- The same action keeps the same name everywhere (the button that says "Delete" leads to a confirm that says "Delete").
+- Search placeholders must fit on the narrowest supported phone (320px). Shorten them rather than letting them clip.
+
+## Before you ship a UI change
+
+1. Run `node tests/screenshots.mjs` (see the header of that file) and look at the changed screens on a 375px viewport, in at least one dark and one light theme.
+2. No new raw colour, radius, font size or spacing value outside this guide.
+3. No tappable thing under 44px. No tappable thing using `--stmui-faint`.
+4. Accent appears only in the roles listed above.
+5. `node tests/check.mjs` and `node tests/phone.mjs` pass.
+6. Remove one decoration. If nothing was missed, leave it removed.
+
+## Known gaps (from the November 2026 audit)
+
+Not yet fixed, in priority order: Delete tile weight and stock green tiles; accent overuse across rows and icons; shared theme recipe; rainbow placeholder avatars; no enforced type and radius scale; 34–38px controls (preset steppers); faint message action icons and Midnight `onAccent` contrast; composer rest border, "1/1" swipe pill, unlabeled context ring, Presets hint misaligned (x=10 vs the 24px content edge), unstyled "Unlocked" checkbox, clipped search placeholder, filler menu subtitles.
