@@ -1,6 +1,15 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.15.1',
+        items: [
+            "Fixed: tapping anywhere on a reply with several versions went back to the previous version.",
+            "Fixed: opening a chat sometimes left you in the middle instead of at the newest message.",
+            "Sheets drag down smoothly, also from their content, and a quick flick closes them.",
+            "The message box has a soft shadow, so it sits clearly above the chat.",
+        ],
+    },
+    {
         version: '2.15.0',
         items: [
             "A calmer, more deliberate look: the accent colour only marks what matters, Close is plain text, and there are no more shadows or all-caps labels.",

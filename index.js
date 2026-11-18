@@ -526,33 +526,82 @@ function wireSheet(target) {
         closeSheet();
     });
 
+    // Drag down to close: from the top strip, or from the contents when they are
+    // scrolled to the top. The sheet is its own layer while dragging and moves
+    // once per frame; the dimmed background lightens with it; a quick flick closes.
     let startY = null;
+    let lastY = 0;
+    let lastT = 0;
+    let speed = 0;
     let dy = 0;
+    let dragging = false;
+    let frame = 0;
+    const paint = () => {
+        frame = 0;
+        panel.style.transform = `translateY(${dy}px)`;
+        dialog.style.setProperty('--stmui-drag', String(Math.min(1, dy / Math.max(1, panel.offsetHeight))));
+    };
     const begin = event => {
-        if (event.target.closest('button')) return;
-        startY = event.touches[0].clientY;
+        // Rows and buttons can start a drag too (most of a sheet is rows); fields cannot.
+        if (event.touches.length !== 1 || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+        startY = lastY = event.touches[0].clientY;
+        lastT = event.timeStamp;
+        speed = 0;
         dy = 0;
-        panel.style.transition = 'none';
+        dragging = false;
     };
     const move = event => {
         if (startY === null) return;
-        dy = Math.max(0, event.touches[0].clientY - startY);
-        panel.style.transform = `translateY(${dy}px)`;
+        const y = event.touches[0].clientY;
+        if (!dragging) {
+            // From the contents, only a downward pull at the very top drags; anything else scrolls.
+            const body = event.currentTarget === head ? null : event.currentTarget;
+            if (y - startY < 6 || (body && body.scrollTop > 0)) {
+                if (body && (y - startY < -6 || body.scrollTop > 0)) startY = null;
+                return;
+            }
+            dragging = true;
+            startY = y;
+            panel.style.transition = 'none';
+            panel.style.willChange = 'transform';
+        }
+        if (event.cancelable) event.preventDefault();
+        const dt = Math.max(1, event.timeStamp - lastT);
+        speed = (y - lastY) / dt;
+        lastY = y;
+        lastT = event.timeStamp;
+        dy = Math.max(0, y - startY);
+        if (!frame) frame = requestAnimationFrame(paint);
     };
     const end = () => {
         if (startY === null) return;
         startY = null;
+        if (!dragging) return;
+        dragging = false;
+        cancelAnimationFrame(frame);
+        frame = 0;
+        // A drag that started on a row must not also press it.
+        const swallow = click => {
+            click.preventDefault();
+            click.stopPropagation();
+        };
+        dialog.addEventListener('click', swallow, { capture: true, once: true });
+        setTimeout(() => dialog.removeEventListener('click', swallow, { capture: true }), 400);
         panel.style.transition = '';
-        // Pulled far enough: keep going down from where the finger let go.
-        if (dy > 90) {
+        panel.style.willChange = '';
+        dialog.style.removeProperty('--stmui-drag');
+        // Pulled far enough, or flicked down: keep going from where the finger let go.
+        if (dy > 90 || speed > 0.55) {
             panel.style.transform = 'translateY(100%)';
             closeSheet();
         } else panel.style.transform = '';
     };
-    head.addEventListener('touchstart', begin, { passive: true });
-    head.addEventListener('touchmove', move, { passive: true });
-    head.addEventListener('touchend', end);
-    head.addEventListener('touchcancel', end);
+    for (const area of [head, target.body ?? target.list].filter(Boolean)) {
+        area.addEventListener('touchstart', begin, { passive: true });
+        area.addEventListener('touchmove', move, { passive: false });
+        area.addEventListener('touchend', end);
+        area.addEventListener('touchcancel', end);
+    }
 }
 
 class Sheet {
@@ -4886,8 +4935,35 @@ function primeChatSizes(delay = 0) {
         if (!active || !settings.fastChat || !chat) return;
         chat.classList.add('stmui-fast-prime');
         // Drawn in the next frame (heights are remembered then), skipped again after it.
-        requestAnimationFrame(() => requestAnimationFrame(() => chat.classList.remove('stmui-fast-prime')));
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            chat.classList.remove('stmui-fast-prime');
+            keepAtNewest();
+        }));
     }, delay);
+}
+
+/**
+ * A chat opens at its newest message. SillyTavern scrolls there once, but then
+ * the messages settle (their real heights are measured, long ones fold), and
+ * the chat ended up far above the newest message. For a moment after a chat
+ * opens, keep it at the newest message, until you scroll yourself.
+ */
+const newest = { until: 0 };
+
+function keepAtNewest() {
+    const chat = document.getElementById('chat');
+    if (!chat || Date.now() > newest.until || ctx().getCurrentChatId?.() === undefined) return;
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function holdAtNewest(ms = 2500) {
+    const chat = document.getElementById('chat');
+    if (!active || !chat || ctx().powerUserSettings?.auto_scroll_chat_to_bottom === false) return;
+    newest.until = Date.now() + ms;
+    const stop = () => { newest.until = 0; };
+    chat.addEventListener('touchstart', stop, { once: true, passive: true });
+    chat.addEventListener('wheel', stop, { once: true, passive: true });
+    for (const delay of [60, 250, 500, 900, 1400, 2200]) setTimeout(keepAtNewest, delay);
 }
 
 function onChatWidthChange() {
@@ -6608,6 +6684,7 @@ function init() {
         setTimeout(onChatScroll, 300);
         // After the messages (and folding, 200 ms) are in.
         primeChatSizes(400);
+        holdAtNewest();
     });
     if (event_types.MORE_MESSAGES_LOADED) eventSource?.on?.(event_types.MORE_MESSAGES_LOADED, () => primeChatSizes(400));
     if (event_types.MESSAGE_SENT) eventSource?.on?.(event_types.MESSAGE_SENT, clearDraft);

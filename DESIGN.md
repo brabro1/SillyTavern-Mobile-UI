@@ -79,7 +79,7 @@ Multiples of 4: `4, 8, 12, 16, 24`. Page gutter is 16px on every page, including
 
 ### Elevation and motion
 
-- No drop shadows. Separation comes from `--stmui-raised`, `--stmui-line` and the sheet scrim.
+- No drop shadows. Separation comes from `--stmui-raised`, `--stmui-line` and the sheet scrim. One exception, asked for by the owner: the floating message box has a soft shadow so it sits clearly above the chat. Don't add others.
 - Motion answers a tap (sheet opens, row expands, toggle flips). 120–250ms, `--stmui-ease` / `--stmui-ease-sheet`. `--stmui-ease-pop` only for small confirmations.
 - No entrance animation that plays on its own, no hover effects (this is a phone), and everything respects `prefers-reduced-motion` and the **Light** animations setting.
 

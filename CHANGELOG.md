@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.15.1
+
+- **Fixed: a tap on a reply went to the previous version.** 2.15.0 gave the swipe arrows a bigger invisible tap area, but the back arrow wasn't positioned, so that area stretched over the whole message. A tap anywhere on a reply with several versions pressed "back". The tap area now stays around the arrow (48×44px), and SillyTavern's old offsets for the arrow no longer shift it. The phone test checks this now.
+- **Fixed: opening a chat could land mid-way.** SillyTavern scrolls to the newest message once, right after drawing the chat; then the messages settle (Faster long chats measures their real heights, long ones fold) and the chat ended up thousands of pixels above the newest message. For a moment after a chat opens, Pocket Tavern now keeps it at the newest message, until you scroll yourself. It respects SillyTavern's own "scroll chat to bottom" setting.
+- **Smooth sheet dragging.** Sheets move once per frame on their own layer while you drag them, can be pulled down from their content (when it is scrolled to the top) as well as the top strip, the dimmed background lightens as you pull, and a quick flick closes them even when short. A drag that starts on a row doesn't also press it.
+- **A soft shadow under the message box**, so it sits clearly above the chat. It is the one shadow in Pocket Tavern (DESIGN.md notes the exception).
+- The phone test no longer leaves test versions in the test chat.
+
 ## 2.15.0
 
 Design round, following the new [DESIGN.md](DESIGN.md) guide (written from an audit of the screenshots and a contrast check of every theme).

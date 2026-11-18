@@ -180,6 +180,46 @@ await step('message box: persona button, context ring and Context page; search t
     await until(() => !document.querySelector('.stmui-chat-finder') && !document.querySelector('mark.stmui-find-mark'));
 });
 
+await step('tapping the text of a reply does not change its version', async () => {
+    await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        if (context.characterId === undefined && context.characters.length) await context.selectCharacterById('0');
+    });
+    await until(() => document.querySelectorAll('#chat .mes').length > 0);
+    const original = await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        const id = context.chat.length - 1;
+        const message = context.chat[id];
+        const before = structuredClone(message);
+        // Three versions, showing the second (only in this page; nothing is saved meanwhile).
+        window.__stmuiSave = [context.saveChat, context.saveChatDebounced];
+        context.saveChat = async () => {};
+        context.saveChatDebounced = () => {};
+        message.swipes = [message.mes, 'Second version, long enough to tap in the middle of its text.', 'Third version.'];
+        message.swipe_info = [{}, {}, {}];
+        message.swipe_id = 1;
+        message.mes = message.swipes[1];
+        context.updateMessageBlock(id, message);
+        (await import('/script.js')).refreshSwipeButtons?.();
+        document.getElementById('chat').scrollTo(0, 1e9);
+        return before;
+    });
+    await page.waitForTimeout(600);
+    const text = await page.locator('#chat .mes.last_mes .mes_text').boundingBox();
+    await page.touchscreen.tap(text.x + text.width / 2, text.y + text.height / 2);
+    await page.waitForTimeout(800);
+    const afterTap = await page.evaluate(() => SillyTavern.getContext().chat.at(-1).swipe_id);
+    // Put the message back as it was.
+    await page.evaluate(original => {
+        const context = SillyTavern.getContext();
+        const id = context.chat.length - 1;
+        context.chat[id] = original;
+        context.updateMessageBlock(id, original);
+        [context.saveChat, context.saveChatDebounced] = window.__stmuiSave;
+    }, original);
+    if (afterTap !== 1) throw new Error(`a tap on the text changed the version to ${afterTap}`);
+});
+
 await step('recent chats are grouped by character', async () => {
     await page.locator('.stmui-ab-home').click();
     await until(() => document.querySelector('#chat .welcomePanel .recentChatList'));

@@ -278,7 +278,13 @@ dialog.stmui-sheet::backdrop {
 }
 
 dialog.stmui-sheet.stmui-sheet-open::backdrop {
-    background: rgba(0, 0, 0, 0.55);
+    /* Lightens as the sheet is dragged down (--stmui-drag goes from 0 to 1). */
+    background: rgba(0, 0, 0, calc(0.55 * (1 - var(--stmui-drag, 0))));
+}
+
+/* While a finger drags the sheet, the background follows it directly. */
+dialog.stmui-sheet[style*="--stmui-drag"]::backdrop {
+    transition: none;
 }
 
 .stmui-panel {
@@ -1647,7 +1653,10 @@ html.stmui-chat:not(.stmui-editing) #chat .mes .mesAvatarWrapper > :is(.mesIDDis
 
 html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .swipe_left {
     grid-area: left;
-    position: static;
+    /* relative, not static: its bigger tap area (::after) must hang off the arrow, not cover the whole message. */
+    position: relative;
+    /* SillyTavern places it with bottom/left offsets meant for absolute positioning; they would shift it now. */
+    inset: auto;
     margin-top: 6px;
 }
 
@@ -1715,6 +1724,10 @@ html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right {
 html.stmui-chat:not(.stmui-editing) #chat .mes > .swipe_left,
 html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right {
     position: relative;
+}
+
+html.stmui-chat:not(.stmui-editing) body #chat .mes > .swipeRightBlock .swipe_right {
+    position: relative !important;
 }
 
 html.stmui-chat:not(.stmui-editing) #chat .mes > .swipe_left::after,
@@ -1894,7 +1907,8 @@ html.stmui-chat #send_form {
     border: 1px solid var(--stmui-line) !important;
     border-radius: 16px;
     background: var(--stmui-raised) !important;
-    box-shadow: none;
+    /* The one shadow in Pocket Tavern: a soft lift so the box sits clearly above the chat. */
+    box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.14);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
