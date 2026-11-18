@@ -1,6 +1,15 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.15.2',
+        items: [
+            "Fixed: with the keyboard up, the message box squeezed your text into a narrow column.",
+            "Holding and dragging a sheet is smooth now, not only a quick swipe.",
+            "The message box glides up with the keyboard, and the chat stays at the newest message.",
+            "No scrollbars anywhere, like a phone app.",
+        ],
+    },
+    {
         version: '2.15.1',
         items: [
             "Fixed: tapping anywhere on a reply with several versions went back to the previous version.",

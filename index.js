@@ -527,8 +527,10 @@ function wireSheet(target) {
     });
 
     // Drag down to close: from the top strip, or from the contents when they are
-    // scrolled to the top. The sheet is its own layer while dragging and moves
-    // once per frame; the dimmed background lightens with it; a quick flick closes.
+    // scrolled to the top. The sheet is its own layer while dragging and moves once
+    // per frame, and nothing else changes meanwhile (restyling the dimmed
+    // background each frame made a slow drag stutter). The listeners never block
+    // the browser's own scrolling. A quick flick closes.
     let startY = null;
     let lastY = 0;
     let lastT = 0;
@@ -538,8 +540,7 @@ function wireSheet(target) {
     let frame = 0;
     const paint = () => {
         frame = 0;
-        panel.style.transform = `translateY(${dy}px)`;
-        dialog.style.setProperty('--stmui-drag', String(Math.min(1, dy / Math.max(1, panel.offsetHeight))));
+        panel.style.transform = `translate3d(0, ${dy}px, 0)`;
     };
     const begin = event => {
         // Rows and buttons can start a drag too (most of a sheet is rows); fields cannot.
@@ -565,7 +566,6 @@ function wireSheet(target) {
             panel.style.transition = 'none';
             panel.style.willChange = 'transform';
         }
-        if (event.cancelable) event.preventDefault();
         const dt = Math.max(1, event.timeStamp - lastT);
         speed = (y - lastY) / dt;
         lastY = y;
@@ -589,7 +589,6 @@ function wireSheet(target) {
         setTimeout(() => dialog.removeEventListener('click', swallow, { capture: true }), 400);
         panel.style.transition = '';
         panel.style.willChange = '';
-        dialog.style.removeProperty('--stmui-drag');
         // Pulled far enough, or flicked down: keep going from where the finger let go.
         if (dy > 90 || speed > 0.55) {
             panel.style.transform = 'translateY(100%)';
@@ -598,7 +597,7 @@ function wireSheet(target) {
     };
     for (const area of [head, target.body ?? target.list].filter(Boolean)) {
         area.addEventListener('touchstart', begin, { passive: true });
-        area.addEventListener('touchmove', move, { passive: false });
+        area.addEventListener('touchmove', move, { passive: true });
         area.addEventListener('touchend', end);
         area.addEventListener('touchcancel', end);
     }
@@ -1273,24 +1272,12 @@ class Shell {
         this.focusAt = 0;
         this.resizeFrame = 0;
         // The keyboard slides in over many frames; look once per frame at most.
-        this.onResize = () => {
-            if (this.resizeFrame) return;
-            this.resizeFrame = requestAnimationFrame(() => {
-                this.resizeFrame = 0;
-                this.checkKeyboard();
-            });
-        };
-        // Tapping a text box: step the tab bar aside right away, before the
-        // keyboard starts moving, instead of jumping halfway through its slide.
+        // Checked right away on resize: the tab bar steps aside in the same frame
+        // the screen shrinks for the keyboard, so there is one change, not two.
+        this.onResize = () => this.checkKeyboard();
+        this.lastHeight = window.innerHeight;
         this.onFocusIn = event => {
-            if (!isTypingField(event.target)) return;
-            setTimeout(() => {
-                if (!isTypingField(document.activeElement)) return;
-                this.focusAt = Date.now();
-                this.checkKeyboard();
-                // No keyboard came (a hardware keyboard, say): look again once it would have.
-                setTimeout(() => this.checkKeyboard(), 900);
-            }, 0);
+            if (isTypingField(event.target)) setTimeout(() => this.checkKeyboard(), 400);
         };
         this.onFocusOut = () => setTimeout(() => this.checkKeyboard(), 0);
         this.build();
@@ -1459,9 +1446,26 @@ class Shell {
         if (Math.abs(width - this.keyboardBase.width) > 40) this.keyboardBase = { width, height };
         if (height > this.keyboardBase.height) this.keyboardBase.height = height;
         const typing = isTypingField(document.activeElement);
-        // While the keyboard is still on its way up, count it as up already.
-        const keyboard = typing && (height < this.keyboardBase.height * 0.78 || Date.now() - this.focusAt < 800);
-        document.documentElement.classList.toggle('stmui-keyboard', keyboard);
+        const keyboard = typing && height < this.keyboardBase.height * 0.78;
+        const root = document.documentElement;
+        const was = root.classList.contains('stmui-keyboard');
+        const tabbar = this.tabbar?.offsetHeight || this.tabH || 0;
+        if (!was && tabbar) this.tabH = tabbar;
+        const before = this.lastHeight;
+        this.lastHeight = height;
+        root.classList.toggle('stmui-keyboard', keyboard);
+        if (height === before && keyboard === was) return;
+        // Reading the newest message: stay there while the screen changes.
+        const chat = document.getElementById('chat');
+        if (chat && extras.atBottom !== false) chat.scrollTop = chat.scrollHeight;
+        // The message box glides from where it was to its new place (movement
+        // only), so it follows the keyboard instead of jumping.
+        const form = document.getElementById('form_sheld');
+        if (!form || !motionAllowed() || keyboard === was) return;
+        const tab = this.tabH || 0;
+        const shift = (height - (keyboard ? 0 : tab)) - (before - (was ? 0 : tab));
+        if (Math.abs(shift) < 8) return;
+        form.animate([{ transform: `translate3d(0, ${-shift}px, 0)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
     }
 
     onTab(id) {
@@ -2215,6 +2219,7 @@ function onChatScroll() {
         const chat = document.getElementById('chat');
         if (!chat || !extras.jump) return;
         const distance = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
+        extras.atBottom = distance < 40;
         // Not on the start screen: there is no "latest message" there, and it covered the chat list.
         // (No chat open = the start screen; cheaper than searching a long chat on every frame.)
         const welcome = ctx().getCurrentChatId?.() === undefined;

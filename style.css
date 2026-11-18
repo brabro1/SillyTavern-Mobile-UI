@@ -38,6 +38,19 @@
     --stmui-bot-tint: color-mix(in srgb, var(--stmui-text) 5%, transparent);
 }
 
+/* No scrollbars anywhere, like a phone app: content still scrolls by touch. */
+html.stmui-on,
+html.stmui-on * {
+    scrollbar-width: none !important;
+}
+
+html.stmui-on ::-webkit-scrollbar,
+html.stmui-on *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
 .stmui-svg {
     display: block;
     flex: 0 0 auto;
@@ -278,13 +291,13 @@ dialog.stmui-sheet::backdrop {
 }
 
 dialog.stmui-sheet.stmui-sheet-open::backdrop {
-    /* Lightens as the sheet is dragged down (--stmui-drag goes from 0 to 1). */
-    background: rgba(0, 0, 0, calc(0.55 * (1 - var(--stmui-drag, 0))));
+    background: rgba(0, 0, 0, 0.55);
 }
 
-/* While a finger drags the sheet, the background follows it directly. */
-dialog.stmui-sheet[style*="--stmui-drag"]::backdrop {
-    transition: none;
+/* Sheet contents: no Android stretch at the top, so pulling down there drags the sheet. */
+.stmui-menu-body,
+.stmui-list {
+    overscroll-behavior-y: none;
 }
 
 .stmui-panel {
@@ -818,7 +831,9 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
 
 /* ---- Sheet: landscape and keyboard-open (compact) ------------------------ */
 
-@media (orientation: landscape) and (max-height: 520px) {
+/* "Sideways" needs a clearly wide screen: with the keyboard up, a portrait phone's
+   view is wider than tall too, and it must keep its portrait layout. */
+@media (orientation: landscape) and (max-height: 520px) and (min-aspect-ratio: 3/2) {
     .stmui-panel {
         max-height: 100%;
         max-width: 560px;
@@ -1318,7 +1333,7 @@ html.stmui-on body #toast-container > div {
 }
 
 /* Landscape phones: slimmer bars, labels beside icons. */
-@media (orientation: landscape) and (max-height: 520px) {
+@media (orientation: landscape) and (max-height: 520px) and (min-aspect-ratio: 3/2) {
     html.stmui-shell {
         --stmui-appbar-h: 46px;
         --stmui-tabbar-h: 46px;
@@ -2889,7 +2904,7 @@ html.stmui-on .mes_text video {
 
 /* -- Landscape phones: reclaim vertical space ----------------------------- */
 
-@media (orientation: landscape) and (max-height: 520px) {
+@media (orientation: landscape) and (max-height: 520px) and (min-aspect-ratio: 3/2) {
     html.stmui-touch {
         --bottomFormBlockSize: 44px;
     }
@@ -2911,7 +2926,7 @@ html.stmui-on .mes_text video {
 }
 
 /* Sideways phones are short: the message box goes back to one row (tools, text, ring and Send). */
-@media (orientation: landscape) and (max-height: 520px) {
+@media (orientation: landscape) and (max-height: 520px) and (min-aspect-ratio: 3/2) {
     html.stmui-chat #nonQRFormItems {
         grid-template-areas: "left text right";
     }

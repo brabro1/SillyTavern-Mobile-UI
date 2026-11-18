@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.15.2
+
+- **Fixed: squeezed message box while typing.** With the keyboard up, a portrait phone's view is wider than it is tall, so the sideways layout switched on: the message box went to one row and squeezed the text into a narrow column (and the bars got slimmer while typing). The sideways layout now also needs a clearly wide screen (3:2), which only a real sideways phone has.
+- **Smooth hold-and-drag on sheets.** A slow drag stuttered because the background's dimming was restyled on every frame and the touch listener held up the browser's scrolling. The sheet now moves on its own layer with nothing else changing, the listeners never block scrolling, and Android's stretch effect is off inside sheets so pulling down at the top drags the sheet.
+- **The keyboard, smoother.** The tab bar steps aside in the same frame the screen shrinks (one change instead of two jumps), the message box glides from where it was to its new place above the keyboard, and if you were at the newest message the chat stays there.
+- **No scrollbars**, anywhere Pocket Tavern is on; everything still scrolls by touch.
+
 ## 2.15.1
 
 - **Fixed: a tap on a reply went to the previous version.** 2.15.0 gave the swipe arrows a bigger invisible tap area, but the back arrow wasn't positioned, so that area stretched over the whole message. A tap anywhere on a reply with several versions pressed "back". The tap area now stays around the arrow (48×44px), and SillyTavern's old offsets for the arrow no longer shift it. The phone test checks this now.
