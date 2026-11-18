@@ -8233,8 +8233,9 @@ html.stmui-chat.stmui-compact #send_textarea {
 }
 
 /* ==========================================================================
-   Docked message box (html.stmui-docked): flat along the bottom edge, like a
-   messaging app, instead of floating over the chat.
+   Docked message box (html.stmui-docked): a bar along the bottom edge, like a
+   messaging app. The text field sits at the bottom between your persona and
+   Send, where the thumb is; the other tools sit in a row above it.
    ========================================================================== */
 
 html.stmui-chat.stmui-docked #form_sheld {
@@ -8244,17 +8245,20 @@ html.stmui-chat.stmui-docked #form_sheld {
 
 html.stmui-chat.stmui-docked #send_form,
 html.stmui-chat.stmui-docked #send_form:focus-within {
-    padding: 8px calc(8px + var(--stmui-safe-right)) 4px calc(8px + var(--stmui-safe-left));
+    position: relative;
+    padding: 4px calc(8px + var(--stmui-safe-right)) 8px calc(8px + var(--stmui-safe-left));
     border: 0 !important;
     border-top: 1px solid var(--stmui-line) !important;
     border-radius: 0;
+    /* The same surface as the tab bar, so with the tabs out they read as one bottom bar. */
     background: color-mix(in srgb, var(--stmui-surface) 97%, transparent) !important;
     box-shadow: none;
 }
 
-/* The text gets its own field inside the bar; it shows the focus instead of the bar. */
+/* The text gets its own field; it shows the focus instead of the bar. */
 html.stmui-chat.stmui-docked #send_textarea {
-    padding: 9px 12px 7px;
+    min-height: 44px;
+    padding: 11px 12px 9px;
     border: 1px solid var(--stmui-line);
     border-radius: 12px;
     background: var(--stmui-raised) !important;
@@ -8265,14 +8269,80 @@ html.stmui-chat.stmui-docked #send_textarea:focus {
     border-color: color-mix(in srgb, var(--stmui-accent) 38%, var(--stmui-line));
 }
 
-html.stmui-chat.stmui-docked.stmui-compact #send_form,
-html.stmui-chat.stmui-docked.stmui-compact #send_form:focus-within {
-    padding-top: 6px;
-    padding-bottom: 2px;
+/* Portrait: tools on top, then persona, field and Send in one row at the bottom.
+   (A phone held sideways keeps the single row it already has.) */
+@media not all and (orientation: landscape) and (max-height: 520px) and (min-aspect-ratio: 3/2) {
+    html.stmui-chat.stmui-docked #nonQRFormItems {
+        position: static;
+        grid-template-areas:
+            "left gap right"
+            "text text text";
+        row-gap: 4px;
+    }
+
+    html.stmui-chat.stmui-docked :is(#leftSendForm, #rightSendForm) {
+        position: static;
+    }
+
+    /* Room on both sides of the field for the persona picture and Send. */
+    html.stmui-chat.stmui-docked #send_textarea {
+        width: auto;
+        margin-inline: 52px;
+    }
+
+    /* Your persona: its picture, at the start of the bottom row (the name is in its label). */
+    html.stmui-chat.stmui-docked #send_form .stmui-persona-chip {
+        position: absolute;
+        bottom: 8px;
+        inset-inline-start: calc(8px + var(--stmui-safe-left));
+        justify-content: center;
+        width: 44px;
+        max-width: none;
+        height: 44px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+    }
+
+    html.stmui-chat.stmui-docked #send_form .stmui-persona-chip::after {
+        inset: 0;
+    }
+
+    html.stmui-chat.stmui-docked #send_form .stmui-persona-name {
+        display: none;
+    }
+
+    html.stmui-chat.stmui-docked #send_form .stmui-persona-img {
+        width: 36px;
+        height: 36px;
+        box-shadow: 0 0 0 1px var(--stmui-line);
+    }
+
+    /* Send (and Stop while a reply is coming) at the end of the bottom row, level with the field. */
+    html.stmui-chat.stmui-docked #send_form #rightSendForm > :is(#send_but, .mes_stop) {
+        position: absolute;
+        bottom: 8px;
+        inset-inline-end: calc(8px + var(--stmui-safe-right));
+        width: 44px;
+        height: 44px;
+        margin: 0;
+    }
 }
 
-html.stmui-chat.stmui-docked.stmui-compact #send_textarea {
-    padding: 7px 10px 5px;
+html.stmui-chat.stmui-docked.stmui-compact #send_form,
+html.stmui-chat.stmui-docked.stmui-compact #send_form:focus-within {
+    padding-top: 2px;
+    padding-bottom: 6px;
+}
+
+html.stmui-chat.stmui-docked.stmui-compact #send_form .stmui-persona-chip,
+html.stmui-chat.stmui-docked.stmui-compact #send_form #rightSendForm > :is(#send_but, .mes_stop) {
+    bottom: 6px;
+}
+
+html.stmui-chat.stmui-docked.stmui-compact #nonQRFormItems {
+    row-gap: 2px;
 }
 
 /* ==========================================================================

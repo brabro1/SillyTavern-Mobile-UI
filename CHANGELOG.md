@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.18.1
+
+The **Docked** message box, redone. In 2.18.0 it was the floating box flattened: the field on top, every tool and Send in a row under it, pressed against the bottom edge, and Send far from the text.
+
+- **One row at the bottom, like a messaging app:** your persona's picture, the text field, and Send right beside it. The field and Send are where your thumb is, and Send stays level with the bottom of the field as your message grows.
+- **The other tools in a row above:** the tabs arrow, ☰, the wand, anything extensions add, and the context ring.
+- The bar has 8px of room above the bottom edge, a clear line between it and the chat, and the same surface as the tab bar, so with the tabs out they read as one bottom bar.
+- A phone held sideways keeps a single row. The desktop layout uses the same docked bar in the chat column.
+- The phone test checks that persona, field and Send share the bottom row and that Send is clear of the edge.
+
 ## 2.18.0
 
 Fixes and changes from the first round of feedback on Reddit.

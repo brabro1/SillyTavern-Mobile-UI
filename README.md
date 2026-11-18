@@ -63,7 +63,7 @@
 
 ### Chatting
 - **Messages made for a phone:** the text runs across the whole card, edge to edge. The picture, name and date sit in a small header, swipes in a small ‹ 1/3 › pill (the last one offers a new version), and the model's thinking folds into a neat box you can open. Cards, bubbles or flat. Drag the last reply sideways to swipe.
-- **A floating or docked message box:** Floating floats over the chat, so messages scroll on behind it; Docked sits flat along the bottom edge like a messaging app. Your text gets the whole width, with the tools in a row underneath. Your persona sits there as a little picture with your name: tap it to switch who you are, or to edit your persona's name and description on the spot.
+- **A floating or docked message box:** Floating floats over the chat, so messages scroll on behind it; Docked is a bar along the bottom edge like a messaging app, with your persona, the text field and Send in one row. Your text gets the whole width, with the tools in a row underneath. Your persona sits there as a little picture with your name: tap it to switch who you are, or to edit your persona's name and description on the spot.
 - **Context ring:** a ring in the message box fills up as the chat uses more of the model's memory. Tap it for the Context page: what filled it (character, lorebooks, examples, chat history), how much room is left, the model and preset, and the full prompt.
 - **Edit on a full page:** tap ✎ and the message opens full screen, with Save right above the keyboard.
 - **Search this chat:** find any word in the conversation and jump between matches.

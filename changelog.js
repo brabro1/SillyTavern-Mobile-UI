@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.18.1',
+        items: [
+            "The docked message box is redone like a messaging app: your persona, the text field and Send in one row at the bottom, with the other tools in a row above.",
+            "Send stays level with the field as your message grows, and the bar has room above the bottom edge.",
+        ],
+    },
+    {
         version: '2.18.0',
         items: [
             "In a chat the bottom tabs tuck away, so they are not right under the message box. Tap the arrow in the message box to bring them back.",

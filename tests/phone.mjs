@@ -426,6 +426,20 @@ await step('compact size and docked message box fit more chat and keep 44px butt
         if (state.bar > 49) throw new Error(`top bar is ${state.bar}px`);
         if (state.card >= before) throw new Error('message cards did not get smaller');
         if (state.small) throw new Error(`${state.small} buttons under 44px`);
+        // Docked: persona, field and Send share the bottom row, level with each other.
+        const row = await page.evaluate(() => {
+            const box = selector => document.querySelector(selector).getBoundingClientRect();
+            const field = box('#send_textarea');
+            const send = box('#send_but');
+            const persona = box('#send_form .stmui-persona-chip');
+            return {
+                send: Math.abs(send.bottom - field.bottom) <= 1 && send.left >= field.right,
+                persona: Math.abs(persona.bottom - field.bottom) <= 1 && persona.right <= field.left,
+                edge: window.innerHeight - send.bottom,
+            };
+        });
+        if (!row.send || !row.persona) throw new Error(`the bottom row is not persona, field, Send: ${JSON.stringify(row)}`);
+        if (row.edge < 4) throw new Error(`Send is ${row.edge}px from the bottom edge`);
         const covered = await lastMessageCovered();
         if (covered > 1) throw new Error(`the newest message is ${covered}px under the message box`);
     } finally {
