@@ -1693,6 +1693,7 @@ function openMoreSheet() {
                 }, !inChat),
                 row('chat-plus', 'Start a new chat', () => {
                     closeSheet(true);
+                    closePages();
                     document.getElementById('option_start_new_chat')?.click();
                 }, !inChat),
                 row('phone', 'Phone features', () => openExtrasSheet()),
@@ -1700,6 +1701,8 @@ function openMoreSheet() {
                 row('languages', 'Translate chat', () => openTranslateSheet(), !inChat),
                 row('search', 'Search this chat', () => {
                     closeSheet(true);
+                    // The bar searches the chat, so show the chat, not the page that was open.
+                    closePages();
                     openChatFinder();
                 }, !inChat),
                 isStandalone() ? null : row('download', 'Install as an app', () => installApp()),

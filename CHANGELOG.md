@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.15.3
+
+A test round before sharing the project: the phone test, a screen-by-screen check at three sizes and with the keyboard up, a slow-phone speed test, the light theme and Arabic (right to left).
+
+- **Fixed: Search this chat from a page.** Opened from More while a page such as Extensions was showing, the search bar searched the chat behind that page. It now closes the page first, so you see the matches. Start a new chat does the same.
+- **44px to tap everywhere.** SillyTavern's buttons were 42px tall in Pocket Tavern, and a few were smaller: your persona button in the message box, Close on sheets, and the buttons on the start screen (the Recent chats header, Docs/GitHub/Discord, pin/rename/delete on a recent chat). All are at least 44px now.
+
 ## 2.15.2
 
 - **Fixed: squeezed message box while typing.** With the keyboard up, a portrait phone's view is wider than it is tall, so the sideways layout switched on: the message box went to one row and squeezed the text into a narrow column (and the bars got slimmer while typing). The sideways layout now also needs a clearly wide screen (3:2), which only a real sideways phone has.

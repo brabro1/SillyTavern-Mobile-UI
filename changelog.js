@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.15.3',
+        items: [
+            "Fixed: Search this chat, opened from More while a page was showing, searched behind that page. It now goes to the chat first.",
+            "Every button is at least 44px to tap, including your persona button, Close and the start screen buttons.",
+        ],
+    },
+    {
         version: '2.15.2',
         items: [
             "Fixed: with the keyboard up, the message box squeezed your text into a narrow column.",

@@ -2367,7 +2367,7 @@ html.stmui-touch select {
 html.stmui-touch .menu_button,
 html.stmui-touch .menu_button_icon {
     box-sizing: border-box;
-    min-height: 42px;
+    min-height: 44px;
     padding: 8px 12px;
     border-radius: var(--stmui-radius-sm);
 }
@@ -2958,6 +2958,7 @@ html.stmui-on .mes_text video {
     max-width: 128px;
     height: 40px;
     min-height: 40px;
+    position: relative;
     margin: 0 4px 0 1px;
     padding: 0 12px 0 4px;
     border: 1px solid var(--stmui-line);
@@ -2974,6 +2975,13 @@ html.stmui-on .mes_text video {
 
 .stmui-persona-chip:active {
     transform: scale(0.95);
+}
+
+/* The pill is 40px tall to sit in the box; the tap area is 44px. */
+.stmui-persona-chip::after {
+    content: '';
+    position: absolute;
+    inset: -4px -1px;
 }
 
 .stmui-persona-img {
@@ -4488,8 +4496,8 @@ html.stmui-chat .welcomePanel .welcomeHeaderTitle .mes_button {
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     margin: 0;
     padding: 0;
     border-radius: 12px;
@@ -4534,7 +4542,7 @@ html.stmui-chat .welcomePanel .welcomeShortcuts .menu_button {
     flex: 0 0 auto;
     gap: 7px;
     min-width: 0;
-    height: 38px;
+    height: 44px;
     margin: 0;
     padding: 0 14px;
     border-radius: 999px;
@@ -4676,8 +4684,8 @@ html.stmui-chat .welcomeRecent .recentChatList .recentChat .chatActions button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     min-height: 0;
     margin: 0;
     padding: 0;
