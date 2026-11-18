@@ -36,6 +36,8 @@
 | ![Lorebook picker](docs/screenshots/lorebooks.jpg) | ![Lorebook entries as cards with keyword chips](docs/screenshots/lorebook-entries.jpg) | ![Presets with − and + beside each slider](docs/screenshots/presets.jpg) |
 | **Prompt editor** | **Personas** | **More** |
 | ![Prompt editor](docs/screenshots/prompt-editor.jpg) | ![Personas](docs/screenshots/personas.jpg) | ![More menu](docs/screenshots/more.jpg) |
+| **Settings** | **A settings section** | **Chat options (☰)** |
+| ![Settings as a list of sections](docs/screenshots/settings.jpg) | ![The Display section: switches on the right, a line on what each does](docs/screenshots/settings-section.jpg) | ![Chat options grouped into Reply, This chat and Chats](docs/screenshots/chat-options.jpg) |
 
 </details>
 
@@ -46,6 +48,8 @@
 - **Your character at the top:** see who you're talking to and whether you're connected. Tap the name for the character card.
 - **The back gesture works:** swiping back closes the open menu, popup or page instead of leaving SillyTavern.
 - **Pages that fit:** every panel opens full screen with a title and a back arrow. Menus and popups slide up from the bottom, within reach of your thumb.
+- **Settings that make sense:** SillyTavern's Settings page opens on a short list of sections (Look, Display, Chat, Characters and more), like your phone's own Settings app. Every option says what it does in a line under it, and every switch sits on the right.
+- **Menus that explain themselves:** ☰ opens Chat options grouped into Reply, This chat and Chats, and the wand opens Tools. Each item has a line on what it does.
 - **Install it like an app:** **More → Install as an app** puts SillyTavern on your home screen, full screen without the browser bar.
 - **Light on your phone:** typing, scrolling and pages are measured on a phone-speed CPU and kept smooth, even in long chats. Older phone? Pick **Light** animations under **More → Themes**.
 
@@ -63,7 +67,7 @@
 - **Sharp pictures, even animated ones:** full-quality pictures instead of blurry thumbnails, and GIF or animated WebP pictures that move.
 - **Character cards with tabs:** Description, First message and Notes & tags, each with the whole page.
 - **Easy lorebook picking:** a searchable list with big checkboxes. Lorebook entries show as cards with keyword chips.
-- **Easier presets:** − and + buttons on sliders, prompt triggers as chips and a prompt editor that fits the screen.
+- **Easier presets:** − and + buttons on sliders, a line under each slider on what it does, prompt triggers as chips and a prompt editor that fits the screen.
 
 ### Everything else
 - **12 themes:** 9 dark and 3 light, each with its own character (from true black with candle gold to ink on paper), or keep your own SillyTavern colors. New rounded icons and smooth, light animations.

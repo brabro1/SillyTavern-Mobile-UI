@@ -241,6 +241,64 @@ await step('find a setting searches the Settings page', async () => {
     await until(() => !document.documentElement.dataset.stmuiPage);
 });
 
+await step('Settings opens on its sections; a section, explanations, search and back work', async () => {
+    await page.evaluate(() => document.querySelector('#user-settings-button > .drawer-toggle')?.click());
+    await until(() => document.documentElement.dataset.stmuiPage === 'user-settings-button');
+    await until(() => document.querySelectorAll('.stmui-set-home .stmui-menu-row').length >= 6);
+    if (!await page.evaluate(() => getComputedStyle(document.getElementById('user-settings-block-content')).display === 'none')) throw new Error('the list of sections also shows every setting');
+    await page.locator('.stmui-set-home .stmui-menu-row', { hasText: 'Display' }).click();
+    await until(() => document.querySelector('.stmui-ab-title')?.textContent === 'Display');
+    const shown = await page.evaluate(() => ({
+        display: !!document.getElementById('messageTimestampsEnabled')?.closest('label')?.offsetParent,
+        look: !!document.getElementById('themes')?.offsetParent,
+        tips: document.querySelectorAll('#user-settings-block .stmui-help').length,
+    }));
+    if (!shown.display || shown.look) throw new Error(`wrong settings in Display: ${JSON.stringify(shown)}`);
+    if (shown.tips < 10) throw new Error(`only ${shown.tips} explanations`);
+    // A tap on an explanation shows all of it and leaves its switch alone.
+    const before = await page.evaluate(() => document.getElementById('reduced_motion').checked);
+    await page.locator('label[for="reduced_motion"] .stmui-help').click();
+    const after = await page.evaluate(() => ({ checked: document.getElementById('reduced_motion').checked, open: document.querySelector('label[for="reduced_motion"] .stmui-help').classList.contains('stmui-help-open') }));
+    if (after.checked !== before || !after.open) throw new Error('tapping the explanation flipped the switch, or did not open it');
+    await page.waitForTimeout(500);
+    await page.goBack();
+    await until(() => document.querySelector('.stmui-ab-title')?.textContent === 'Settings' && document.documentElement.dataset.stmuiPage === 'user-settings-button');
+    // Search from the list goes into the right section.
+    await page.locator('.stmui-set-home .stmui-search-field').click();
+    await page.locator('#stmui-sheet .stmui-choice-search').fill('font scale');
+    await page.locator('#stmui-sheet .stmui-menu-row').first().click();
+    await until(() => document.querySelector('.stmui-ab-title')?.textContent === 'Look');
+    await page.waitForTimeout(500);
+    await page.goBack();
+    await until(() => document.querySelector('.stmui-ab-title')?.textContent === 'Settings');
+    await page.waitForTimeout(500);
+    await page.goBack();
+    await until(() => !document.documentElement.dataset.stmuiPage);
+
+});
+
+await step('☰ and the wand open sheets, and their items work', async () => {
+    await page.evaluate(async () => { const c = SillyTavern.getContext(); await c.selectCharacterById(String(c.characters.findIndex(x => x.name === 'Seraphina'))); });
+    await until(() => document.querySelectorAll('#chat .mes').length > 0);
+    await page.locator('#options_button').tap();
+    await until(() => document.getElementById('stmui-sheet')?.textContent.includes('Manage chat files'));
+    const groups = await page.evaluate(() => [...document.querySelectorAll('#stmui-sheet .stmui-menu-heading')].map(el => el.textContent));
+    if (!groups.includes('Reply') || !groups.includes('Chats')) throw new Error(`groups: ${groups.join(', ')}`);
+    if (await page.evaluate(() => getComputedStyle(document.getElementById('options')).display !== 'none')) throw new Error("SillyTavern's own menu opened too");
+    await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Manage chat files' }).click();
+    await until(() => getComputedStyle(document.getElementById('shadow_select_chat_popup')).display !== 'none');
+    await page.waitForTimeout(500);
+    await page.goBack();
+    await until(() => getComputedStyle(document.getElementById('shadow_select_chat_popup')).display === 'none');
+    await page.locator('#extensionsMenuButton').tap();
+    await until(() => document.getElementById('stmui-sheet')?.textContent.includes('Token Counter'));
+    await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Token Counter' }).click();
+    await until(() => !!document.querySelector('dialog.popup[open]'));
+    await page.waitForTimeout(500);
+    await page.goBack();
+    await until(() => !document.querySelector('dialog.popup[open]'));
+});
+
 await step('search everything finds settings', async () => {
     await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="more"]').click());
     await page.locator('#stmui-sheet .stmui-search-field').click();
@@ -272,7 +330,7 @@ await step('turning Pocket Tavern off leaves nothing behind, and on again works'
     const off = await page.evaluate(async () => {
         document.getElementById('stmui_enabled').click();
         await new Promise(resolve => setTimeout(resolve, 600));
-        const stray = [...document.querySelectorAll('[class*="stmui"], [id^="stmui"]')].filter(el => !el.closest('#stmui_settings')).length;
+        const stray = [...document.querySelectorAll('[class*="stmui"], [id^="stmui"], [data-stmui-sec], [data-stmui-row], [data-stmui-view]')].filter(el => !el.closest('#stmui_settings')).length;
         const classes = document.documentElement.className;
         document.getElementById('stmui_enabled').click();
         return { stray, classes };

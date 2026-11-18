@@ -3475,11 +3475,12 @@ html.stmui-touch .drawer-content label.checkbox_label > input[type='checkbox']:n
     height: 24px !important;
     min-width: 40px;
     margin: 0;
-    border: 1px solid var(--stmui-line);
+    border: 1px solid color-mix(in srgb, var(--stmui-muted) 55%, transparent);
     border-radius: 999px;
     background-color: var(--stmui-raised-2);
 }
 
+/* Off: a muted knob, so the switch reads on light themes too. On: the accent's own text colour. */
 html.stmui-touch .drawer-content label.checkbox_label > input[type='checkbox']:not(.stmui-switch)::before {
     content: '';
     position: absolute;
@@ -3488,7 +3489,7 @@ html.stmui-touch .drawer-content label.checkbox_label > input[type='checkbox']:n
     width: 18px;
     height: 18px;
     border-radius: 999px;
-    background: #fff;
+    background: var(--stmui-muted);
     box-shadow: none;
     clip-path: none;
     transform: none;
@@ -3501,6 +3502,7 @@ html.stmui-touch .drawer-content label.checkbox_label > input[type='checkbox']:n
 }
 
 html.stmui-touch .drawer-content label.checkbox_label > input[type='checkbox']:not(.stmui-switch):checked::before {
+    background: var(--stmui-on-accent);
     transform: translateX(16px);
 }
 
@@ -3752,7 +3754,7 @@ html input[type='checkbox'].stmui-switch {
     width: 50px !important;
     height: 30px !important;
     margin: 0;
-    border: 1px solid var(--stmui-line);
+    border: 1px solid color-mix(in srgb, var(--stmui-muted) 55%, transparent);
     border-radius: 999px !important;
     background: var(--stmui-raised-2);
     outline: none;
@@ -3771,8 +3773,8 @@ html input[type='checkbox'].stmui-switch::before {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: #fff;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+    background: var(--stmui-muted);
+    box-shadow: none;
     clip-path: none;
     transform: none;
     transition: transform 0.28s var(--stmui-ease-pop);
@@ -3784,6 +3786,7 @@ html input[type='checkbox'].stmui-switch:checked {
 }
 
 html input[type='checkbox'].stmui-switch:checked::before {
+    background: var(--stmui-on-accent);
     transform: translateX(20px);
 }
 
@@ -7662,4 +7665,334 @@ html.stmui-lorecards #world_popup_entries_list .world_entry .world_entry_form > 
     border: 0 !important;
     background: none !important;
     box-shadow: none !important;
+}
+
+
+/* ==========================================================================
+   Settings: a list of sections, rows with the switch on the right, and a
+   line under each setting with SillyTavern's own explanation
+   ========================================================================== */
+
+.stmui-sec-off {
+    display: none !important;
+}
+
+/* The list of sections. Inside a section, the list and the page's top block step aside. */
+html.stmui-setnav #user-settings-block[data-stmui-view='home'] #user-settings-block-content,
+html.stmui-setnav #user-settings-block:not([data-stmui-view='home']) > :has(> .stmui-set-home) {
+    display: none !important;
+}
+
+html.stmui-setnav #user-settings-block > :has(> .stmui-set-home) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 0 24px;
+}
+
+/* SillyTavern's title row and search row: their parts join the column above. */
+html.stmui-setnav #user-settings-block > :has(> .stmui-set-home) > .flex-container {
+    display: contents;
+}
+
+html.stmui-setnav #user-settings-block .flex-container:has(> h3),
+html.stmui-setnav #settingsSearch {
+    display: none !important;
+}
+
+.stmui-set-home {
+    display: flex;
+    flex-direction: column;
+    order: 0;
+}
+
+.stmui-set-home .stmui-search-field {
+    width: 100%;
+    margin: 0;
+}
+
+html.stmui-setnav #UI-language-block {
+    order: 1;
+    padding: 0 4px;
+}
+
+html.stmui-setnav #account_controls {
+    order: 2;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 4px;
+}
+
+html.stmui-setnav #account_controls:not(:has(> :not([style*='display: none']))) {
+    display: none;
+}
+
+html.stmui-setnav #version_display {
+    order: 3;
+    padding: 0 4px;
+    color: var(--stmui-muted);
+    font-size: 12px;
+    text-align: start;
+}
+
+/* Section titles inside a page: quiet text, not SillyTavern's dark bars. */
+html.stmui-setnav #user-settings-block-content h4 {
+    margin: 24px 0 4px;
+    padding: 0;
+    border: 0;
+    background: none !important;
+    color: var(--stmui-muted);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: start;
+}
+
+/* A plain heading that only repeats the section's name in the top bar. */
+html.stmui-setnav #user-settings-block-content [data-stmui-sec] > h4:first-child:not(:has(*)),
+html.stmui-setnav #user-settings-block-content h4[data-stmui-sec]:not(:has(*)) {
+    display: none;
+}
+
+html.stmui-setnav #user-settings-block-content > div {
+    gap: 0;
+}
+
+/* -- Toggle rows: label and explanation on the left, the switch on the right -- */
+
+html.stmui-touch .drawer-content label.checkbox_label.stmui-setrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 4px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--stmui-tap);
+    margin: 0;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--stmui-line);
+    color: var(--stmui-text);
+    font-size: 16px;
+    line-height: 1.35;
+    text-align: start;
+}
+
+html.stmui-touch .stmui-setrow > * {
+    order: 1;
+}
+
+html.stmui-touch .stmui-setrow > :is(small, span):not(.stmui-help) {
+    flex: 0 1 auto;
+    min-width: 0;
+    color: var(--stmui-text);
+    opacity: 1;
+    font-size: 16px;
+    white-space: normal;
+}
+
+html.stmui-touch .stmui-setrow > input[type='checkbox'] {
+    order: 2;
+    margin-inline-start: auto !important;
+}
+
+html.stmui-touch .stmui-setrow > .stmui-help {
+    order: 3;
+    flex: 1 0 100%;
+    padding-inline-end: 56px;
+}
+
+/* Pocket Tavern's own settings use the same row. */
+html.stmui-touch .stmui-settings .stmui-check.stmui-setrow {
+    align-items: center;
+}
+
+html.stmui-touch .stmui-settings .stmui-check.stmui-setrow .stmui-check-text {
+    flex: 1 1 0;
+}
+
+html.stmui-touch .stmui-settings .stmui-check.stmui-setrow .stmui-check-hint {
+    color: var(--stmui-muted);
+    font-size: 14px;
+    opacity: 1;
+}
+
+/* Two toggles that SillyTavern puts side by side get a row each. */
+html.stmui-touch .drawer-content .checkbox-container:has(> .stmui-setrow) {
+    flex-wrap: wrap;
+}
+
+/* -- "Avatars: [Circle]" rows on the Settings page ------------------------ */
+
+html.stmui-touch .stmui-selrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    column-gap: 12px;
+    row-gap: 4px;
+    min-height: var(--stmui-tap);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--stmui-line);
+}
+
+html.stmui-touch .stmui-selrow > :is(span, label) {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--stmui-text);
+    font-size: 16px;
+}
+
+html.stmui-touch .stmui-selrow > :is(span, label) small {
+    font-size: inherit;
+}
+
+html.stmui-touch .stmui-selrow > select {
+    flex: 0 1 auto;
+    width: auto !important;
+    min-width: 128px;
+    max-width: 58%;
+    margin: 0 !important;
+}
+
+html.stmui-touch .stmui-selrow > .stmui-help {
+    flex: 1 0 100%;
+}
+
+html.stmui-setnav #UI-language-block.stmui-selrow {
+    border-bottom: 0;
+}
+
+/* -- Sliders on the Settings page: name and number on one line, slider under -- */
+
+html.stmui-setnav #user-settings-block-content .flexBasis48p:has(> input[type='range']) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 12px;
+    flex-basis: 100% !important;
+    padding: 12px 0 4px;
+    border-bottom: 1px solid var(--stmui-line);
+}
+
+html.stmui-setnav #user-settings-block-content .flexBasis48p:has(> input[type='range']) > * {
+    grid-column: 1 / -1;
+}
+
+html.stmui-setnav #user-settings-block-content .flexBasis48p:has(> input[type='range']) > small:first-child {
+    grid-row: 1;
+    grid-column: 1;
+    color: var(--stmui-text);
+    font-size: 16px;
+    text-align: start;
+}
+
+html.stmui-setnav #user-settings-block-content .flexBasis48p:has(> input[type='range']) > :is(.stmui-step-wrap, input[type='number']) {
+    grid-row: 1;
+    grid-column: 2;
+}
+
+html.stmui-setnav #user-settings-block-content .flexBasis48p:has(> input[type='range']) > .stmui-help {
+    grid-row: 2;
+}
+
+html.stmui-setnav #user-settings-block-content .flexBasis48p:has(> input[type='range']) > input[type='range'] {
+    grid-row: 3;
+    width: 100%;
+}
+
+html.stmui-setnav #user-settings-block-content .flexBasis48p:has(> input[type='range']) > small:not(:first-child):not(.stmui-help) {
+    grid-row: 4;
+    color: var(--stmui-muted);
+    font-size: 12px;
+    text-align: start;
+}
+
+/* -- The explanation line ------------------------------------------------- */
+
+.stmui-help {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    align-self: stretch;
+    margin: 0;
+    color: var(--stmui-muted);
+    opacity: 1;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+    text-align: start;
+    white-space: normal;
+}
+
+html.stmui-touch .drawer-content .range-block-title + .stmui-help {
+    margin: 2px 0 4px;
+}
+
+/* Two lines at first; a tap shows the rest. */
+.stmui-help.stmui-help-open {
+    display: block;
+}
+
+/* The ⓘ icon whose text now shows under the setting. */
+.stmui-tip-shown {
+    display: none !important;
+}
+
+/* -- Extensions page: one line on what each built-in extension does -------- */
+
+html.stmui-touch .drawer-content .inline-drawer-header:has(> .stmui-ext-note) {
+    flex-wrap: wrap;
+    row-gap: 2px;
+}
+
+html.stmui-touch .inline-drawer-header:has(> .stmui-ext-note) > * {
+    order: 1;
+}
+
+html.stmui-touch .inline-drawer-header:has(> .stmui-ext-note) > .inline-drawer-icon {
+    order: 2;
+}
+
+html.stmui-touch .inline-drawer-header > .stmui-ext-note {
+    order: 3;
+    flex: 1 0 100%;
+    padding-inline-end: 40px;
+    color: var(--stmui-muted);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.35;
+    text-align: start;
+}
+
+/* -- Chat options and Tools sheets ---------------------------------------- */
+
+.stmui-menu-heading + .stmui-menu-list {
+    margin-top: 0;
+}
+
+.stmui-menu-sheet .stmui-menu-heading:first-child {
+    margin-top: 4px;
+}
+
+.stmui-action-row .stmui-row-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.stmui-menu-row .stmui-fa-icon {
+    flex: 0 0 auto;
+    width: 24px;
+    min-width: 24px;
+    color: var(--stmui-muted);
+    font-size: 18px;
+    text-align: center;
+}
+
+.stmui-menu-row-danger .stmui-row-text > span {
+    color: var(--stmui-danger);
+}
+
+.stmui-menu-row-danger .stmui-row-text > small {
+    color: var(--stmui-muted);
 }

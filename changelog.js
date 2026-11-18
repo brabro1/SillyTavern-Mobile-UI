@@ -1,6 +1,15 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.16.0',
+        items: [
+            "Settings opens on a short list of sections (Look, Display, Chat, Characters and more), each with a line on what is inside.",
+            "Every switch sits on the right, with a line under it on what it does. Tap a long explanation to read all of it.",
+            "The ☰ menu is a sheet grouped into Reply, This chat and Chats, and the wand opens Tools. Each item says what it does.",
+            "Presets, API, Formatting and Extensions show the same explanations, and switches that are off are easier to see on light themes.",
+        ],
+    },
+    {
         version: '2.15.3',
         items: [
             "Fixed: Search this chat, opened from More while a page was showing, searched behind that page. It now goes to the chat first.",

@@ -97,7 +97,10 @@ Multiples of 4: `4, 8, 12, 16, 24`. Page gutter is 16px on every page, including
 - **Swipe pill:** shown only when there is more than one swipe, or when the last message offers a new one.
 - **Composer:** the border is neutral at rest and accent only while focused. The context ring shows the number with its unit or a label on tap.
 - **Sheets:** handle, title, content. Dismiss with the handle, the scrim or back. A Close button is plain text, not an outlined button.
-- **Settings rows:** label left, control right, helper text under the label. Checkboxes in Pocket Tavern pages are always the pill toggle, never the browser checkbox.
+- **Settings rows:** label left, control right, helper text under the label, a hairline between rows. Checkboxes in Pocket Tavern pages are always the pill toggle, never the browser checkbox. The helper text on SillyTavern's pages is SillyTavern's own tooltip (`title` or the ⓘ icon), shown at 14px `--stmui-muted`, two lines with a tap for the rest. Icon-only toggles (no text) keep SillyTavern's look.
+- **Switches:** off is a `--stmui-muted` knob on `--stmui-raised-2` with a muted outline (it must read on light themes); on is an `--stmui-on-accent` knob on the accent.
+- **Settings page:** opens on a list of sections (one grouped list, icon, title, one line on what is inside, chevron). A section shows only its own controls; the top bar shows its name and back returns to the list. Controls are marked, never moved, and anything unrecognised goes to the last general section.
+- **Menus:** SillyTavern's ☰ and wand pop-ups open as sheets. Items are grouped only when the groups mean something (Reply, This chat, Chats), each has a one-line description, and a destructive item goes last in danger colour.
 - **Placeholder avatars:** one tonal colour derived from the theme (not a random rainbow), with the initial. No half-body silhouette.
 - **Lists of records (characters, lorebook entries):** one row, one clear title, at most two lines of metadata. Status dots always have a label or a tooltip you can reach by tap.
 

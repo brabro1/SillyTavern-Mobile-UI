@@ -1093,6 +1093,7 @@ function openLayerCount() {
     if (editorOpen()) count += 1;
     if (chatFinderOpen()) count += 1;
     if (openLoreEntry()) count += 1;
+    if (settingsSectionOpen()) count += 1;
     return count;
 }
 
@@ -1174,6 +1175,7 @@ function closeTopLayer() {
         else $j()(close).trigger('click');
         return true;
     }
+    if (closeSettingsSection()) return true;
     if (currentPageId()) {
         closePages();
         return true;
@@ -1291,7 +1293,7 @@ class Shell {
             'aria-label': 'Back',
             // Step back one level: the prompt editor first, then the page.
             onclick: () => {
-                if (!closePromptEditor()) closePages();
+                if (!closePromptEditor() && !closeSettingsSection()) closePages();
             },
         }, [ui('arrow-left')]);
         this.avatar = h('span', { class: 'stmui-ab-avatar', 'aria-hidden': 'true' });
@@ -1540,6 +1542,11 @@ class Shell {
 
     renderContent(pageId) {
         const root = document.documentElement;
+        // Settings opens on its list of sections again next time.
+        if (pageId !== 'user-settings-button' && setnav.view !== 'home') {
+            setnav.view = 'home';
+            applySettingsView();
+        }
         root.classList.toggle('stmui-page-open', !!pageId);
         if (pageId) root.dataset.stmuiPage = pageId;
         else delete root.dataset.stmuiPage;
@@ -1558,6 +1565,13 @@ class Shell {
             if (drawer && settings.touchSizing) {
                 requestAnimationFrame(() => fillRanges(drawer));
                 addSliderSteppers(drawer);
+                if (pageId === 'user-settings-button') syncSettingsNav();
+                if (SEARCH_PAGES.includes(pageId)) {
+                    describeSettings(drawer);
+                    // Presets and API fill parts of their page a moment later.
+                    setTimeout(() => describeSettings(drawer), 600);
+                }
+                if (pageId === 'extensions-settings-button') describeExtensions();
             }
             const info = drawer ? pageInfo(drawer) : { title: '', icon: 'fa-gear' };
             this.titleEl.textContent = t(info.title);
@@ -1581,9 +1595,16 @@ class Shell {
                 if (editing) this.subEl.textContent = name ? t('Editing {name}', { name }) : t('New character');
                 else if (isShown(document.getElementById('rm_group_chats_block'))) this.subEl.textContent = t('Group chat');
             }
+            let headIcon = info.icon;
+            const section = pageId === 'user-settings-button' && setnav.view !== 'home' && SETTINGS_SECTIONS.find(item => item.id === setnav.view);
+            if (section) {
+                this.titleEl.textContent = t(section.title);
+                this.subEl.textContent = t('Settings');
+                headIcon = section.icon;
+            }
             this.search.hidden = !SEARCH_PAGES.includes(pageId) || !!editorMode;
             this.quick.hidden = true;
-            this.avatar.replaceChildren(ui(info.icon));
+            this.avatar.replaceChildren(ui(headIcon));
             this.avatar.classList.add('stmui-ab-avatar-icon');
             this.who.disabled = true;
             this.appbar.classList.add('stmui-ab-page');
@@ -6204,6 +6225,8 @@ function settingItems(root) {
 }
 
 function revealSetting(row) {
+    const section = row.closest('[data-stmui-sec]')?.dataset.stmuiSec;
+    if (section && setnav.home && setnav.view !== section) openSettingsSection(section);
     // Open any folded sections around it first.
     for (let node = row.parentElement; node; node = node.parentElement) {
         if (node.classList?.contains('inline-drawer-content') && getComputedStyle(node).display === 'none') {
@@ -6255,6 +6278,411 @@ function openSettingSearch() {
             setTimeout(() => input.focus(), 250);
         },
     }));
+}
+
+// -- settings: sections and descriptions
+
+/**
+ * SillyTavern's User Settings page is one long list of about a hundred controls.
+ * On a phone it opens on a short list of sections instead, like a phone's own
+ * Settings app, and a section shows only its own controls. Nothing is moved:
+ * each control is marked with its section and the others are hidden.
+ */
+const SETTINGS_SECTIONS = [
+    { id: 'look', icon: 'palette', title: 'Look', note: 'Theme, colors, avatars, text size and chat width' },
+    { id: 'display', icon: 'eye', title: 'Display', note: 'Timestamps, token counts, icons and effects' },
+    { id: 'chat', icon: 'chat', title: 'Chat', note: 'Sending, streaming, swipes and replies' },
+    { id: 'characters', icon: 'users', title: 'Characters', note: 'Character list, card import and avatars' },
+    { id: 'other', icon: 'sliders', title: 'Sounds and more', note: 'Sounds, smooth streaming, tools and window layout' },
+    { id: 'css', icon: 'brush', title: 'Custom CSS', note: 'Your own style rules' },
+    { id: 'stscript', icon: 'scroll', title: 'STscript', note: 'How slash commands are read' },
+];
+
+const setnav = { view: 'home', home: null, marked: [] };
+
+function settingsBlock() {
+    return document.getElementById('user-settings-block');
+}
+
+/** Marks SillyTavern's settings with their section; false when the page is not laid out as expected. */
+function markSettingsSections(block) {
+    const content = block.querySelector('#user-settings-block-content');
+    if (!content) return false;
+    const mark = (element, id) => {
+        if (!element || element.dataset.stmuiSec) return;
+        element.dataset.stmuiSec = id;
+        setnav.marked.push(element);
+    };
+    const theme = content.querySelector('#UI-Theme-Block');
+    mark(theme?.querySelector('#UI-presets-block'), 'look');
+    for (const child of theme?.querySelector(':scope > .flexNoGap')?.children ?? []) {
+        mark(child, child.querySelectorAll(':scope > label.checkbox_label').length >= 5 ? 'display' : 'look');
+    }
+    for (const group of content.querySelectorAll('#UI-Customization > div')) {
+        if (group.querySelector('#aux_field, #tag_import_setting')) mark(group, 'characters');
+        else for (const child of group.children) mark(child, child.id === 'CustomCSS-block' ? 'css' : 'other');
+    }
+    for (const group of content.querySelectorAll('#power-user-option-checkboxes > *')) {
+        mark(group, group.querySelector('[id^="stscript_"]') ? 'stscript' : 'chat');
+    }
+    // Anything else (a newer SillyTavern, another extension) goes to "Sounds and more", so nothing gets lost.
+    const sweep = parent => {
+        for (const child of parent.children) {
+            if (child.dataset.stmuiSec) continue;
+            if (child.querySelector('[data-stmui-sec]')) sweep(child);
+            else mark(child, 'other');
+        }
+    };
+    sweep(content);
+    return setnav.marked.some(element => element.dataset.stmuiSec === 'look');
+}
+
+function buildSettingsHome(block) {
+    const sections = SETTINGS_SECTIONS.filter(section => setnav.marked.some(element => element.dataset.stmuiSec === section.id));
+    const row = (iconName, title, note, onclick) => h('button', { type: 'button', class: 'stmui-menu-row', onclick }, [
+        ui(iconName, 'stmui-menu-row-icon'),
+        h('span', { class: 'stmui-row-text' }, [h('span', { text: title }), h('small', { text: note })]),
+        ui('chevron-right', 'stmui-menu-row-go'),
+    ]);
+    setnav.home = h('div', { class: 'stmui-set-home', 'data-stmui': '1' }, [
+        h('button', { type: 'button', class: 'stmui-search-field', onclick: () => openSettingSearch() }, [ui('search'), h('span', { text: 'Search settings' })]),
+        h('div', { class: 'stmui-menu-list' }, sections.map(section => row(section.icon, section.title, section.note, () => openSettingsSection(section.id)))),
+        h('div', { class: 'stmui-menu-list' }, [row('phone', 'Pocket Tavern', 'Phone layout, gestures and helpers', () => openMobileSettings())]),
+    ]);
+    // The block on top holds the title, language, account and version; the list goes first in it.
+    const top = block.querySelector('#settingsSearch')?.closest('#user-settings-block > *');
+    if (top) top.prepend(setnav.home);
+    else block.prepend(setnav.home);
+}
+
+function applySettingsView() {
+    const block = settingsBlock();
+    if (!block || !setnav.home) return;
+    block.dataset.stmuiView = setnav.view;
+    for (const element of setnav.marked) element.classList.toggle('stmui-sec-off', element.dataset.stmuiSec !== setnav.view);
+}
+
+function openSettingsSection(id) {
+    if (!setnav.home) return;
+    setnav.view = id;
+    applySettingsView();
+    const block = settingsBlock();
+    if (block) block.scrollTop = 0;
+    shell?.render(currentPageId());
+    scheduleHistorySync();
+}
+
+function settingsSectionOpen() {
+    return !!setnav.home && setnav.view !== 'home' && currentPageId() === 'user-settings-button';
+}
+
+/** Back from a section to the list of sections. */
+function closeSettingsSection() {
+    if (!settingsSectionOpen()) return false;
+    setnav.view = 'home';
+    applySettingsView();
+    const block = settingsBlock();
+    if (block) block.scrollTop = 0;
+    shell?.render(currentPageId());
+    scheduleHistorySync();
+    return true;
+}
+
+function teardownSettingsNav() {
+    for (const element of setnav.marked) {
+        delete element.dataset.stmuiSec;
+        element.classList.remove('stmui-sec-off');
+    }
+    setnav.marked = [];
+    setnav.home?.remove();
+    setnav.home = null;
+    setnav.view = 'home';
+    const block = settingsBlock();
+    if (block) delete block.dataset.stmuiView;
+    document.documentElement.classList.remove('stmui-setnav');
+}
+
+function syncSettingsNav() {
+    const block = settingsBlock();
+    if (!active || !settings.touchSizing || !block) {
+        if (setnav.home || setnav.marked.length) teardownSettingsNav();
+        return;
+    }
+    if (setnav.home?.isConnected) return;
+    teardownSettingsNav();
+    if (!markSettingsSections(block)) {
+        teardownSettingsNav();
+        return;
+    }
+    buildSettingsHome(block);
+    document.documentElement.classList.add('stmui-setnav');
+    applySettingsView();
+}
+
+/**
+ * SillyTavern explains most settings in tooltips, which a phone never shows.
+ * Show each one as a line under its setting, and lay toggles out as rows:
+ * the label on the left, the switch on the right.
+ */
+function describeSettings(root) {
+    if (!active || !settings.touchSizing || !root) return;
+    const plain = text => String(text ?? '').replace(/\s+/g, ' ').trim();
+    const useful = (tip, label) => {
+        const a = plain(tip).toLowerCase();
+        const b = plain(label).toLowerCase().replace(/[:：]$/, '');
+        return a.length >= 6 && a !== b && !b.includes(a);
+    };
+    const help = text => h('small', { class: 'stmui-help stmui-skip', 'data-stmui': '1', text: plain(text) });
+    const skip = '.template_element, #stmui-sheet, .world_entry, .inline-drawer-header';
+    for (const label of root.querySelectorAll('label.checkbox_label')) {
+        if (label.dataset.stmuiRow || label.closest(skip)) continue;
+        if (!label.querySelector(':scope > input[type="checkbox"]') || label.querySelectorAll('input, select, textarea').length !== 1) continue;
+        // Icon-only toggles (Formatting's "Bind to context" and the like) keep their look.
+        if (!plain(label.textContent)) continue;
+        label.dataset.stmuiRow = '1';
+        label.classList.add('stmui-setrow');
+        if (label.classList.contains('stmui-check')) continue;
+        const icon = label.querySelector('.fa-circle-info[title]');
+        const tip = label.getAttribute('title') || icon?.getAttribute('title') || '';
+        if (!useful(tip, label.textContent)) continue;
+        label.append(help(tip));
+        icon?.classList.add('stmui-tip-shown');
+    }
+    // "Avatars: [Circle]" and similar rows on the Settings page.
+    for (const select of root.querySelectorAll('#user-settings-block-content .flex-container > select, #UI-language-block > select')) {
+        const row = select.parentElement;
+        if (row.dataset.stmuiRow || !row.querySelector(':scope > span, :scope > label')) continue;
+        row.dataset.stmuiRow = '1';
+        row.classList.add('stmui-selrow');
+        const tip = row.getAttribute('title') || '';
+        if (useful(tip, row.querySelector(':scope > span, :scope > label')?.textContent)) row.append(help(tip));
+    }
+    // Sliders and other settings keep their explanation in an ⓘ icon.
+    for (const icon of root.querySelectorAll('.fa-circle-info[title]')) {
+        if (icon.classList.contains('stmui-tip-shown') || icon.closest(`${skip}, label.checkbox_label, .stmui-set-home`)) continue;
+        const holder = icon.parentElement;
+        if (!holder || holder === root) continue;
+        const tip = icon.getAttribute('title');
+        if (!useful(tip, holder.textContent)) continue;
+        holder.after(help(tip));
+        icon.classList.add('stmui-tip-shown');
+    }
+}
+
+function removeSettingDescriptions() {
+    document.querySelectorAll('.stmui-help, .stmui-ext-note').forEach(node => node.remove());
+    document.querySelectorAll('[data-stmui-row]').forEach(node => {
+        delete node.dataset.stmuiRow;
+        node.classList.remove('stmui-setrow', 'stmui-selrow');
+    });
+    document.querySelectorAll('.stmui-tip-shown').forEach(node => node.classList.remove('stmui-tip-shown'));
+}
+
+/** One line on what each built-in extension does, under its name on the Extensions page. */
+const EXTENSION_NOTES = {
+    assets_container: 'More extensions, themes and sample characters',
+    expressions_container: "Shows the character's emotion pictures",
+    sd_container: 'Makes pictures with an image AI',
+    tts_container: 'Reads replies aloud',
+    qr_container: 'Buttons that send saved messages or commands',
+    translation_container: 'Translates messages with an online translator',
+    caption_container: 'Describes pictures you send',
+    summarize_container: 'Keeps a running summary of long chats',
+    regex_container: 'Find-and-replace rules for messages and prompts',
+    vectors_container: 'Lets the AI recall older messages and files',
+    stmui_settings: 'The phone layout you are using now',
+};
+
+function describeExtensions() {
+    if (!active || !settings.touchSizing) return;
+    for (const [id, note] of Object.entries(EXTENSION_NOTES)) {
+        const header = document.querySelector(`#${id} .inline-drawer-header`);
+        if (!header || header.querySelector('.stmui-ext-note')) continue;
+        header.append(h('small', { class: 'stmui-ext-note stmui-skip', 'data-stmui': '1', text: note }));
+    }
+}
+
+// -- the ☰ and wand menus as sheets
+
+/** SillyTavern's chat options menu, in groups, each item with a line on what it does. */
+const CHAT_OPTIONS = [
+    {
+        title: 'Reply', chat: true, items: [
+            { id: 'option_regenerate', icon: 'refresh', note: 'Write the last reply again' },
+            { id: 'option_continue', icon: 'play', note: 'Make the last reply longer' },
+            { id: 'option_impersonate', icon: 'mask', note: 'Let the AI write your next message' },
+        ],
+    },
+    {
+        title: 'This chat', chat: true, items: [
+            { id: 'option_toggle_AN', icon: 'note', note: 'A note the AI reads at a set depth' },
+            { id: 'option_toggle_CFG', icon: 'scale', note: 'Extra guidance for the next replies' },
+            { id: 'option_toggle_logprobs', icon: 'chart', note: 'Which words the AI weighed for each reply' },
+            { id: 'option_new_bookmark', icon: 'flag', note: 'A point in this chat you can come back to' },
+            { id: 'option_back_to_main', icon: 'arrow-left', note: 'Leave this branch for the chat it came from' },
+            { id: 'option_convert_to_group', icon: 'users', note: 'Turn this chat into a group chat' },
+            { id: 'option_delete_mes', icon: 'trash', note: 'Pick messages to remove', danger: true },
+        ],
+    },
+    {
+        title: 'Chats', items: [
+            { id: 'option_start_new_chat', icon: 'chat-plus', note: 'A fresh chat with the same character' },
+            { id: 'option_select_chat', icon: 'history', note: 'Every saved chat with this character' },
+            { id: 'option_close_chat', icon: 'x', note: 'Back to the start screen' },
+        ],
+    },
+];
+
+/** Shown, unlike SillyTavern's spare copies (it has two "Close chat" items, one always hidden). */
+function menuItemShown(element, stop) {
+    if (!element || !(element.textContent ?? '').trim()) return false;
+    for (let node = element; node && node !== stop; node = node.parentElement) {
+        if (node.classList?.contains('displayNone') || node.style?.display === 'none' || node.hidden) return false;
+    }
+    return true;
+}
+
+function actionRow(iconNode, label, note, onclick, danger = false) {
+    return h('button', { type: 'button', class: `stmui-menu-row stmui-action-row${danger ? ' stmui-menu-row-danger' : ''}`, onclick }, [
+        iconNode,
+        h('span', { class: 'stmui-row-text' }, [h('span', { text: label }), note ? h('small', { text: note }) : null]),
+    ]);
+}
+
+/** Runs a SillyTavern menu item after the sheet is gone, so whatever it opens lands on top. */
+function pressMenuItem(element) {
+    closeSheet(true);
+    buzz(6);
+    element.click();
+}
+
+function itemLabel(element) {
+    return (element.querySelector(':scope > span')?.textContent ?? element.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
+/** The item's own Font Awesome icon (Pocket Tavern restyles those), or a neutral one. */
+function faIcon(element) {
+    const source = element.querySelector('.extensionsMenuExtensionButton, i[class*="fa-"], div[class*="fa-"]');
+    if (!source) return ui('puzzle', 'stmui-menu-row-icon');
+    const copy = source.cloneNode(false);
+    copy.removeAttribute('id');
+    copy.removeAttribute('title');
+    copy.classList.add('stmui-menu-row-icon', 'stmui-fa-icon');
+    copy.setAttribute('aria-hidden', 'true');
+    return copy;
+}
+
+async function openChatOptions() {
+    const menu = document.getElementById('options');
+    if (!menu) return;
+    // SillyTavern decides which checkpoint items apply when its menu opens; do the same.
+    try {
+        (await import('/scripts/bookmarks.js')).showBookmarksButtons?.();
+    } catch (error) {
+        console.debug(LOG, 'Checkpoint items not refreshed', error);
+    }
+    const context = ctx();
+    const inChat = !!(context.groupId || context.characterId !== undefined);
+    showSheet(new MenuSheet({
+        title: 'Chat options',
+        subtitle: '',
+        fill: body => {
+            const known = new Set();
+            for (const group of CHAT_OPTIONS) {
+                const rows = [];
+                for (const item of group.items) {
+                    known.add(item.id);
+                    if (group.chat && !inChat) continue;
+                    const element = [...menu.querySelectorAll(`[id="${item.id}"]`)].find(node => menuItemShown(node, menu));
+                    if (element) rows.push(actionRow(ui(item.icon, 'stmui-menu-row-icon'), itemLabel(element), item.note, () => pressMenuItem(element), item.danger));
+                }
+                if (rows.length) body.append(h('h4', { class: 'stmui-menu-heading', text: group.title }), h('div', { class: 'stmui-menu-list' }, rows));
+            }
+            // Items other extensions put in the menu.
+            const extra = [...menu.querySelectorAll('.options-content > :not(hr)')]
+                .filter(node => !known.has(node.id) && menuItemShown(node, menu))
+                .map(node => actionRow(faIcon(node), itemLabel(node), '', () => pressMenuItem(node)));
+            if (extra.length) body.append(h('h4', { class: 'stmui-menu-heading', text: 'From extensions' }), h('div', { class: 'stmui-menu-list' }, extra));
+        },
+    }));
+}
+
+const TOOL_NOTES = {
+    manageAttachments: 'Files and web pages the AI can look things up in',
+    attachFile: 'Send a file or picture with your next message',
+    sd_gen: 'Make a picture of the scene or a character',
+    send_picture: 'Let the AI describe a picture',
+    show_gallery_wand_button: 'Pictures saved for this character',
+    ttsExtensionMenuItem: 'Turn reading replies aloud on or off',
+    ttsExtensionNarrateAll: 'Read the whole chat aloud',
+    token_counter: 'Count the tokens in any text',
+    translate_chat: 'Translate every message in this chat',
+    translate_input_message: 'Translate the message you are typing',
+    stmui_wand_lorebooks: 'Choose the lorebooks for all chats',
+};
+
+const PICTURE_NOTES = {
+    sd_you: 'The character',
+    sd_face: "The character's face",
+    sd_me: 'You, as your persona',
+    sd_world: 'A scene from the whole story',
+    sd_last: 'What the last message describes',
+    sd_raw_last: 'The last message, word for word',
+    sd_background: 'A background for this chat',
+};
+
+function openToolsSheet() {
+    const menu = document.getElementById('extensionsMenu');
+    if (!menu) return;
+    showSheet(new MenuSheet({
+        title: 'Tools',
+        subtitle: 'From your extensions',
+        fill: body => {
+            const rows = [...menu.querySelectorAll('.list-group-item')]
+                .filter(item => menuItemShown(item, menu))
+                .map(item => actionRow(faIcon(item), itemLabel(item), TOOL_NOTES[item.id] ?? '', () => {
+                    // Image generation asks what to draw, in a little menu of its own.
+                    if (item.id === 'sd_gen' && document.querySelector('#sd_dropdown [id]')) openPictureSheet();
+                    else pressMenuItem(item);
+                }));
+            body.append(rows.length ? h('div', { class: 'stmui-menu-list' }, rows) : h('p', { class: 'stmui-menu-foot', text: 'No extension has added a tool yet.' }));
+        },
+    }));
+}
+
+function openPictureSheet() {
+    const dropdown = document.getElementById('sd_dropdown');
+    showSheet(new MenuSheet({
+        title: 'Generate image',
+        subtitle: 'What should the picture show?',
+        fill: body => {
+            const rows = [...dropdown.querySelectorAll('[id]')]
+                .filter(item => menuItemShown(item, dropdown))
+                .map(item => actionRow(ui('image', 'stmui-menu-row-icon'), itemLabel(item), PICTURE_NOTES[item.id] ?? '', () => pressMenuItem(item)));
+            body.append(h('div', { class: 'stmui-menu-list' }, rows));
+        },
+    }));
+}
+
+/** Taps on ☰ and the wand open the sheets instead of SillyTavern's small pop-up menus. */
+function onMenuButtonClick(event) {
+    if (!active || !settings.touchSizing) return;
+    // A long explanation shows two lines; a tap shows all of it (and does not flip the switch it belongs to).
+    const tip = event.target.closest?.('.stmui-help');
+    if (tip) {
+        event.preventDefault();
+        event.stopPropagation();
+        tip.classList.toggle('stmui-help-open');
+        return;
+    }
+    const options = event.target.closest?.('#options_button');
+    const wand = !options && event.target.closest?.('#extensionsMenuButton');
+    if (!options && !wand) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    buzz(6);
+    if (options) openChatOptions();
+    else openToolsSheet();
 }
 
 // -- install as an app
@@ -6364,6 +6792,8 @@ function syncExtras() {
     renderMeter();
     if (active && settings.touchSizing) addSliderSteppers();
     else removeSliderSteppers();
+    syncSettingsNav();
+    if (!active || !settings.touchSizing) removeSettingDescriptions();
     if (!active) closeChatFinder();
     syncPictures();
     syncCharacterPage();
@@ -6408,6 +6838,7 @@ function syncExtras() {
     // Capture phase: runs before SillyTavern's own delegated handlers.
     document.addEventListener('pointerdown', onSendPointerDown, true);
     document.addEventListener('click', onSendClick, true);
+    document.addEventListener('click', onMenuButtonClick, true);
     document.addEventListener('click', onMessageMenuClick, true);
     document.addEventListener('click', onEditCopyClick, true);
     document.addEventListener('click', onAvatarClick, true);

@@ -165,6 +165,23 @@ if (want('more')) {
     await closeSheet();
 }
 
+if (want('chat-options')) {
+    await page.locator('#options_button').tap();
+    await until(() => document.getElementById('stmui-sheet')?.textContent.includes('Manage chat files'));
+    await shot('chat-options');
+    await closeSheet();
+}
+
+if (want('settings') || want('settings-section')) {
+    await page.evaluate(() => document.querySelector('#user-settings-button > .drawer-toggle')?.click());
+    await until(() => document.querySelectorAll('.stmui-set-home .stmui-menu-row').length > 0);
+    if (want('settings')) await shot('settings');
+    await page.evaluate(() => [...document.querySelectorAll('.stmui-set-home .stmui-menu-row')].find(row => row.textContent.includes('Display'))?.click());
+    await until(() => document.querySelector('.stmui-ab-title')?.textContent === 'Display');
+    if (want('settings-section')) await shot('settings-section');
+    await tab('chat');
+}
+
 if (want('themes')) {
     await openThemes();
     await shot('themes');

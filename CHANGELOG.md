@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.16.0
+
+A redesign of the settings and menus, so they feel like a phone app.
+
+- **Settings in sections.** SillyTavern's Settings page was one long list of about a hundred options. It now opens on a short list, like a phone's own Settings app: **Look**, **Display**, **Chat**, **Characters**, **Sounds and more**, **Custom CSS** and **STscript**, each with a line on what is inside, plus **Pocket Tavern** for the phone layout. A section shows only its own options, the top bar shows its name, and back returns to the list. **Search settings** finds any option and opens the section it is in. Language, account and version sit under the list. Anything a newer SillyTavern or another extension adds lands in **Sounds and more**, so nothing gets lost.
+- **Explanations under each setting.** SillyTavern explains most options in tooltips, which a phone never shows. Pocket Tavern shows that text as a line under the option, on Settings, Presets, API, Formatting and Extensions. Long ones show two lines; tap to read the rest (the tap does not flip the switch).
+- **Switches on the right.** Every on/off option is a row: the name and its explanation on the left, the switch on the right, with a thin line between rows. "Avatars: Circle" style options are rows too, with the choice on the right, and sliders show their name and number on one line with the slider under them. Switches that are off now have a grey knob, so they are easy to see on light themes; switches that are on use the theme's accent.
+- **Chat options (☰) as a sheet.** The menu is grouped into **Reply** (Regenerate, Continue, Impersonate), **This chat** (Author's Note, CFG, token probabilities, checkpoints, convert to group, and Delete messages last, in red) and **Chats** (start new, manage chat files, close). Each item has a line on what it does. Items other extensions add appear under **From extensions**. Like every sheet, it closes with a drag down or back.
+- **Tools (the wand) as a sheet,** each tool with a line on what it does. **Generate Image** asks what to draw in a sheet of its own (the character, their face, you, the whole story, the last message, a background).
+- **Extensions page:** a line under each built-in extension's name says what it does.
+- The phone test checks the new Settings sections, the explanations, ☰ and the wand.
+
 ## 2.15.3
 
 A test round before sharing the project: the phone test, a screen-by-screen check at three sizes and with the keyboard up, a slow-phone speed test, the light theme and Arabic (right to left).
