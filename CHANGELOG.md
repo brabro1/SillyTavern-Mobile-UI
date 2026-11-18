@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.15.0
+
+Design round, following the new [DESIGN.md](DESIGN.md) guide (written from an audit of the screenshots and a contrast check of every theme).
+
+- **Accent only where it means something:** Send and Save, the active tab, current selections, toggles and sliders, the context ring. Row and tile icons, chips, lorebook keyword chips, the A–Z strip, the ⚡ button, rings around pictures, recent-chat badges and the persona card are neutral now. **Close** is plain text instead of an outlined button.
+- **Themes with their own character.** Most themes were one recipe in another colour (a tinted dark background, two glows, a stock bright accent). Now each differs in structure: flat or one glow at most, different surface lightness, and accents tuned for the theme. **Paper** is fountain-pen blue on grey-white paper (it was cream and terracotta), **AMOLED** uses candle gold (it was acid teal), **Ember** glows from below like a hearth, **Ocean** is a lighter sea with light from above, and Forest, Sakura, Mocha, Lavender and Nord are flat. Midnight's buttons now pass the contrast check. All twelve themes pass: text 4.5:1, text on accent 4.5:1, accent 3:1. Theme names are unchanged, so your choice is kept.
+- **Character card:** Delete is last and quiet (a red icon and label; the fill belongs to the confirm). Lore and Chat lore look like the other tiles, with a small dot when a lorebook is linked, instead of SillyTavern's green.
+- **No generated-design tells:** no all-caps letter-spaced labels (Pinned, Recent, chat-history dates, badges), no middle-dot lists, no sparkle icon (the thinking box uses a lightbulb, Model a flask, Phone features a phone), and no drop shadows (things floating over the chat get a thin outline).
+- **One scale:** corners use 12px, 16px or fully round; text uses 12, 14, 16 and 20px. The tiny 9–11px text is gone.
+- **Easier to tap:** preset − and +, the swipe arrows, the message box tools, the context ring and the message buttons all have at least a 44px tap area. The ⋯ and ✎ on messages are easier to see.
+- **Small things:** the message box border is neutral until you type; a reply with one version shows only the ⟳ button (no "1/1"); the context ring shows "46%"; the Presets hint lines up with the page; labelled checkboxes on settings pages are pill toggles; the More search says "Search everything"; More tiles only keep subtitles that add something.
+
 ## 2.14.3
 
 Polish round: every screen was walked through on a normal phone, a small phone (360×640), sideways and with the keyboard up, checking for errors and anything spilling off the screen (`tests/audit.mjs` does this and saves a picture of each screen).

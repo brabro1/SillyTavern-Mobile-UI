@@ -1,6 +1,15 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.15.0',
+        items: [
+            "A calmer, more deliberate look: the accent colour only marks what matters, Close is plain text, and there are no more shadows or all-caps labels.",
+            "The themes are redone so each has its own character. Paper is now ink blue on paper, AMOLED uses candle gold.",
+            "The character card's Delete button is quiet and last; Lore and Chat lore lost SillyTavern's green.",
+            "Bigger tap areas for small buttons, easier-to-read small text, and a reply with one version no longer shows 1/1.",
+        ],
+    },
+    {
         version: '2.14.3',
         items: [
             "Sideways, the message box is one compact row, so the chat keeps its room.",

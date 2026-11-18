@@ -66,7 +66,7 @@
 - **Easier presets:** − and + buttons on sliders, prompt triggers as chips and a prompt editor that fits the screen.
 
 ### Everything else
-- **12 themes:** 9 dark and 3 light, or keep your own SillyTavern colors. New rounded icons and smooth, light animations.
+- **12 themes:** 9 dark and 3 light, each with its own character (from true black with candle gold to ink on paper), or keep your own SillyTavern colors. New rounded icons and smooth, light animations.
 - **Quick switch (⚡):** change persona, connection profile, model or preset in two taps.
 - **Recent chats by character:** the start screen shows one card per character with their picture, the last thing said and how many chats you have. Tap it for the latest chat, or the arrow to drop down the list: **New chat**, **All chats**, **Character**, and every recent chat with them. Pinned chats stay on top, and search opens the cards that match.
 - **Search everything:** characters, chats, lorebooks and settings in one search box. On settings pages, 🔍 finds any option by name.
