@@ -2160,7 +2160,10 @@ function onChatScroll() {
         const chat = document.getElementById('chat');
         if (!chat || !extras.jump) return;
         const distance = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
-        extras.jump.classList.toggle('stmui-jump-on', distance > Math.max(320, chat.clientHeight * 0.7) || (extras.generating && distance > 150));
+        // Not on the start screen: there is no "latest message" there, and it covered the chat list.
+        // (No chat open = the start screen; cheaper than searching a long chat on every frame.)
+        const welcome = ctx().getCurrentChatId?.() === undefined;
+        extras.jump.classList.toggle('stmui-jump-on', !welcome && (distance > Math.max(320, chat.clientHeight * 0.7) || (extras.generating && distance > 150)));
         // While a reply streams in below, the button says so.
         extras.jump.classList.toggle('stmui-jump-new', extras.generating && distance > 150);
     });
@@ -3758,6 +3761,7 @@ function enhanceWelcome() {
         groups.get(key).push(card);
     }
     if (groups.size) {
+        onChatScroll();
         // A placeholder marks the spot: the rows themselves move into the groups.
         const spot = document.createComment('stmui-groups');
         rest[0].before(spot);

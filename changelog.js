@@ -1,6 +1,14 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.14.3',
+        items: [
+            "Sideways, the message box is one compact row, so the chat keeps its room.",
+            "The jump-to-latest button no longer shows on the start screen, where it covered the chat list.",
+            "Pocket Tavern now has a Ko-fi page, if you'd like to support it.",
+        ],
+    },
+    {
         version: '2.14.2',
         items: [
             "Opening an edit (a message, its thinking, a lorebook entry, a persona) no longer pops up the keyboard; tap the text to type.",

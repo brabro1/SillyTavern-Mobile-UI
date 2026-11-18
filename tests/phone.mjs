@@ -145,6 +145,7 @@ await step('message box: persona button, context ring and Context page; search t
     await closeSheet();
     // Your persona: edit the description quickly, check it saved, then put it back.
     const before = await page.evaluate(() => SillyTavern.getContext().powerUserSettings.persona_description ?? '');
+    try {
     for (const text of ['Pocket Tavern test description', before]) {
         await page.locator('.stmui-persona-chip').click();
         await until(() => document.querySelector('#stmui-sheet .stmui-persona-card-edit'));
@@ -157,6 +158,17 @@ await step('message box: persona button, context ring and Context page; search t
         await until(() => !document.getElementById('stmui-sheet'));
         const saved = await page.evaluate(() => SillyTavern.getContext().powerUserSettings.persona_description ?? '');
         if (saved !== text) throw new Error(`persona description not saved (got "${saved.slice(0, 30)}")`);
+    }
+    } finally {
+        // Whatever happened above, leave the persona as it was.
+        await page.evaluate(async original => {
+            const box = document.getElementById('persona_description');
+            if (!box || box.value === original) return;
+            box.value = original;
+            box.dispatchEvent(new Event('input', { bubbles: true }));
+            await SillyTavern.getContext().saveSettings?.();
+        }, before);
+        if (await page.locator('#stmui-sheet').count()) await closeSheet();
     }
     await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="more"]').click());
     await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Search this chat' }).click();

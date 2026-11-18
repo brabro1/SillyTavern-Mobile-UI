@@ -6,6 +6,7 @@
 [![SillyTavern](https://img.shields.io/badge/SillyTavern-1.19%2B-6c4bd8)](https://github.com/SillyTavern/SillyTavern)
 [![Platform](https://img.shields.io/badge/made%20for-Android%20%C2%B7%20Termux-3ddc84)](#requirements)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Ko-fi](https://img.shields.io/badge/support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/brabro)
 
 **Pocket Tavern makes SillyTavern on your phone look and feel like a real app.** Tabs at the bottom, your character at the top, big readable text, and buttons sized for your thumb. It's a SillyTavern extension that only switches on for phones. On your computer SillyTavern stays exactly as it is.
 
@@ -156,6 +157,12 @@ Pocket Tavern is in **alpha**: the main pages are in place, but parts are still 
 ## Feedback and bug reports
 
 Found a bug or have an idea? [Open an issue](https://github.com/brabro1/SillyTavern-PocketTavern/issues/new/choose). A screenshot, your phone and browser, and your SillyTavern version help a lot.
+
+## Support
+
+Pocket Tavern is free and always will be. If it makes your evenings with SillyTavern nicer and you'd like to say thanks, you can buy me a coffee on Ko-fi. It's completely optional and very much appreciated.
+
+[![Support me on Ko-fi](https://img.shields.io/badge/Buy%20me%20a%20coffee-Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/brabro)
 
 ## Contributing
 

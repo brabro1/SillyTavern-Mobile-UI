@@ -2863,6 +2863,28 @@ html.stmui-on .mes_text video {
     }
 }
 
+/* Sideways phones are short: the message box goes back to one row (tools, text, ring and Send). */
+@media (orientation: landscape) and (max-height: 520px) {
+    html.stmui-chat #nonQRFormItems {
+        grid-template-areas: "left text right";
+    }
+
+    html.stmui-chat #send_textarea {
+        min-height: 38px;
+        max-height: 30dvh;
+        padding: 8px 8px;
+    }
+
+    html.stmui-chat #form_sheld {
+        padding-top: 10px;
+        padding-bottom: 6px;
+    }
+
+    html.stmui-chat #send_form {
+        padding: 3px 5px;
+    }
+}
+
 /* -- Message box: your persona and the context ring ------------------------ */
 
 .stmui-persona-chip {

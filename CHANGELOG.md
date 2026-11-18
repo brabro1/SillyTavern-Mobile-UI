@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.14.3
+
+Polish round: every screen was walked through on a normal phone, a small phone (360×640), sideways and with the keyboard up, checking for errors and anything spilling off the screen (`tests/audit.mjs` does this and saves a picture of each screen).
+
+- **Sideways:** the message box goes back to one row (persona and tools, the text, the ring and Send), so a short sideways screen keeps room for the chat.
+- **Start screen:** the round jump-to-latest button showed there and covered the buttons of an open Recent chats card. It now only shows in a chat.
+- **Support:** Pocket Tavern has a [Ko-fi page](https://ko-fi.com/brabro). The README has a Support section and GitHub shows a Sponsor button.
+- The phone test always puts the test persona back as it was, even when a step fails.
+
 ## 2.14.2
 
 - **No keyboard when an edit opens.** Tapping ✎ (or Edit in the message menu, editing a message's thinking, opening a lorebook entry or a persona) made SillyTavern focus the text box, which popped up the keyboard. A text box in an edit area that takes focus because you tapped something else now stays closed; tap the text itself to type. SillyTavern's copy fallback still works.

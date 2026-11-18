@@ -18,7 +18,7 @@ Pocket Tavern is a plain SillyTavern extension with no build step:
 | `locales.js`, `i18n.js` | Translations of Pocket Tavern's own labels |
 | `changelog.js`, `CHANGELOG.md` | The What's new list and the full history |
 | `termux/setup.sh` | The one-tap start shortcuts for Android |
-| `tests/` | The checks, the speed test and the screenshot script (not needed to use the extension) |
+| `tests/` | The checks, the speed test, the audit and the screenshot script (not needed to use the extension) |
 
 The internal `stmui` names and the `mobileUI` settings key come from the project's old name, Mobile UI. They stay as they are so existing settings keep working.
 
@@ -39,7 +39,8 @@ The internal `stmui` names and the `mobileUI` settings key come from the project
    ```
    `PROFILE="type"` (any part of a scenario name, here "type a message") shows the busiest functions and what made the page restyle.
 5. For a user-facing change, add a line to `CHANGELOG.md` and `changelog.js`, and update the README.
-6. If the look changed, retake the screenshots with test data only (never your own chats), then redraw the banner from `docs/brand/banner.html`:
+6. For a polish pass, `node audit.mjs results/audit` (same `ST_URL` and `CHROME_CHANNEL`) walks every screen at three sizes and with the keyboard up, and saves a picture of each.
+7. If the look changed, retake the screenshots with test data only (never your own chats), then redraw the banner from `docs/brand/banner.html`:
    ```bash
    cd tests && ST_URL=http://127.0.0.1:8000 CHROME_CHANNEL=chrome node screenshots.mjs
    ```
