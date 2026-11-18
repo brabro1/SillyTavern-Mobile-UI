@@ -120,4 +120,11 @@ Multiples of 4: `4, 8, 12, 16, 24`. Page gutter is 16px on every page, including
 
 ## Known gaps (from the November 2026 audit)
 
-Not yet fixed, in priority order: Delete tile weight and stock green tiles; accent overuse across rows and icons; shared theme recipe; rainbow placeholder avatars; no enforced type and radius scale; 34–38px controls (preset steppers); faint message action icons and Midnight `onAccent` contrast; composer rest border, "1/1" swipe pill, unlabeled context ring, Presets hint misaligned (x=10 vs the 24px content edge), unstyled "Unlocked" checkbox, clipped search placeholder, filler menu subtitles.
+Fixed on the design branch: Delete tile weight and stock green Lore tiles; accent removed from row icons, tile icons, chips, keyword chips, the A–Z strip, the ⚡ button, avatar rings, recent-chat badges and thread line, the persona card gradient and the Close outline; message action icons now `--stmui-muted`; Midnight `onAccent` (now 5.5:1, all 12 themes pass the contrast rule); preset steppers, swipe arrows, composer tools, context ring and message buttons at a 44px hit area; composer border neutral at rest and drop shadows removed; "1/1" hidden with a single swipe; context ring shows "46%"; Presets hint on the content edge; labelled checkboxes on settings pages are pill toggles; More search placeholder shortened; filler More subtitles removed.
+
+Still open:
+
+- **Theme recipes:** seven themes still share the tinted-dark, two-glow, one-accent recipe, and Paper is the cream-and-terracotta default. Options proposed to the user; not changed yet.
+- **Type and radius scale:** folded in only where code was touched. Many 11–13px sizes and 14/18/20/22px radii remain in older rules.
+- **Accent in SillyTavern's own markup:** the `?` help icons and some stock controls inside pages still use the accent.
+- **Placeholder avatars:** not a Pocket Tavern issue. The rainbow letter pictures in the README screenshots are the test copy's sample characters; Pocket Tavern draws no placeholder avatars. Nicer sample pictures would make the screenshots look less generic.
