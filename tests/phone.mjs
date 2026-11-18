@@ -342,6 +342,16 @@ await step('characters page has search, labeled card tools and tabs', async () =
 });
 
 await step('character list shows its page buttons when there is more than one page', async () => {
+    // A fresh SillyTavern has one character: add a throwaway one so there can be a second page.
+    const added = await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        if (context.characters.length + (context.groups?.length ?? 0) >= 2) return null;
+        const st = await import('/script.js');
+        const response = await fetch('/api/characters/create', { method: 'POST', headers: st.getRequestHeaders(), body: JSON.stringify({ ch_name: 'Page test' }) });
+        if (!response.ok) throw new Error(`could not add a test character: ${response.status}`);
+        await st.getCharacters();
+        return response.text();
+    });
     // A page size that always leaves a second page, however few characters there are.
     const count = await page.evaluate(async () => {
         const context = SillyTavern.getContext();
@@ -369,6 +379,7 @@ await step('character list shows its page buttons when there is more than one pa
             accountStorage.setItem('Characters_PerPage', '50');
             await (await import('/script.js')).printCharacters(true);
         });
+        if (added) await page.evaluate(async avatar => (await import('/script.js')).deleteCharacter(avatar, { deleteChats: true }), added).catch(() => {});
     }
     await page.locator('.stmui-tab[data-tab="chat"]').click();
     await until(() => !document.documentElement.dataset.stmuiPage);
