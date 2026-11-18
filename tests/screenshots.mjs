@@ -260,4 +260,4 @@ if (want('before')) {
 }
 
 await browser.close();
-console.log('\nDone. Check the pictures, then redraw docs/brand/banner.png if chat, characters or themes changed.');
+console.log('\nDone. Check the pictures, then run node brand.mjs to redraw the banner if chat, settings or characters changed.');
