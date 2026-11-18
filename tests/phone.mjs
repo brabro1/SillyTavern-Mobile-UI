@@ -342,11 +342,16 @@ await step('characters page has search, labeled card tools and tabs', async () =
 });
 
 await step('character list shows its page buttons when there is more than one page', async () => {
-    await page.evaluate(async () => {
+    // A page size that always leaves a second page, however few characters there are.
+    const count = await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        const total = context.characters.length + (context.groups?.length ?? 0);
         const { accountStorage } = await import('/scripts/util/AccountStorage.js');
-        accountStorage.setItem('Characters_PerPage', '10');
+        accountStorage.setItem('Characters_PerPage', String(Math.max(1, Math.floor((total - 1) / 2) || 1)));
         await (await import('/script.js')).printCharacters(true);
+        return total;
     });
+    if (count < 2) throw new Error('the test needs at least two characters');
     await showTabs();
     await page.locator('.stmui-tab[data-tab="rightNavHolder"]').click();
     await until(() => document.documentElement.dataset.stmuiPage === 'rightNavHolder');
@@ -355,8 +360,9 @@ await step('character list shows its page buttons when there is more than one pa
         await next.waitFor({ state: 'visible' });
         const size = await next.boundingBox();
         if (size.height < 44 || size.width < 44) throw new Error(`page button is ${size.width}x${size.height}`);
+        const before = await page.evaluate(() => document.querySelector('#rm_print_characters_pagination .paginationjs-nav')?.textContent);
         await next.click();
-        await until(() => /^\s*11/.test(document.querySelector('#rm_print_characters_pagination .paginationjs-nav')?.textContent ?? ''));
+        await until(was => document.querySelector('#rm_print_characters_pagination .paginationjs-nav')?.textContent !== was, before);
     } finally {
         await page.evaluate(async () => {
             const { accountStorage } = await import('/scripts/util/AccountStorage.js');
@@ -369,6 +375,11 @@ await step('character list shows its page buttons when there is more than one pa
 });
 
 await step('in a chat the tabs tuck away; the arrow brings them back and typing hides them again', async () => {
+    await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        if (context.characterId === undefined && !context.groupId) await context.selectCharacterById('0');
+    });
+    await until(() => document.querySelectorAll('#chat .mes').length > 0);
     await until(() => document.documentElement.classList.contains('stmui-tabs-tucked'));
     // Hidden from touch and screen readers once it has slid away (0.2s).
     await until(() => getComputedStyle(document.querySelector('.stmui-tabbar')).visibility === 'hidden', null, 2000)
