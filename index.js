@@ -1642,7 +1642,7 @@ function openMoreSheet() {
                     closeSheet(true);
                     document.getElementById('option_start_new_chat')?.click();
                 }, !inChat),
-                row('sparkles', 'Phone features', () => openExtrasSheet()),
+                row('phone', 'Phone features', () => openExtrasSheet()),
                 row('zap', 'Quick switch', () => openQuickSwitch()),
                 row('languages', 'Translate chat', () => openTranslateSheet(), !inChat),
                 row('search', 'Search this chat', () => {
@@ -1758,7 +1758,7 @@ function toastIconCss() {
         .map(([type, name]) => `html.stmui-toasts #toast-container > .toast-${type} { --stmui-t-icon: ${iconUrl(name)}; }`)
         .join(' ')
         // A grey magnifier drawn inside search boxes.
-        + ` html.stmui-on { --stmui-search-icon: ${iconUrl('search').replace('%23000', '%23909090')}; --stmui-think-icon: ${iconUrl('sparkles')}; --stmui-regen-icon: ${iconUrl('refresh')}; }`;
+        + ` html.stmui-on { --stmui-search-icon: ${iconUrl('search').replace('%23000', '%23909090')}; --stmui-think-icon: ${iconUrl('bulb')}; --stmui-regen-icon: ${iconUrl('refresh')}; }`;
 }
 
 function applyAppearance() {
@@ -2542,7 +2542,7 @@ function openMessageMenu(message) {
             const rows = buttons.map(button => {
                 const faClass = Array.from(button.classList).find(name => name.startsWith('fa-') && !['fa-solid', 'fa-regular', 'fa-fw', 'fa-xs', 'fa-sm', 'fa-lg'].includes(name));
                 return h('button', { type: 'button', class: 'stmui-menu-row', onclick: () => run(button) }, [
-                    faClass ? ui(faClass, 'stmui-menu-row-icon') : ui('sparkles', 'stmui-menu-row-icon'),
+                    faClass ? ui(faClass, 'stmui-menu-row-icon') : ui('puzzle', 'stmui-menu-row-icon'),
                     h('span', { text: messageActionLabel(button) }),
                 ]);
             });
@@ -5321,7 +5321,7 @@ function fillContextSheet(body, { inChat, info, loading, failed }) {
             const text = h('span', { class: 'stmui-ctx-name' }, [h('span', { text: CTX_PARTS[part.key].label })]);
             if (part.key === 'character') {
                 const pieces = Object.entries(info.character).filter(([, tokens]) => tokens > 0).map(([name, tokens]) => `${t(name)} ${fmt(tokens)}`);
-                if (pieces.length) text.append(h('small', { text: pieces.join(' · ') }));
+                if (pieces.length) text.append(h('small', { text: pieces.join(', ') }));
             }
             if (part.key === 'history') {
                 const count = info.facts.find(([name]) => name === 'Messages in context')?.[1];
@@ -6034,7 +6034,7 @@ function openQuickSwitch() {
             }
             const model = currentModelSelect();
             if (model) {
-                rows.push(row('sparkles', t('Model'), model.selectedOptions[0]?.textContent.trim(), () => openChoiceSheet({
+                rows.push(row('flask', t('Model'), model.selectedOptions[0]?.textContent.trim(), () => openChoiceSheet({
                     title: t('Model'),
                     options: optionsOf(model),
                     current: model.value,

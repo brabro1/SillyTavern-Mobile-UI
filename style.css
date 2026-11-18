@@ -293,9 +293,9 @@ dialog.stmui-sheet.stmui-sheet-open::backdrop {
     padding-right: var(--stmui-safe-right);
     border: 1px solid var(--stmui-line);
     border-bottom: 0;
-    border-radius: 24px 24px 0 0;
+    border-radius: 16px 16px 0 0;
     background: linear-gradient(var(--stmui-surface), var(--stmui-surface)), #101010;
-    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+    box-shadow: none;
     outline: none;
     transform: translateY(100%);
     transition: transform 0.2s ease-in;
@@ -391,7 +391,7 @@ input[type='search'].stmui-search-input {
     margin: 0;
     padding: 8px 46px 8px 40px;
     border: 1px solid var(--stmui-line);
-    border-radius: 14px;
+    border-radius: 12px;
     background: var(--stmui-raised);
     color: var(--stmui-text);
     font-size: 16px;
@@ -454,7 +454,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     flex: 1 1 auto;
     padding: 3px;
     border: 1px solid var(--stmui-line);
-    border-radius: 14px;
+    border-radius: 12px;
     background: var(--stmui-raised);
 }
 
@@ -521,7 +521,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     display: flex;
     align-items: stretch;
     margin: 2px 0;
-    border-radius: 14px;
+    border-radius: 12px;
     transition: background 0.12s ease;
 }
 
@@ -534,7 +534,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     min-height: 54px;
     padding: 8px 10px 8px 12px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     background: transparent;
     color: inherit;
     font: inherit;
@@ -566,7 +566,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     border: 2px solid color-mix(in srgb, var(--stmui-text) 40%, transparent);
     border-radius: 8px;
     color: transparent;
-    font-size: 13px;
+    font-size: 14px;
     transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
@@ -575,7 +575,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
 }
 
 #stmui-sheet [aria-multiselectable='false'] .stmui-mark i {
-    font-size: 9px;
+    font-size: 12px;
 }
 
 .stmui-row-on .stmui-mark {
@@ -621,14 +621,12 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     background: color-mix(in srgb, var(--stmui-text) 14%, transparent);
     color: var(--stmui-muted);
     font-size: 0.72em;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
 }
 
 .stmui-edit {
     flex: 0 0 52px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     background: transparent;
     color: var(--stmui-muted);
     cursor: pointer;
@@ -700,7 +698,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     min-height: 108px;
     padding: 14px 6px 10px;
     border: 1px solid var(--stmui-line);
-    border-radius: 18px;
+    border-radius: 16px;
     background: var(--stmui-raised);
     color: var(--stmui-text);
     font: inherit;
@@ -725,7 +723,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     justify-content: center;
     width: 44px;
     height: 44px;
-    border-radius: 14px;
+    border-radius: 12px;
     background: var(--stmui-raised-2);
     color: var(--stmui-text);
     font-size: 20px;
@@ -756,7 +754,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     flex-direction: column;
     margin-top: 14px;
     border: 1px solid var(--stmui-line);
-    border-radius: 18px;
+    border-radius: 16px;
     background: var(--stmui-raised);
     overflow: hidden;
 }
@@ -818,7 +816,7 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     .stmui-panel {
         max-height: 100%;
         max-width: 560px;
-        border-radius: 18px 18px 0 0;
+        border-radius: 16px 16px 0 0;
     }
 
     .stmui-grab {
@@ -1029,7 +1027,7 @@ html.stmui-shell .stmui-appbar {
     height: 48px;
     padding: 0 8px 0 4px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     background: transparent;
     color: inherit;
     font: inherit;
@@ -1056,7 +1054,7 @@ html.stmui-shell .stmui-appbar {
     border-radius: 50%;
     background: var(--stmui-raised-2);
     color: var(--stmui-muted);
-    font-size: 17px;
+    font-size: 16px;
     overflow: hidden;
 }
 
@@ -1082,7 +1080,7 @@ html.stmui-shell .stmui-appbar {
 
 .stmui-ab-title {
     overflow: hidden;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1091,7 +1089,7 @@ html.stmui-shell .stmui-appbar {
 .stmui-ab-sub {
     overflow: hidden;
     color: var(--stmui-muted);
-    font-size: 12.5px;
+    font-size: 14px;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
@@ -1181,7 +1179,7 @@ html.stmui-shell.stmui-keyboard .stmui-tabbar {
 .stmui-tab-label {
     max-width: 100%;
     overflow: hidden;
-    font-size: 11.5px;
+    font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.01em;
     white-space: nowrap;
@@ -1309,8 +1307,8 @@ html.stmui-on body #toast-container > div {
     width: 100% !important;
     max-width: none;
     margin: 0 0 8px;
-    border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    border-radius: 12px;
+    box-shadow: none;
 }
 
 /* Landscape phones: slimmer bars, labels beside icons. */
@@ -1359,7 +1357,7 @@ html.stmui-chat body:not(.bubblechat):not(.documentstyle) #chat .mes {
     margin: 5px 6px;
     padding: 12px 14px 10px;
     border: 1px solid var(--stmui-line);
-    border-radius: 20px;
+    border-radius: 16px;
     background: var(--stmui-bot-tint);
 }
 
@@ -1475,7 +1473,7 @@ html.stmui-chat #chat .swipe_right {
 html.stmui-chat #chat #curEditTextarea {
     min-height: 120px;
     padding: 10px 12px;
-    border-radius: 14px;
+    border-radius: 12px;
     font-size: 16px;
     line-height: 1.5;
 }
@@ -1569,7 +1567,7 @@ html.stmui-chat:not(.stmui-editing) #chat .mes .ch_name .alignItemsBaseline {
 html.stmui-chat:not(.stmui-editing) #chat .mes .ch_name .name_text {
     grid-row: 1;
     overflow: hidden;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1584,7 +1582,7 @@ html.stmui-chat:not(.stmui-editing) #chat .mes .ch_name .timestamp {
     grid-row: 2;
     grid-column: 1 / -1;
     margin: 0;
-    font-size: 11.5px;
+    font-size: 12px;
     line-height: 1.2;
 }
 
@@ -1638,7 +1636,7 @@ html.stmui-chat:not(.stmui-editing) #chat .mes .mesAvatarWrapper > :is(.mesIDDis
     margin: 8px 8px 0 0;
     padding: 0;
     color: var(--stmui-muted);
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.2;
     white-space: nowrap;
 }
@@ -1683,7 +1681,7 @@ html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #c
     padding: 0 0 0 4px;
     border-radius: 999px 0 0 999px;
     color: var(--stmui-text);
-    font-size: 15px;
+    font-size: 16px;
     opacity: 0.85;
 }
 
@@ -1710,7 +1708,7 @@ html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right {
     margin: 0;
     border-radius: 50%;
     color: var(--stmui-text);
-    font-size: 15px;
+    font-size: 16px;
     opacity: 0.85;
 }
 
@@ -1785,7 +1783,7 @@ html.stmui-chat #chat .mes .mes_reasoning_details {
     margin: 10px 0 0;
     overflow: hidden;
     border: 1px solid var(--stmui-line);
-    border-radius: 14px;
+    border-radius: 12px;
     background: color-mix(in srgb, var(--stmui-text) 4%, transparent);
 }
 
@@ -1801,7 +1799,7 @@ html.stmui-chat #chat .mes .mes_reasoning_header {
     border-radius: 0;
     background: transparent;
     color: var(--stmui-muted);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     align-items: center;
 }
@@ -1828,7 +1826,7 @@ html.stmui-chat #chat .mes .mes_reasoning_actions {
 html.stmui-chat #chat .mes .mes_reasoning_actions .mes_button {
     min-width: 32px;
     min-height: 32px;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 html.stmui-chat #chat .mes .mes_reasoning {
@@ -1894,7 +1892,7 @@ html.stmui-chat #send_form {
     padding: 4px 6px 6px;
     box-sizing: border-box;
     border: 1px solid var(--stmui-line) !important;
-    border-radius: 24px;
+    border-radius: 16px;
     background: var(--stmui-raised) !important;
     box-shadow: none;
     -webkit-backdrop-filter: none;
@@ -2439,7 +2437,7 @@ html.stmui-touch #rm_button_search {
     margin: 0;
     padding: 0;
     border-radius: 12px;
-    font-size: 17px;
+    font-size: 16px;
 }
 
 html.stmui-touch #character_sort_order {
@@ -2482,7 +2480,7 @@ html.stmui-touch #form_character_search_form {
 html.stmui-touch #character_search_bar {
     min-height: 46px;
     padding-left: 14px;
-    border-radius: 14px;
+    border-radius: 12px;
 }
 
 html.stmui-touch .rm_tag_controls .tags {
@@ -2523,7 +2521,7 @@ html.stmui-touch #rm_print_characters_block .bogus_folder_select {
     margin: 0;
     padding: 10px 12px;
     border: 1px solid var(--stmui-line);
-    border-radius: 18px;
+    border-radius: 16px;
     background: color-mix(in srgb, var(--stmui-text) 4%, transparent);
 }
 
@@ -2586,7 +2584,7 @@ html.stmui-touch #avatar_controls .menu_button {
 }
 
 html.stmui-touch #rm_ch_create_block textarea {
-    border-radius: 14px;
+    border-radius: 12px;
 }
 
 /* -- Message actions without the chat style ------------------------------- */
@@ -2634,9 +2632,9 @@ html.stmui-touch #extensionsMenu {
     margin: 0 auto;
     padding: 6px;
     border: 1px solid var(--stmui-line);
-    border-radius: 22px;
+    border-radius: 16px;
     background: var(--stmui-solid);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    box-shadow: none;
 }
 
 html.stmui-touch #options .options-content,
@@ -2662,7 +2660,7 @@ html.stmui-touch #extensionsMenu > div:not(.extension_container) {
     gap: 14px;
     min-height: 50px;
     padding: 0 14px;
-    border-radius: 14px;
+    border-radius: 12px;
     opacity: 1;
     font-size: 16px;
 }
@@ -2707,9 +2705,9 @@ html.stmui-touch #select_chat_popup {
     gap: 10px;
     border: 1px solid var(--stmui-line);
     border-bottom: 0;
-    border-radius: 24px 24px 0 0;
+    border-radius: 16px 16px 0 0;
     background: var(--stmui-solid);
-    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+    box-shadow: none;
     animation: stmui-sheet-up 0.25s var(--stmui-ease);
 }
 
@@ -2740,7 +2738,7 @@ html.stmui-touch #select_chat_cross {
 html.stmui-touch #select_chat_popup .select_chat_block {
     margin-top: 8px;
     padding: 10px 12px;
-    border-radius: 14px;
+    border-radius: 12px;
     border-color: var(--stmui-line);
     background: color-mix(in srgb, var(--stmui-text) 4%, transparent);
     line-height: 1.4;
@@ -2769,9 +2767,9 @@ html.stmui-touch dialog.popup:not(.transparent_dialogue_popup) {
     box-sizing: border-box;
     border: 1px solid var(--stmui-line);
     border-bottom: 0;
-    border-radius: 24px 24px 0 0;
+    border-radius: 16px 16px 0 0;
     background: var(--stmui-solid);
-    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+    box-shadow: none;
 }
 
 html.stmui-touch dialog.popup:not(.transparent_dialogue_popup)::before {
@@ -2834,7 +2832,7 @@ html.stmui-touch .popup-controls .menu_button {
     flex: 1 1 0;
     min-height: 50px;
     margin: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     font-size: 16px;
     font-weight: 600;
 }
@@ -2938,7 +2936,7 @@ html.stmui-on .mes_text video {
     background: var(--stmui-raised-2);
     color: var(--stmui-text);
     font: inherit;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     line-height: 1;
     cursor: pointer;
@@ -3091,7 +3089,7 @@ html.stmui-on .mes_text video {
 .stmui-ctx-big .stmui-ctx-num:not(:empty)::after {
     content: '%';
     margin-left: 1px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     opacity: 0.7;
 }
@@ -3104,9 +3102,7 @@ html.stmui-on .mes_text video {
     position: relative;
     margin-top: 3px;
     color: var(--stmui-muted);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font-size: 12px;
 }
 
 .stmui-ctx-head {
@@ -3125,7 +3121,7 @@ html.stmui-on .mes_text video {
 
 .stmui-ctx-head small {
     color: var(--stmui-muted);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.35;
 }
 
@@ -3225,7 +3221,7 @@ html.stmui-motion-full .stmui-sheet-open .stmui-ctx-bar > span {
 
 .stmui-ctx-tok small {
     color: var(--stmui-muted);
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .stmui-ctx-row-free .stmui-ctx-name,
@@ -3261,13 +3257,13 @@ html.stmui-motion-full .stmui-sheet-open .stmui-ctx-bar > span {
     min-width: 0;
     padding: 10px 12px;
     border: 1px solid var(--stmui-line);
-    border-radius: 14px;
+    border-radius: 12px;
     background: var(--stmui-raised);
 }
 
 .stmui-ctx-fact small {
     color: var(--stmui-muted);
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .stmui-ctx-fact b {
@@ -3380,7 +3376,7 @@ html.stmui-themed.stmui-backdrop #chat {
 
 html.stmui-touch :is(.drawer-content, .popup, #character_popup, #select_chat_popup) .menu_button {
     border: 1px solid var(--stmui-line);
-    border-radius: 14px;
+    border-radius: 12px;
     background-color: var(--stmui-raised);
     color: var(--stmui-text);
     font-weight: 600;
@@ -3497,7 +3493,7 @@ html.stmui-touch input[type='range'][style*='--stmui-fill'] {
 html.stmui-touch input[type='range']::-webkit-slider-thumb {
     border: 3px solid var(--stmui-accent) !important;
     background: #fff !important;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18) !important;
 }
 
 html.stmui-touch input[type='range']::-moz-range-thumb {
@@ -3552,7 +3548,7 @@ html.stmui-touch #rm_button_selected_ch h2 {
     min-width: 0;
     padding: 8px 8px 12px;
     border: 1.5px solid var(--stmui-line);
-    border-radius: 22px;
+    border-radius: 16px;
     background: var(--stmui-raised);
     color: var(--stmui-text);
     font: inherit;
@@ -3571,7 +3567,7 @@ html.stmui-touch #rm_button_selected_ch h2 {
     gap: 6px;
     height: 116px;
     padding: 9px;
-    border-radius: 15px;
+    border-radius: 12px;
     background: var(--p-backdrop);
     box-shadow: inset 0 0 0 1px rgba(127, 127, 127, 0.18);
     overflow: hidden;
@@ -3671,8 +3667,6 @@ html.stmui-touch #rm_button_selected_ch h2 {
     color: var(--stmui-muted);
     font-size: 0.76em;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
 }
 
 .stmui-menu-foot {
@@ -3741,7 +3735,7 @@ html input[type='checkbox'].stmui-switch::before {
     height: 22px;
     border-radius: 50%;
     background: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
     clip-path: none;
     transform: none;
     transition: transform 0.28s var(--stmui-ease-pop);
@@ -4047,14 +4041,14 @@ html.stmui-touch #completion_prompt_manager_popup .completion_prompt_manager_pop
     gap: 6px;
     margin-bottom: 6px;
     color: var(--stmui-muted);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     letter-spacing: 0.02em;
 }
 
 html.stmui-touch #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_control > .text_muted {
     margin-top: 6px;
-    font-size: 12.5px;
+    font-size: 14px;
     line-height: 1.35;
 }
 
@@ -4083,7 +4077,7 @@ html.stmui-touch .stmui-prompt-name {
 
 html.stmui-touch #completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_prompt {
     min-height: 42dvh;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.55;
     resize: none;
 }
@@ -4115,7 +4109,7 @@ html.stmui-touch #completion_prompt_manager_popup .completion_prompt_manager_pop
     height: 50px;
     margin: 0;
     padding: 0;
-    border-radius: 15px;
+    border-radius: 12px;
     font-size: 19px;
 }
 
@@ -4188,7 +4182,7 @@ html.stmui-touch #completion_prompt_manager .prompt_manager_prompt_controls > sp
 }
 
 html.stmui-touch #completion_prompt_manager .prompt_manager_prompt_tokens {
-    font-size: 12.5px;
+    font-size: 14px;
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
@@ -4366,7 +4360,8 @@ html.stmui-on .stmui-jump {
     border-radius: 50%;
     background: color-mix(in srgb, var(--stmui-surface) 94%, transparent);
     color: var(--stmui-text);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    box-shadow: none;
+    outline: 1px solid var(--stmui-line);
     opacity: 0;
     transform: translateY(14px) scale(0.8);
     pointer-events: none;
@@ -4469,7 +4464,7 @@ html.stmui-chat .welcomePanel .welcomeHeaderTitle .mes_button {
     margin: 0;
     padding: 0;
     border-radius: 12px;
-    font-size: 15px;
+    font-size: 16px;
     opacity: 0.8;
 }
 
@@ -4482,7 +4477,7 @@ html.stmui-chat .welcomePanel .welcomeHeader {
 }
 
 html.stmui-chat .welcomePanel .recentChatsTitle {
-    font-size: 21px;
+    font-size: 20px;
     font-weight: 750;
 }
 
@@ -4541,7 +4536,7 @@ html.stmui-chat .welcomeRecent .recentChatList .recentChat {
     margin: 0;
     padding: 12px 10px 8px 12px;
     border: 1px solid var(--stmui-line);
-    border-radius: 18px;
+    border-radius: 16px;
     background: var(--stmui-raised);
     -webkit-tap-highlight-color: transparent;
 }
@@ -4605,7 +4600,7 @@ html.stmui-chat .welcomeRecent .recentChat .chatName > span:first-of-type {
 
 html.stmui-chat .welcomeRecent .recentChat .chatName > span:last-of-type {
     color: var(--stmui-muted);
-    font-size: 12.5px;
+    font-size: 14px;
 }
 
 html.stmui-chat .welcomeRecent .recentChat .chatDate {
@@ -4661,7 +4656,7 @@ html.stmui-chat .welcomeRecent .recentChatList .recentChat .chatActions button {
     border-radius: 12px;
     background: transparent;
     color: var(--stmui-muted);
-    font-size: 15px;
+    font-size: 16px;
 }
 
 html.stmui-chat .welcomeRecent .recentChat .chatActions button:active {
@@ -4690,7 +4685,7 @@ html.stmui-chat .welcomeRecent .recentChatList .recentChat .recentChatPinned {
     border-radius: 50%;
     background: var(--stmui-accent);
     color: var(--stmui-on-accent);
-    font-size: 9px;
+    font-size: 12px;
     opacity: 1;
 }
 
@@ -4785,7 +4780,7 @@ html.stmui-touch #persona_pagination_container .paginationjs {
 
 html.stmui-touch #persona_pagination_container .paginationjs-nav {
     white-space: nowrap;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 /* Persona list: one card per persona; the active one is highlighted. */
@@ -4836,7 +4831,7 @@ html.stmui-touch #user_avatar_block:not(.gridView) .avatar-container .ch_descrip
     -webkit-line-clamp: 2;
     line-clamp: 2;
     overflow: hidden;
-    font-size: 13.5px;
+    font-size: 14px;
     line-height: 1.35;
     white-space: normal;
 }
@@ -4948,8 +4943,9 @@ html.stmui-toasts body #toast-container > div.toast {
     background: color-mix(in srgb, var(--stmui-t-color) 10%, var(--stmui-solid)) !important;
     background-image: none !important;
     color: var(--stmui-text) !important;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-    font-size: 14.5px;
+    box-shadow: none;
+    outline: 1px solid var(--stmui-line);
+    font-size: 14px;
     line-height: 1.4;
     text-shadow: none;
     opacity: 1;
@@ -4989,7 +4985,7 @@ html.stmui-toasts body #toast-container > .toast::after {
 html.stmui-toasts body #toast-container > .toast .toast-title {
     margin-bottom: 2px;
     color: var(--stmui-text);
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
 }
 
@@ -5134,7 +5130,7 @@ html.stmui-toasts body #toast-container > .toast .toast-progress {
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -5190,7 +5186,7 @@ html.stmui-motion-off .stmui-viewer-img {
 
 .stmui-menu-row .stmui-row-text > small {
     color: var(--stmui-muted);
-    font-size: 12.5px;
+    font-size: 14px;
     line-height: 1.35;
 }
 
@@ -5306,8 +5302,8 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons
     min-width: 0;
     margin: 0;
     padding: 0;
-    border-radius: 14px;
-    font-size: 17px;
+    border-radius: 12px;
+    font-size: 16px;
 }
 
 html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons .mes_edit_cancel {
@@ -5330,7 +5326,7 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons
 html.stmui-chat.stmui-editing #chat .mes_edit_buttons .mes_edit_done::after,
 html.stmui-chat.stmui-editing #chat .mes_edit_buttons .mes_edit_cancel::after {
     font-family: var(--mainFontFamily, system-ui, sans-serif);
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 650;
 }
 
@@ -5394,7 +5390,8 @@ html.stmui-on.stmui-fast-chat #chat.stmui-fast-prime > .mes:not(.last_mes):not(:
     border-radius: 16px;
     background: color-mix(in srgb, #e5574f 14%, var(--stmui-solid));
     color: var(--stmui-text);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    box-shadow: none;
+    outline: 1px solid var(--stmui-line);
     animation: stmui-toast-in 0.3s var(--stmui-ease-pop);
 }
 
@@ -5432,7 +5429,7 @@ html.stmui-on.stmui-fast-chat #chat.stmui-fast-prime > .mes:not(.last_mes):not(:
 
 .stmui-banner-text small {
     color: var(--stmui-muted);
-    font-size: 12.5px;
+    font-size: 14px;
 }
 
 .stmui-banner-btn {
@@ -5457,7 +5454,7 @@ html.stmui-on.stmui-fast-chat #chat.stmui-fast-prime > .mes:not(.last_mes):not(:
     width: calc(100% - 8px);
     height: 46px;
     margin: 0 4px 10px !important;
-    border-radius: 14px;
+    border-radius: 12px;
     font-size: 16px;
 }
 
@@ -5493,7 +5490,7 @@ html.stmui-on.stmui-fast-chat #chat.stmui-fast-prime > .mes:not(.last_mes):not(:
 
 .stmui-steps {
     padding: 0 6px;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.5;
 }
 
@@ -5504,7 +5501,7 @@ html.stmui-on.stmui-fast-chat #chat.stmui-fast-prime > .mes:not(.last_mes):not(:
 .stmui-news {
     margin: 0 4px 6px;
     padding-left: 22px;
-    font-size: 14.5px;
+    font-size: 14px;
     line-height: 1.5;
 }
 
@@ -5593,7 +5590,7 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons
     background: var(--stmui-solid);
     border: 1px solid var(--stmui-line);
     color: inherit;
-    font-size: 9px;
+    font-size: 12px;
     font-weight: 700;
     line-height: 13px;
     text-align: center;
@@ -5680,7 +5677,7 @@ html.stmui-charpage .stmui-cap {
     margin-top: 4px;
     overflow: hidden;
     color: var(--stmui-muted);
-    font-size: 11.5px;
+    font-size: 12px;
     line-height: 1.2;
     text-align: center;
     white-space: nowrap;
@@ -5731,14 +5728,14 @@ html.stmui-charpage body.charListGrid #rm_print_characters_block .avatar {
     height: auto !important;
     aspect-ratio: 1;
     margin: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     overflow: hidden;
 }
 
 html.stmui-charpage body.charListGrid #rm_print_characters_block .avatar img {
     width: 100%;
     height: 100%;
-    border-radius: 14px;
+    border-radius: 12px;
     object-fit: cover;
 }
 
@@ -5752,7 +5749,7 @@ html.stmui-charpage body.charListGrid #rm_print_characters_block .group_select_c
 html.stmui-charpage body.charListGrid #rm_print_characters_block .ch_name {
     display: block;
     overflow: hidden;
-    font-size: 13.5px;
+    font-size: 14px;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
@@ -5810,7 +5807,7 @@ html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block {
     justify-content: center;
     width: 72px;
     height: 72px;
-    border-radius: 20px;
+    border-radius: 16px;
     background: var(--stmui-accent);
     color: var(--stmui-on-accent);
     font-size: 34px;
@@ -5893,7 +5890,7 @@ html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > .menu_b
     width: auto;
     height: 60px;
     margin: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     font-size: 18px;
 }
 
@@ -5904,7 +5901,7 @@ html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > .displa
 
 html.stmui-charpage .stmui-btn-label {
     font-family: var(--mainFontFamily, system-ui, sans-serif);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1;
     white-space: nowrap;
@@ -5937,7 +5934,7 @@ html.stmui-charpage #form_create.stmui-ctab-notes :is(#descriptionWrapper, #firs
 
 html.stmui-charpage #form_create :is(#description_textarea, #firstmessage_textarea) {
     min-height: 46dvh;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.55;
 }
 
@@ -5955,7 +5952,7 @@ html.stmui-chat .stmui-recent-search {
     height: 44px;
     margin: 0 0 8px;
     padding-left: 42px;
-    border-radius: 14px;
+    border-radius: 12px;
     background-image: var(--stmui-search-icon);
     background-repeat: no-repeat;
     background-position: 14px center;
@@ -5966,10 +5963,8 @@ html.stmui-chat .stmui-recent-search {
 html.stmui-chat .stmui-recent-heading {
     margin: 6px 4px 0;
     color: var(--stmui-muted);
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
 }
 
 html.stmui-chat .welcomeRecent .recentChatList.stmui-searching .stmui-recent-heading,
@@ -6015,7 +6010,7 @@ html.stmui-chat .welcomeRecent .recentChatList .recentChat {
     gap: 8px;
     box-sizing: border-box;
     padding: 0 22px;
-    border-radius: 18px;
+    border-radius: 16px;
     color: #fff;
     font-weight: 700;
     opacity: 0.55;
@@ -6048,7 +6043,7 @@ html.stmui-chat .stmui-chat-group {
     flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--stmui-line);
-    border-radius: 20px;
+    border-radius: 16px;
     background: var(--stmui-raised);
     transition: border-color 0.2s ease;
 }
@@ -6148,7 +6143,7 @@ html.stmui-chat .stmui-group-name {
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
-    font-size: 16.5px;
+    font-size: 16px;
     font-weight: 750;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -6165,7 +6160,7 @@ html.stmui-chat .stmui-group-last {
     display: -webkit-box;
     overflow: hidden;
     color: color-mix(in srgb, var(--stmui-text) 72%, transparent);
-    font-size: 13.5px;
+    font-size: 14px;
     line-height: 1.35;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -6247,7 +6242,7 @@ html.stmui-chat .stmui-group-action {
     background: color-mix(in srgb, var(--stmui-text) 4%, transparent);
     color: var(--stmui-text);
     font: inherit;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 650;
     white-space: nowrap;
     cursor: pointer;
@@ -6293,7 +6288,7 @@ html.stmui-chat .welcomeRecent .recentChatList .stmui-group-chats .recentChat {
     margin-left: 22px;
     padding: 10px 8px 6px 12px;
     overflow: visible;
-    border-radius: 14px;
+    border-radius: 12px;
     background: color-mix(in srgb, var(--stmui-text) 4%, transparent);
 }
 
@@ -6312,7 +6307,7 @@ html.stmui-chat .welcomeRecent .stmui-group-chats .recentChat .chatMessage {
     display: -webkit-box;
     margin-top: 3px;
     overflow: hidden;
-    font-size: 13.5px;
+    font-size: 14px;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
 }
@@ -6341,7 +6336,7 @@ html.stmui-chat .welcomeRecent .recentChatList .stmui-group-chats .recentChat.st
 
 html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
     left: 22px;
-    border-radius: 14px;
+    border-radius: 12px;
 }
 
 /* -- Your persona sheet and the quick editor --------------------------------- */
@@ -6354,7 +6349,7 @@ html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
     margin: 4px 12px 8px;
     padding: 14px;
     border: 1px solid var(--stmui-line);
-    border-radius: 20px;
+    border-radius: 16px;
     background: var(--stmui-raised);
 }
 
@@ -6376,7 +6371,7 @@ html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
 .stmui-persona-card-name {
     overflow: hidden;
     color: var(--stmui-text);
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 750;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -6386,7 +6381,7 @@ html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
     display: -webkit-box;
     overflow: hidden;
     color: var(--stmui-muted);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.35;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -6441,7 +6436,7 @@ html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
 .stmui-pe-field small,
 .stmui-pe-label {
     color: var(--stmui-muted);
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 650;
 }
 
@@ -6460,7 +6455,7 @@ html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
     box-sizing: border-box;
     width: 100%;
     margin: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     font-size: 16px;
 }
 
@@ -6496,7 +6491,7 @@ html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
     background: var(--stmui-raised);
     color: var(--stmui-text);
     font: inherit;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     cursor: pointer;
 }
@@ -6524,10 +6519,8 @@ html.stmui-chat .stmui-group-chats .stmui-swipe-hint {
 html.stmui-touch #select_chat_div .stmui-date-heading {
     margin: 10px 4px 4px;
     color: var(--stmui-muted);
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
 }
 
 html.stmui-touch #select_chat_div .stmui-date-heading:first-child {
@@ -6536,7 +6529,7 @@ html.stmui-touch #select_chat_div .stmui-date-heading:first-child {
 
 html.stmui-touch #select_chat_search {
     height: 44px;
-    border-radius: 14px;
+    border-radius: 12px;
     font-size: 16px;
 }
 
@@ -6558,7 +6551,7 @@ html.stmui-touch #select_chat_search {
     background: var(--stmui-raised);
     color: var(--stmui-muted);
     font: inherit;
-    font-size: 15px;
+    font-size: 16px;
     text-align: left;
     cursor: pointer;
 }
@@ -6675,7 +6668,7 @@ html.stmui-charpage .rm_tag_filter .tag {
     margin: 0;
     padding: 0 11px;
     border: 1px solid var(--stmui-line) !important;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 html.stmui-charpage .rm_tag_controls .tags {
@@ -6728,7 +6721,7 @@ html.stmui-charpage body.charListGrid #rm_print_characters_block > :is(.characte
     border-radius: 16px;
     background: var(--stmui-raised);
     overflow: hidden;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    box-shadow: none;
 }
 
 html.stmui-charpage body.charListGrid #rm_print_characters_block .avatar {
@@ -6761,7 +6754,7 @@ html.stmui-charpage body.charListGrid #rm_print_characters_block :is(.character_
 
 html.stmui-charpage body.charListGrid #rm_print_characters_block .ch_name {
     color: #fff;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     text-align: left;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
@@ -6775,7 +6768,7 @@ html.stmui-charpage body.charListGrid #rm_print_characters_block .ch_fav_icon {
     z-index: 1;
     display: none;
     color: #ffd54f;
-    font-size: 13px;
+    font-size: 14px;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
 }
 
@@ -6809,7 +6802,7 @@ html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block > :is(.ch
     margin: 0;
     padding: 6px 10px;
     border: 0 !important;
-    border-radius: 14px;
+    border-radius: 12px;
     background: transparent;
 }
 
@@ -6831,7 +6824,7 @@ html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .ch_name 
 
 html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .ch_fav_icon {
     color: #ffd54f;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .ch_additional_info:empty,
@@ -7008,9 +7001,10 @@ html.stmui-charpage #avatar_controls .form_create_bottom_buttons_block > :is(#wo
     border-radius: 999px;
     background: color-mix(in srgb, var(--stmui-surface) 92%, transparent);
     color: var(--stmui-muted);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    box-shadow: none;
+    outline: 1px solid var(--stmui-line);
     transform: translateY(-50%);
     pointer-events: none;
     transition: color 0.15s ease, background-color 0.15s ease;
@@ -7060,7 +7054,7 @@ html.stmui-chat #chat .mes.stmui-long .stmui-more-btn {
     background: var(--stmui-raised-2);
     color: var(--stmui-text);
     font: inherit;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
 }
@@ -7081,7 +7075,7 @@ html.stmui-on .stmui-jump.stmui-jump-new {
 
 html.stmui-on .stmui-jump.stmui-jump-new .stmui-jump-label {
     display: inline;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
 }
 
@@ -7102,7 +7096,8 @@ html.stmui-on .stmui-jump.stmui-jump-new .stmui-jump-label {
     padding: 8px calc(8px + var(--stmui-safe-right, 0px)) 8px calc(10px + var(--stmui-safe-left, 0px));
     border-bottom: 1px solid var(--stmui-line);
     background: var(--stmui-solid);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    box-shadow: none;
+    outline: 1px solid var(--stmui-line);
     animation: stmui-fade 0.15s ease-out;
 }
 
@@ -7118,7 +7113,7 @@ html.stmui-on .stmui-jump.stmui-jump-new .stmui-jump-label {
 .stmui-find-count {
     min-width: 34px;
     color: var(--stmui-muted);
-    font-size: 12.5px;
+    font-size: 14px;
     text-align: center;
     font-variant-numeric: tabular-nums;
 }
@@ -7160,7 +7155,7 @@ mark.stmui-find-mark {
 
 html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes {
     max-width: 92%;
-    border-radius: 20px;
+    border-radius: 16px;
 }
 
 html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user="true"] {
@@ -7232,7 +7227,7 @@ html.stmui-chat #qr--bar .qr--button {
     border: 1px solid var(--stmui-line);
     border-radius: 999px;
     background: var(--stmui-raised);
-    font-size: 13.5px;
+    font-size: 14px;
     line-height: 32px;
     white-space: nowrap;
 }
@@ -7245,7 +7240,7 @@ html.stmui-lorecards #world_popup_entries_list .world_entry {
     margin: 0 0 10px;
     padding: 10px 12px;
     border: 1px solid var(--stmui-line);
-    border-radius: 18px;
+    border-radius: 16px;
     background: var(--stmui-raised);
 }
 
@@ -7297,7 +7292,7 @@ html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_en
     margin: 0;
     padding: 0 22px 0 8px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 html.stmui-lorecards #world_popup_entries_list .inline-drawer-header > .world_entry_thin_controls > .inline-drawer-toggle {
@@ -7331,7 +7326,7 @@ html.stmui-lorecards #world_popup_entries_list .stmui-entry-keys[hidden] {
     border-radius: 999px;
     background: var(--stmui-raised-2);
     color: var(--stmui-text);
-    font-size: 12.5px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -7371,7 +7366,7 @@ html.stmui-lorecards #world_popup_entries_list .WIEnteryHeaderControls label {
     display: block !important;
     margin: 0 0 2px;
     color: var(--stmui-muted);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -7491,7 +7486,7 @@ html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open .wo
 
 html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open textarea[name="content"] {
     min-height: 40dvh;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.55;
 }
 
@@ -7558,7 +7553,7 @@ html.stmui-touch #completion_prompt_manager #completion_prompt_manager_list .com
     background: var(--stmui-raised);
     color: var(--stmui-text);
     font: inherit;
-    font-size: 13.5px;
+    font-size: 14px;
     cursor: pointer;
 }
 
