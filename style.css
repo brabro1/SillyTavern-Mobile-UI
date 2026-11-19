@@ -969,7 +969,8 @@ html.stmui-shell {
     --stmui-appbar-h: 56px;
     --stmui-tabbar-h: 62px;
     --stmui-bottom: calc(var(--stmui-tabbar-h) + var(--stmui-safe-bottom));
-    --topBarBlockSize: calc(var(--stmui-appbar-h) + var(--stmui-safe-top));
+    /* Pinned (!important): themes set it too (Moonlit Echoes, on phones), which shrank the top bar and dropped the notch space. */
+    --topBarBlockSize: calc(var(--stmui-appbar-h) + var(--stmui-safe-top)) !important;
     --stmui-page-h: calc(100dvh - var(--topBarBlockSize) - var(--stmui-bottom));
 }
 
@@ -1367,7 +1368,10 @@ html.stmui-on body #toast-container > div {
 }
 
 /* ==========================================================================
-   Chat (html.stmui-chat): message cards and the rounded message box
+   Chat (html.stmui-chat): message cards and the rounded message box.
+   The cards step aside when another chat style is picked in SillyTavern:
+   its own Bubbles and Document, and Moonlit Echoes' Echo, Whisper, Hush,
+   Ripple and Tide (body classes). Those draw the messages themselves.
    ========================================================================== */
 
 html.stmui-chat #chat {
@@ -1376,7 +1380,7 @@ html.stmui-chat #chat {
     overscroll-behavior: contain;
 }
 
-html.stmui-chat body:not(.bubblechat):not(.documentstyle) #chat .mes {
+html.stmui-chat body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes {
     align-self: stretch;
     width: auto;
     max-width: calc(100% - 12px);
@@ -1388,12 +1392,12 @@ html.stmui-chat body:not(.bubblechat):not(.documentstyle) #chat .mes {
     background: var(--stmui-bot-tint);
 }
 
-html.stmui-chat body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user='true'] {
+html.stmui-chat body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes[is_user='true'] {
     border-color: color-mix(in srgb, var(--stmui-accent) 28%, transparent);
     background: var(--stmui-user-tint);
 }
 
-html.stmui-chat body:not(.bubblechat):not(.documentstyle) #chat .mes[is_system='true'] {
+html.stmui-chat body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes[is_system='true'] {
     background: transparent;
     border-style: dashed;
 }
@@ -1530,7 +1534,7 @@ html.stmui-chat #chat .mes_edit_buttons .menu_button {
    take the rows below. Not while a message is being edited: the full-screen
    editor keeps SillyTavern's own layout. */
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes {
     display: grid !important;
     grid-template-columns: auto auto auto minmax(0, 1fr) auto auto;
     grid-template-areas:
@@ -1545,19 +1549,19 @@ html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #c
     align-items: center;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > :is(.mesAvatarWrapper, .mes_block) {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > :is(.mesAvatarWrapper, .mes_block) {
     display: contents;
 }
 
 /* Anything an extension adds goes across the whole card. */
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > *,
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .mes_block > * {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > *,
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .mes_block > * {
     grid-column: 1 / -1;
     min-width: 0;
 }
 
 /* The header: picture, then the name with the date under it, then the buttons. */
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mesAvatarWrapper > .avatar {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .avatar {
     grid-area: avatar;
     align-self: center;
     width: 36px;
@@ -1565,13 +1569,13 @@ html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #c
     margin: 0 10px 0 0;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mesAvatarWrapper > .avatar img {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .avatar img {
     width: 36px;
     height: 36px;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--stmui-text) 8%, transparent);
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mes_block > .ch_name {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .ch_name {
     grid-area: head;
     min-height: 36px;
     gap: 2px;
@@ -1623,39 +1627,39 @@ html.stmui-chat:not(.stmui-editing) #chat .mes .mes_buttons .mes_button {
 }
 
 /* The text: the whole width of the card, a little air under the header. */
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mes_block > .mes_text {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .mes_text {
     grid-area: text;
     margin-top: 8px;
     padding: 0;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mes_block > .stmui-more-btn {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .stmui-more-btn {
     grid-area: more;
     justify-self: start;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mes_block > .mes_media_wrapper {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .mes_media_wrapper {
     grid-area: media;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mes_block > .mes_file_wrapper {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .mes_file_wrapper {
     grid-area: file;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mes_block > .mes_bias {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .mes_bias {
     grid-area: bias;
 }
 
 /* The footer: message number, time and tokens on the left; swipes on the right. */
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mesAvatarWrapper > .mesIDDisplay {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .mesIDDisplay {
     grid-area: id;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mesAvatarWrapper > .mes_timer {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .mes_timer {
     grid-area: timer;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mesAvatarWrapper > .tokenCounterDisplay {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .tokenCounterDisplay {
     grid-area: tokens;
 }
 
@@ -1672,7 +1676,7 @@ html.stmui-chat:not(.stmui-editing) #chat .mes .mesAvatarWrapper > :is(.mesIDDis
     display: none;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .swipe_left {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipe_left {
     grid-area: left;
     /* relative, not static: its bigger tap area (::after) must hang off the arrow, not cover the whole message. */
     position: relative;
@@ -1681,7 +1685,7 @@ html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #c
     margin-top: 6px;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .swipeRightBlock {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipeRightBlock {
     grid-area: right;
     position: static;
     display: flex;
@@ -1694,14 +1698,14 @@ html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #c
 /* Swipes: one pill, ‹ 1/3 ›. The left half is the back arrow, the right half
    the counter and the next arrow; on the last version "next" makes a new one,
    so it shows a "new version" icon in the accent color. */
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .swipe_left,
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .swipeRightBlock {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipe_left,
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipeRightBlock {
     height: 34px;
     margin-top: 8px;
     background: color-mix(in srgb, var(--stmui-text) 7%, transparent);
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .swipe_left {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipe_left {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1715,14 +1719,14 @@ html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #c
     opacity: 0.85;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .swipeRightBlock {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipeRightBlock {
     padding: 0 4px 0 0;
     border-radius: 0 999px 999px 0;
 }
 
 /* With no back arrow, the right half is the whole pill. */
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes:not(.swipes_visible) > .swipeRightBlock,
-html.stmui-chat:not(.stmui-editing) body.hideAllSwipeButtons:not(.bubblechat):not(.documentstyle) #chat .mes > .swipeRightBlock {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes:not(.swipes_visible) > .swipeRightBlock,
+html.stmui-chat:not(.stmui-editing) body.hideAllSwipeButtons:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipeRightBlock {
     padding-left: 4px;
     border-radius: 999px;
 }
@@ -1781,7 +1785,7 @@ html.stmui-chat:not(.stmui-editing) #chat .mes.stmui-one-swipe .swipes-counter {
     display: none;
 }
 
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes.stmui-one-swipe > .swipeRightBlock {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes.stmui-one-swipe > .swipeRightBlock {
     padding: 0;
     border-radius: 999px;
 }
@@ -1804,7 +1808,7 @@ html.stmui-chat:not(.stmui-editing) body.hideAllSwipeButtons #chat .mes > .swipe
 }
 
 /* Selecting messages to delete: the checkbox sits in the top corner. */
-html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > :is(.del_checkbox, .for_checkbox) {
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > :is(.del_checkbox, .for_checkbox) {
     position: absolute;
     top: 14px;
     right: 14px;
@@ -1885,7 +1889,7 @@ html.stmui-motion-full.stmui-chat #chat .mes .mes_reasoning_details[data-state="
 }
 
 /* Bubbles: your own messages have no picture, so the name starts the header. */
-html.stmui-chat[data-stmui-look="bubbles"]:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user="true"] .ch_name {
+html.stmui-chat[data-stmui-look="bubbles"]:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes[is_user="true"] .ch_name {
     min-height: 0;
 }
 
@@ -2131,7 +2135,7 @@ html.stmui-touch {
 
 /* Without the app shell, keep SillyTavern's top bar but make it finger-sized. */
 html.stmui-touch:not(.stmui-shell) {
-    --topBarBlockSize: calc(48px + var(--stmui-safe-top));
+    --topBarBlockSize: calc(48px + var(--stmui-safe-top)) !important;
 }
 
 html.stmui-touch:not(.stmui-shell) #top-bar {
@@ -2944,7 +2948,7 @@ html.stmui-on .mes_text video {
     }
 
     html.stmui-touch:not(.stmui-shell) {
-        --topBarBlockSize: calc(40px + var(--stmui-safe-top));
+        --topBarBlockSize: calc(40px + var(--stmui-safe-top)) !important;
     }
 
     html.stmui-touch:not(.stmui-shell) #top-settings-holder .drawer-icon {
@@ -5283,7 +5287,7 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) {
     width: auto;
     max-width: none !important;
     margin: 0 !important;
-    padding: 10px calc(12px + var(--stmui-safe-right)) 0 calc(12px + var(--stmui-safe-left));
+    padding: 10px calc(12px + var(--stmui-safe-right)) 0 calc(12px + var(--stmui-safe-left)) !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: var(--stmui-solid) !important;
@@ -5296,6 +5300,47 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) {
 html.stmui-chat.stmui-editing #form_sheld,
 html.stmui-chat.stmui-editing .stmui-jump {
     visibility: hidden;
+}
+
+/* Themes animate the box (Moonlit Echoes: transition: all 0.8s), visibility too,
+   which kept it over the editor's Save and Cancel while it faded. */
+html.stmui-chat.stmui-editing #form_sheld * {
+    transition: none !important;
+}
+
+/* Pinned (!important): chat styles from themes (Moonlit Echoes' Echo and others)
+   pad, frame and shift the message text to make room for a big picture. The
+   editor is a page of its own. */
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea)::before,
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea)::after {
+    display: none !important;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) > .mes_block {
+    transform: none !important;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) :is(.mes_block, .mes_text) {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* A mask on the chat (Moonlit Echoes fades its edges) clipped the editor, which is fixed inside the chat, and let the box paint over it. */
+html.stmui-chat.stmui-editing #chat {
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+}
+
+html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_text {
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) :is(.mesAvatarWrapper, .swipe_left, .swipeRightBlock, .for_checkbox, .del_checkbox) {
@@ -7232,12 +7277,12 @@ mark.stmui-find-mark {
    Chat look: bubbles and flat
    ========================================================================== */
 
-html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes {
+html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes {
     max-width: 92%;
     border-radius: 16px;
 }
 
-html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user="true"] {
+html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes[is_user="true"] {
     align-self: flex-end;
     max-width: 84%;
     margin-left: auto;
@@ -7246,16 +7291,16 @@ html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentst
     background: color-mix(in srgb, var(--stmui-accent) 22%, var(--stmui-surface)) !important;
 }
 
-html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes:not([is_user="true"]) {
+html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes:not([is_user="true"]) {
     align-self: flex-start;
     border-bottom-left-radius: 6px;
 }
 
-html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user="true"] .mesAvatarWrapper {
+html.stmui-chat[data-stmui-look="bubbles"] body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes[is_user="true"] .mesAvatarWrapper {
     display: none;
 }
 
-html.stmui-chat[data-stmui-look="flat"] body:not(.bubblechat):not(.documentstyle) #chat .mes {
+html.stmui-chat[data-stmui-look="flat"] body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes {
     max-width: none;
     margin-bottom: 0;
     border: 0 !important;
@@ -7265,7 +7310,7 @@ html.stmui-chat[data-stmui-look="flat"] body:not(.bubblechat):not(.documentstyle
     box-shadow: none !important;
 }
 
-html.stmui-chat[data-stmui-look="flat"] body:not(.bubblechat):not(.documentstyle) #chat .mes[is_user="true"] {
+html.stmui-chat[data-stmui-look="flat"] body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes[is_user="true"] {
     background: color-mix(in srgb, var(--stmui-accent) 6%, transparent) !important;
 }
 
@@ -8105,13 +8150,14 @@ html.stmui-shell:is(.stmui-motion-light, .stmui-motion-off) .stmui-tabbar {
     }
 }
 
-/* The arrow: first in the row of tools along the bottom of the message box. */
+/* The arrow: first in the row of tools along the bottom of the message box.
+   Pinned (!important): themes show everything in that row (Moonlit Echoes: #leftSendForm > * { display: flex }). */
 .stmui-tabs-btn {
-    display: none;
+    display: none !important;
 }
 
 html.stmui-chat.stmui-tabs-tuckable .stmui-tabs-btn {
-    display: inline-flex;
+    display: inline-flex !important;
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
@@ -8129,7 +8175,7 @@ html.stmui-chat.stmui-tabs-tuckable .stmui-tabs-btn {
 
 /* With the keyboard up the tabs cannot show, so the arrow steps aside and the tools get the room. */
 html.stmui-chat.stmui-keyboard .stmui-tabs-btn {
-    display: none;
+    display: none !important;
 }
 
 .stmui-tabs-btn .stmui-svg {
@@ -8233,23 +8279,23 @@ html.stmui-chat.stmui-compact #chat {
     padding-top: 4px;
 }
 
-html.stmui-chat.stmui-compact body:not(.bubblechat):not(.documentstyle) #chat .mes {
+html.stmui-chat.stmui-compact body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes {
     max-width: calc(100% - 8px);
     margin: 4px;
     padding: 8px 12px;
 }
 
-html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mesAvatarWrapper > .avatar,
-html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mesAvatarWrapper > .avatar img {
+html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .avatar,
+html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .avatar img {
     width: 28px;
     height: 28px;
 }
 
-html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mesAvatarWrapper > .avatar {
+html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .avatar {
     margin-right: 8px;
 }
 
-html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mes_block > .ch_name {
+html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .ch_name {
     min-height: 28px;
 }
 
@@ -8262,7 +8308,7 @@ html.stmui-chat.stmui-compact:not(.stmui-editing) #chat .mes .mes_buttons .mes_b
     margin: -8px 0;
 }
 
-html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes .mes_block > .mes_text {
+html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .mes_text {
     margin-top: 4px;
 }
 
@@ -8274,8 +8320,8 @@ html.stmui-chat.stmui-compact #chat .mes_text p {
     margin: 0.35em 0;
 }
 
-html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .swipe_left,
-html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle) #chat .mes > .swipeRightBlock {
+html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipe_left,
+html.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipeRightBlock {
     margin-top: 4px;
 }
 
@@ -8383,7 +8429,7 @@ html.stmui-chat.stmui-compact .welcomeRecent .recentChatList .stmui-group-chats 
 /* Tablets and unfolded foldables: the chat is a centred column with lines short
    enough to read comfortably, instead of running across the whole screen. */
 @media (min-width: 760px) {
-    html.stmui-chat:not(.stmui-wide):not([data-stmui-look="bubbles"]) body:not(.bubblechat):not(.documentstyle) #chat .mes {
+    html.stmui-chat:not(.stmui-wide):not([data-stmui-look="bubbles"]) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes {
         width: 100%;
         max-width: 720px;
         margin-inline: auto;
@@ -8990,6 +9036,45 @@ html.stmui-chat #nonQRFormItems > .stih--history .stih--item .stih--title {
 html.stmui-chat #nonQRFormItems > .stih--history .stih--item .stih--title::first-line {
     color: var(--stmui-text);
     font-size: 16px;
+}
+
+/* ==========================================================================
+   ScenePulse (another extension). On phones it adds a button next to Send and
+   a round floating copy of it. The row next to Send has no room for another
+   button (Send got squeezed) and the floating copy sat on Send, so both stay
+   hidden and ScenePulse opens from the wand's Tools sheet. Its full-screen
+   panel covers our bars. On computers its side panel starts below the top
+   bar, so its own toolbar shows.
+   ========================================================================== */
+
+html.stmui-on #sp-mobile-fab,
+html.stmui-touch.stmui-chat:not(.stmui-wide) #rightSendForm > #sp-st-restore {
+    display: none !important;
+}
+
+html.stmui-shell #sp-panel:is(.sp-mode-mobile, .sp-mode-tablet) {
+    z-index: 4015 !important;
+}
+
+/* Pinned (!important): ScenePulse sets the top itself, from SillyTavern's top bar, which Pocket Tavern hides. */
+html.stmui-shell #sp-panel:not(.sp-mode-mobile, .sp-mode-tablet) {
+    top: var(--topBarBlockSize) !important;
+}
+
+/* ==========================================================================
+   Moonlit Echoes (theme extension): its chat styles draw the messages (see
+   Chat above). It fades the message box until it is hovered or focused;
+   phones cannot hover, so the box stays fully visible. It also sizes ☰ to the
+   font (about 15px, !important); the tap area stays 44px.
+   ========================================================================== */
+
+html.stmui-chat #send_form {
+    opacity: 1 !important;
+}
+
+html.stmui-chat #nonQRFormItems #options_button {
+    width: 44px !important;
+    height: 44px !important;
 }
 
 /* ==========================================================================

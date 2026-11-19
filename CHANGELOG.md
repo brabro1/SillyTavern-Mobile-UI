@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.19.2
+
+Moonlit Echoes and ScenePulse, checked on a phone. Nothing changes unless you use them.
+
+- **Moonlit Echoes' chat styles.** Moonlit adds five chat styles to SillyTavern: Echo, Whisper, Hush, Ripple and Tide (its Glimmer theme turns on Echo). Pocket Tavern's message cards stayed on top of them, so you got a huge picture inside your own messages and names cut off like "Sera…". When one of them is picked under **More → Settings → Look → Chat Style**, Pocket Tavern's cards now step aside and Moonlit draws the messages, as they already did for SillyTavern's own Bubbles and Document styles. Pick Flat to get Pocket Tavern's cards and looks back.
+- **Fixed: the editor's Save and Cancel were hidden with Moonlit Echoes.** Moonlit fades the top and bottom edges of the chat. The full-screen editor lives inside the chat, so its buttons at the bottom faded away with it and the message box showed through. While you edit, the fade is off. In Moonlit's chat styles the editor also lost room to the space they keep for a big picture; it fills the page again.
+- **The message box stays clear.** Moonlit shows the box at 60% until the mouse is over it or you type in it. A phone has no mouse, so it looked greyed out. It's fully visible now.
+- **The top bar and ☰ keep their size.** Moonlit sets the top bar's height on phones, which made Pocket Tavern's bar shorter and left no room for a notch, and it shrank ☰ to about 15px. Both are back to their own size (☰ is 44px to tap). The tabs arrow also stays hidden on a computer and while the keyboard is up.
+- **ScenePulse opens from the wand on a phone.** ScenePulse adds a button next to Send. That row has no room for another button, so Send got squeezed (to 35px wide on a common phone, 18px on a small one). It also adds a round floating button that sat right on top of Send. On a phone both are hidden, and ScenePulse is in the wand's **Tools** list. Its full-screen panel covers Pocket Tavern's tabs, and on a computer its side panel starts below the top bar so its own toolbar shows.
+- `tests/phone.mjs` checks all of this with stand-ins for both extensions, so it runs without them installed.
+
 ## 2.19.1
 
 A smoother keyboard, and a fix for character pictures in the chat.

@@ -381,6 +381,7 @@ const STRINGS = {
     'Translate every message in this chat': ['Traduce todos los mensajes de este chat', 'Traduza todas as mensagens deste chat', 'Перевести все сообщения в этом чате', '翻译此聊天中的每条消息', 'このチャットのすべてのメッセージを翻訳します', 'ترجمة كل رسالة في هذه الدردشة'],
     'Translate the message you are typing': ['Traduce el mensaje que estás escribiendo', 'Traduza a mensagem que você está digitando', 'Перевести сообщение, которое вы пишете', '翻译你正在输入的消息', '入力中のメッセージを翻訳します', 'ترجمة الرسالة التي تكتبها'],
     'Choose the lorebooks for all chats': ['Elige los lorebooks para todos los chats', 'Escolha os lorebooks para todos os chats', 'Выбрать лорбуки для всех чатов', '为所有聊天选择世界书', 'すべてのチャットのロアブックを選びます', 'اختر كتب المعرفة لكل الدردشات'],
+    'Characters, mood and quests in this scene': ['Personajes, ánimo y misiones de esta escena', 'Personagens, clima e missões desta cena', 'Персонажи, настроение и задания этой сцены', '这个场景里的角色、氛围和任务', 'このシーンのキャラクター、雰囲気、クエスト', 'الشخصيات والمزاج والمهام في هذا المشهد'],
     'Generate image': ['Generar imagen', 'Gerar imagem', 'Создать изображение', '生成图片', '画像を生成', 'إنشاء صورة'],
     'What should the picture show?': ['¿Qué debe mostrar la imagen?', 'O que a imagem deve mostrar?', 'Что должно быть на картинке?', '图片要显示什么？', '画像に何を描きますか？', 'ماذا يجب أن تُظهر الصورة؟'],
     'The character': ['El personaje', 'O personagem', 'Персонаж', '角色', 'キャラクター', 'الشخصية'],

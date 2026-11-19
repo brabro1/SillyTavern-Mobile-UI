@@ -1,6 +1,14 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.19.2',
+        items: [
+            "Moonlit Echoes: pick one of its chat styles (Echo, Whisper, Hush, Ripple, Tide) under Settings → Look → Chat Style and it draws the messages, instead of clashing with Pocket Tavern's cards. The message box no longer looks greyed out, and the top bar and ☰ keep their size.",
+            "Fixed: with Moonlit Echoes, the message editor's Save and Cancel were hidden at the bottom of the screen.",
+            "ScenePulse: on a phone it opens from the wand (Tools). Its button next to Send squeezed the Send button, and its round floating button sat on top of Send. On a computer its side panel starts below the top bar.",
+        ],
+    },
+    {
         version: '2.19.1',
         items: [
             "Opening and closing the keyboard is smoother: the chat and the message box slide together as one piece, and the tabs step aside at once instead of sliding over the box.",

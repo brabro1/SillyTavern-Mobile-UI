@@ -162,7 +162,7 @@ Pick **Compact** under **More → Themes → Size**, and try a smaller chat text
 In a chat they tuck away so you don't hit them by accident. Tap the arrow at the start of the message box's bottom row to bring them back, or turn off **Hide tabs in a chat** under **More → Phone features**.
 
 **Does it work with other extensions?**
-Most of them. Extensions with their own panels show up under **More**, and buttons added to the message box fit in with its own. Theme extensions like Moonlit Echoes are covered by Pocket Tavern's own look while it's on. If one doesn't work, [tell me](#feedback-and-bug-reports).
+Most of them. Extensions with their own panels show up under **More**, and buttons added to the message box fit in with its own. With **Moonlit Echoes**, keep **More → Themes** on **Your theme** for its colours, and pick one of its chat styles under **More → Settings → Look → Chat Style** to let it draw the messages; Flat brings back Pocket Tavern's cards. **ScenePulse** opens from the wand (**Tools**) on a phone. If one doesn't work, [tell me](#feedback-and-bug-reports).
 
 **I use Guided Generations. Where did its buttons go?**
 They're in the guide button (the compass) next to Send. Type an instruction, tap the guide button, and pick an action; hold it to run the last one again. Prefer its own row of buttons? Turn off **Guided Generations button** under **More → Phone features**.
@@ -188,6 +188,7 @@ In its settings, set "Use it on this device" to **Phones only**.
 | Computers and tablets | ✅ On by itself: wide screens get the desktop layout. **Phones only** keeps the original SillyTavern there |
 | Other extensions | Work alongside it. Extensions with their own panels show up under **More**, and buttons they add to the message box fit in with its own. |
 | Guided Generations, Input History, Quick Replies | ✅ Made to fit: a guide button with a menu for Guided Generations, Input History in the text field, quick replies as slim chips |
+| Moonlit Echoes, ScenePulse | ✅ Checked: Moonlit's colours and chat styles show; ScenePulse opens from the wand on a phone |
 
 ## Privacy and your data
 

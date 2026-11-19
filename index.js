@@ -7215,7 +7215,21 @@ const TOOL_NOTES = {
     translate_chat: 'Translate every message in this chat',
     translate_input_message: 'Translate the message you are typing',
     stmui_wand_lorebooks: 'Choose the lorebooks for all chats',
+    'sp-st-restore': 'Characters, mood and quests in this scene',
 };
+
+/** ScenePulse puts its button next to Send, where a phone has no room for it (Send got squeezed), so it opens from Tools instead. */
+function scenePulseRow() {
+    const button = document.getElementById('sp-st-restore');
+    if (!button || button.style.display === 'none') return null;
+    const art = button.querySelector('svg')?.cloneNode(true);
+    if (art) {
+        art.querySelectorAll('[class]').forEach(node => node.removeAttribute('class'));
+        art.setAttribute('class', 'stmui-menu-row-icon');
+        art.setAttribute('aria-hidden', 'true');
+    }
+    return actionRow(art ?? ui('puzzle', 'stmui-menu-row-icon'), 'ScenePulse', TOOL_NOTES['sp-st-restore'], () => pressMenuItem(button));
+}
 
 const PICTURE_NOTES = {
     sd_you: 'The character',
@@ -7241,6 +7255,8 @@ function openToolsSheet() {
                     if (item.id === 'sd_gen' && document.querySelector('#sd_dropdown [id]')) openPictureSheet();
                     else pressMenuItem(item);
                 }));
+            const pulse = scenePulseRow();
+            if (pulse) rows.push(pulse);
             body.append(rows.length ? h('div', { class: 'stmui-menu-list' }, rows) : h('p', { class: 'stmui-menu-foot', text: 'No extension has added a tool yet.' }));
         },
     }));

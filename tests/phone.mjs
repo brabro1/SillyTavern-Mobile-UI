@@ -720,6 +720,109 @@ await step("another extension's buttons and a theme's CSS keep the text on its o
     if (result.button < 44) throw new Error(`the extension's buttons are ${result.button}px`);
 });
 
+await step("Moonlit Echoes and ScenePulse: their chat styles draw the messages, the box stays clear, ScenePulse opens from Tools", async () => {
+    // Stand-ins with the same markup and rules as the real extensions (the test copy has them switched off).
+    const barBefore = await page.evaluate(() => document.getElementById('stmui-appbar').getBoundingClientRect().height);
+    await page.evaluate(() => {
+        const style = document.createElement('style');
+        style.id = 'test-ext-standins';
+        // Moonlit's rules for the top bar, the chat and the message box, then ScenePulse's for its two buttons and its panel.
+        style.textContent = ':root { --topBarBlockSize: 40px !important; }'
+            + ' #chat { -webkit-mask-image: linear-gradient(black 80%, transparent); mask-image: linear-gradient(black 80%, transparent); }'
+            + ' body.echostyle #chat .mes .mes_text { padding-left: 97px !important; min-height: 200px; }'
+            + ' #send_form { opacity: 0.6; } #nonQRFormItems { transition: all 0.8s ease; } #leftSendForm { display: flex; } #leftSendForm > * { display: flex; }'
+            + ' #nonQRFormItems #options_button { width: 13px !important; height: 13px !important; }'
+            + ' .sp-st-restore { display: flex; width: 34px; height: 34px; padding: 4px; flex-shrink: 0; }'
+            + ' .sp-mobile-fab { display: none; position: fixed; bottom: 24px; right: 24px; z-index: 100000; width: 60px; height: 60px; }'
+            + ' .sp-mobile-fab.sp-fab-visible { display: flex !important; }'
+            + ' #sp-panel { display: none; position: fixed; inset: 44px 0 0 0; z-index: 1000; } #sp-panel.sp-visible { display: flex; }';
+        document.head.append(style);
+        const fab = document.createElement('button');
+        fab.id = 'sp-mobile-fab';
+        fab.className = 'sp-mobile-fab sp-fab-visible';
+        const panel = document.createElement('div');
+        panel.id = 'sp-panel';
+        panel.className = 'sp-mode-mobile';
+        document.body.append(fab, panel);
+        const button = document.createElement('div');
+        button.id = 'sp-st-restore';
+        button.className = 'sp-st-restore';
+        button.style.display = 'flex';
+        button.innerHTML = '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" class="sp-mascot-pulse"/></svg>';
+        button.addEventListener('click', () => panel.classList.add('sp-visible'));
+        document.getElementById('rightSendForm').append(button);
+    });
+    try {
+        await page.waitForTimeout(300);
+        const bar = await page.evaluate(() => document.getElementById('stmui-appbar').getBoundingClientRect().height);
+        if (bar !== barBefore) throw new Error(`a theme changed the top bar from ${barBefore}px to ${bar}px`);
+        const box = await page.evaluate(() => {
+            const send = document.getElementById('send_but').getBoundingClientRect();
+            const at = document.elementFromPoint(send.left + send.width / 2, send.top + send.height / 2);
+            const menu = document.getElementById('options_button').getBoundingClientRect();
+            return {
+                opacity: getComputedStyle(document.getElementById('send_form')).opacity,
+                fab: getComputedStyle(document.getElementById('sp-mobile-fab')).display,
+                inRow: getComputedStyle(document.getElementById('sp-st-restore')).display,
+                send: Math.round(Math.min(send.width, send.height)),
+                sendFree: !!at?.closest('#send_but'),
+                menu: Math.round(Math.min(menu.width, menu.height)),
+            };
+        });
+        if (box.opacity !== '1') throw new Error(`the message box is faded to ${box.opacity}`);
+        if (box.fab !== 'none' || !box.sendFree) throw new Error(`ScenePulse's floating button covers Send: ${JSON.stringify(box)}`);
+        if (box.inRow !== 'none' || box.send < 40) throw new Error(`ScenePulse's button crowds the row next to Send: ${JSON.stringify(box)}`);
+        if (box.menu < 44) throw new Error(`☰ is ${box.menu}px`);
+        // Tools lists ScenePulse; tapping it opens its panel, above the tab bar.
+        const pulseRow = () => [...document.querySelectorAll('#stmui-sheet .stmui-menu-row')].find(row => row.textContent.includes('ScenePulse'));
+        await page.locator('#extensionsMenuButton').click();
+        await until(`(${pulseRow})()`);
+        await page.evaluate(`(${pulseRow})().click()`);
+        await until(() => document.getElementById('sp-panel').classList.contains('sp-visible'));
+        const layer = await page.evaluate(() => [Number(getComputedStyle(document.getElementById('sp-panel')).zIndex), Number(getComputedStyle(document.querySelector('.stmui-tabbar')).zIndex)]);
+        if (!(layer[0] > layer[1])) throw new Error(`ScenePulse's panel (z ${layer[0]}) is under the tab bar (z ${layer[1]})`);
+        await page.evaluate(() => document.getElementById('sp-panel').classList.remove('sp-visible'));
+        // Moonlit's chat styles draw the messages themselves; the tabs arrow still steps aside for the keyboard.
+        const looks = await page.evaluate(async () => {
+            const card = () => { const s = getComputedStyle(document.querySelector('#chat .mes')); return `${s.borderTopLeftRadius}|${s.paddingTop}|${s.marginTop}`; };
+            const cards = card();
+            // Read at once: Pocket Tavern's own keyboard check takes the made-up class away again.
+            document.documentElement.classList.add('stmui-keyboard');
+            const arrow = getComputedStyle(document.querySelector('.stmui-tabs-btn')).display;
+            document.documentElement.classList.remove('stmui-keyboard');
+            document.body.dataset.testFlat = String(document.body.classList.contains('flatchat'));
+            document.body.classList.remove('flatchat');
+            document.body.classList.add('echostyle');
+            await new Promise(resolve => setTimeout(resolve, 100));
+            return { cards, echo: card(), arrow };
+        });
+        if (looks.arrow !== 'none') throw new Error(`the tabs arrow shows with the keyboard up (${looks.arrow})`);
+        if (looks.echo === looks.cards) throw new Error(`the message cards stayed on in Moonlit's Echo style (${looks.cards})`);
+        // The editor in Echo, right as it opens: the whole page, Save on top of the faded-out box.
+        await page.evaluate(() => [...document.querySelectorAll('#chat .mes')].pop().querySelector('.mes_edit').click());
+        await until(() => document.documentElement.classList.contains('stmui-editing'));
+        await page.waitForTimeout(150);
+        const editor = await page.evaluate(() => {
+            const save = document.querySelector('#chat .mes:has(#curEditTextarea) .mes_edit_done').getBoundingClientRect();
+            const hit = document.elementFromPoint(save.left + save.width / 2, save.top + save.height / 2);
+            return { saveOnTop: !!hit?.closest('.mes_edit_done'), area: document.getElementById('curEditTextarea').getBoundingClientRect().width / innerWidth };
+        });
+        await page.evaluate(() => document.querySelector('#chat .mes:has(#curEditTextarea) .mes_edit_cancel')?.click());
+        await until(() => !document.documentElement.classList.contains('stmui-editing'));
+        if (!editor.saveOnTop) throw new Error("the message box covers the editor's Save while it opens");
+        if (editor.area < 0.9) throw new Error(`the editor's text field is only ${Math.round(editor.area * 100)}% wide in Echo`);
+    } finally {
+        await page.evaluate(() => {
+            document.documentElement.classList.remove('stmui-keyboard');
+            document.body.classList.remove('echostyle');
+            if (document.body.dataset.testFlat === 'true') document.body.classList.add('flatchat');
+            delete document.body.dataset.testFlat;
+            document.getElementById('test-ext-standins')?.remove();
+            for (const id of ['sp-mobile-fab', 'sp-panel', 'sp-st-restore']) document.getElementById(id)?.remove();
+        });
+    }
+});
+
 await step('banner shows when the server stops answering', async () => {
     await page.route('**/api/ping*', route => route.abort());
     await page.evaluate(() => window.dispatchEvent(new Event('offline')));
@@ -781,6 +884,29 @@ await step('desktop layout: tabs as a rail, pages beside the chat that stay open
         await tab.waitForFunction(() => !!document.getElementById('stmui-sheet'));
         const box = await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-panel').getBoundingClientRect());
         if (box.bottom > 880) throw new Error('More is not a centred dialog');
+        await tab.keyboard.press('Escape');
+        // ScenePulse's side panel (it sets its own top from SillyTavern's hidden top bar) and Moonlit's rule that shows every tool.
+        const side = await tab.evaluate(async () => {
+            const style = document.createElement('style');
+            style.textContent = '#leftSendForm > * { display: flex; }';
+            document.head.append(style);
+            const panel = document.createElement('div');
+            panel.id = 'sp-panel';
+            panel.className = 'sp-visible';
+            panel.style.cssText = 'position: fixed; top: 1px; right: 0; bottom: 0; width: 280px; z-index: 1000;';
+            document.body.append(panel);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const out = {
+                top: Math.round(panel.getBoundingClientRect().top),
+                bar: Math.round(document.getElementById('stmui-appbar').getBoundingClientRect().bottom),
+                arrow: getComputedStyle(document.querySelector('.stmui-tabs-btn')).display,
+            };
+            panel.remove();
+            style.remove();
+            return out;
+        });
+        if (side.top < side.bar) throw new Error(`ScenePulse's panel starts at ${side.top}px, under the top bar (${side.bar}px)`);
+        if (side.arrow !== 'none') throw new Error(`the tabs arrow shows in the desktop layout (${side.arrow})`);
     } finally {
         await desk.close();
     }
