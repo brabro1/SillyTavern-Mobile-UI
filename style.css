@@ -5354,6 +5354,96 @@ html.stmui-wide.stmui-personapage #persona-management-button > .drawer-content {
     }
 }
 
+/* Start screen: the eye beside SillyTavern's buttons hides the message box for more room
+   (remembered; a chat always shows it). */
+html.stmui-chat.stmui-home-nobox #form_sheld {
+    display: none !important;
+}
+
+html.stmui-chat.stmui-home-nobox #chat {
+    padding-bottom: 16px;
+    scroll-padding-bottom: 16px;
+}
+
+html.stmui-chat .welcomePanel .stmui-home-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    color: var(--stmui-muted);
+    font-size: 18px;
+    opacity: 1;
+    cursor: pointer;
+}
+
+html.stmui-chat .welcomePanel .stmui-home-box[data-on='true'] {
+    color: var(--stmui-accent);
+}
+
+@media (hover: hover) {
+    html.stmui-wide .welcomePanel .stmui-home-box:hover {
+        border-radius: 999px;
+        background: var(--stmui-raised-2);
+        color: var(--stmui-text);
+    }
+}
+
+/* SillyTavern updates: the status, then a command per device with a copy button. */
+.stmui-update-status {
+    margin: 4px 16px 8px;
+    color: var(--stmui-text);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.stmui-command {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 16px 8px;
+    padding: 0 0 0 12px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 12px;
+    background: var(--stmui-raised);
+}
+
+.stmui-command code {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 8px 0;
+    border: 0;
+    background: none;
+    color: var(--stmui-text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.stmui-command-copy {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--stmui-muted);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.stmui-update-row[disabled] {
+    opacity: 1;
+    cursor: progress;
+}
+
 /* The shortcut for Search everything, shown on a computer. */
 .stmui-kbd {
     margin-left: auto;
@@ -7309,8 +7399,11 @@ html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block {
     gap: 2px;
 }
 
+/* Rows never shrink: the list is a column of fixed height, and with a minimum height set
+   the browser squeezed long rows to 64px, so their text ran into the next row. */
 html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block > :is(.character_select, .group_select, .bogus_folder_select) {
-    align-items: center;
+    flex-shrink: 0;
+    align-items: flex-start;
     min-height: 64px;
     margin: 0;
     padding: 6px 10px;
@@ -7333,6 +7426,49 @@ html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .avatar i
 html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .ch_name {
     font-size: 16px;
     font-weight: 650;
+}
+
+/* A tidy row: name, two lines of description, one line of small tags. */
+html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block :is(.character_select_container, .group_select_container) {
+    min-width: 0;
+    gap: 2px;
+}
+
+html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .ch_description {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    color: var(--stmui-muted);
+    font-size: 14px;
+    line-height: 1.35;
+    white-space: normal;
+}
+
+html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: 24px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .tags .tag {
+    margin: 0;
+    padding: 2px 8px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px;
+    background: var(--stmui-raised-2);
+    color: var(--stmui-muted);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .avatar {
+    flex: 0 0 auto;
+    margin-top: 2px;
 }
 
 html.stmui-charpage body:not(.charListGrid) #rm_print_characters_block .ch_fav_icon {

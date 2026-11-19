@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.22.0
+
+Updates without leaving Pocket Tavern, a list-view fix and a little more room on the start screen.
+
+### Phone
+
+- **Update SillyTavern from your home screen (Android).** The one-tap start setup (`termux/setup.sh`) now also adds an **Update SillyTavern** shortcut next to SillyTavern and Stop SillyTavern. One tap stops SillyTavern, downloads the update (`git pull`), installs the new parts (`npm install`) and starts it again; if the update can't finish, it starts SillyTavern as it was. Run the setup command once more to get the new shortcut.
+
+### Both
+
+- **Update Pocket Tavern in one tap.** **More → Update Pocket Tavern** (it shows the version you have) asks SillyTavern whether there is a new version and installs it, the same update as Extensions → Manage extensions, then reloads the page once nothing is in progress. Up to date, it says so.
+- **SillyTavern updates.** **More → SillyTavern updates** checks for a new SillyTavern (only when you open it) and shows the quickest way to update on each kind of device: the home-screen shortcut or one command (with a copy button) on Android, UpdateAndStart.bat or SillyTavern Launcher on Windows, one command on macOS and Linux. SillyTavern can't update itself from the page: it has to be stopped and started again on the computer or phone it runs on, which no extension can do from a browser.
+
+- **Fixed: the Characters list in list view.** With the list view on (instead of picture cards), characters with long descriptions or many tags ran into each other: names sat on top of the previous character's tags. The list is a column of fixed height, and Pocket Tavern's 64px minimum for a row let the browser squeeze every row down to it. Rows now never shrink, the description shows two lines, the tags are small chips on one line, and the picture lines up with the name.
+- **Hide the message box on the start screen.** A new eye button sits beside SillyTavern's own buttons at the top of Recent chats. It hides the message box so the list of recent chats gets the whole screen, and Pocket Tavern remembers it. Tap it again to bring the box back. In a chat the box is always there.
+- `tests/phone.mjs` checks list rows with many tags and the eye button.
+
 ## 2.21.0
 
 A second desktop round from the same Firefox user's report, checked screen by screen, and personas that look like your characters. Two fixes (long lorebooks, the Cancel button) also help on a phone.

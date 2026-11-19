@@ -1,6 +1,15 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.22.0',
+        items: [
+            "More → Update Pocket Tavern updates it in one tap and reloads the page, no trip to Manage extensions. More → SillyTavern updates tells you when a new SillyTavern is out and how to update it on your device.",
+            "On Android, the one-tap start setup adds an Update SillyTavern shortcut to your home screen: it updates SillyTavern and starts it again. Run the setup once more to get it.",
+            "Fixed: in list view, the Characters list squeezed long rows, so names, descriptions and tags ran into the next character. Rows now fit, with two lines of description and one line of tags.",
+            "On the start screen, the new eye button beside SillyTavern's buttons hides the message box, so you see more recent chats. Tap it again to bring the box back.",
+        ],
+    },
+    {
         version: '2.21.0',
         items: [
             "On a computer, Author's Note, CFG, Token probabilities and extensions' pop-outs open in a column right of the chat, which moves over to make room. They were hidden in the top-left corner. Escape closes them.",

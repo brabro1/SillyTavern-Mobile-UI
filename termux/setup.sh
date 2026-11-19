@@ -9,6 +9,7 @@
 # It adds:
 #   ~/.shortcuts/SillyTavern        one tap: start SillyTavern (if needed) and open it
 #   ~/.shortcuts/Stop SillyTavern   stop it
+#   ~/.shortcuts/Update SillyTavern update it (git pull, npm install) and start it again
 #   ~/.shortcuts/icons/SillyTavern.png
 #   optionally: start it whenever you open Termux (~/.bashrc)
 #   optionally: start it when the phone boots (~/.termux/boot, needs Termux:Boot)
@@ -63,7 +64,7 @@ remove_bashrc_block() {
 }
 
 if [ "$REMOVE" = 1 ]; then
-    rm -f "$SHORTCUTS/SillyTavern" "$SHORTCUTS/Stop SillyTavern" "$SHORTCUTS/icons/SillyTavern.png" "$BOOT_DIR/start-sillytavern"
+    rm -f "$SHORTCUTS/SillyTavern" "$SHORTCUTS/Stop SillyTavern" "$SHORTCUTS/Update SillyTavern" "$SHORTCUTS/icons/SillyTavern.png" "$BOOT_DIR/start-sillytavern"
     remove_bashrc_block
     ok "Removed the SillyTavern shortcuts and autostart."
     exit 0
@@ -179,8 +180,31 @@ command -v termux-wake-unlock > /dev/null 2>&1 && termux-wake-unlock
 sleep 1
 EOF
 
-chmod 700 "$SHORTCUTS/SillyTavern" "$SHORTCUTS/Stop SillyTavern"
-ok "Added the 'SillyTavern' and 'Stop SillyTavern' shortcuts"
+# ---- update script ---------------------------------------------------------
+
+cat > "$SHORTCUTS/Update SillyTavern" <<EOF
+#!$PREFIX/bin/bash
+# Update SillyTavern, then start it again. Made by Pocket Tavern's setup.sh.
+ST_DIR="$ST_DIR"
+EOF
+cat >> "$SHORTCUTS/Update SillyTavern" <<'EOF'
+echo "Updating SillyTavern..."
+if pkill -f "node server.js"; then echo "Stopped SillyTavern for the update."; sleep 2; fi
+cd "$ST_DIR" || { echo "SillyTavern folder not found: $ST_DIR"; read -r -n 1 -p "Press any key to close."; exit 1; }
+if git pull --rebase --autostash \
+    && npm install --no-save --no-audit --no-fund --loglevel=error --no-progress --omit=dev --ignore-scripts; then
+    echo ""
+    echo "SillyTavern is up to date. Starting it..."
+else
+    echo ""
+    echo "The update did not finish (see the messages above). Starting SillyTavern as it was..."
+    sleep 3
+fi
+exec "$HOME/.shortcuts/SillyTavern"
+EOF
+
+chmod 700 "$SHORTCUTS/SillyTavern" "$SHORTCUTS/Stop SillyTavern" "$SHORTCUTS/Update SillyTavern"
+ok "Added the 'SillyTavern', 'Stop SillyTavern' and 'Update SillyTavern' shortcuts"
 
 # The icon: next to this script, inside SillyTavern's extensions, or from GitHub.
 ICON=""
@@ -230,6 +254,7 @@ say "  1. Install the 'Termux:Widget' app (from the same place you got Termux, e
 say "  2. Long-press an empty spot on your home screen > Widgets > Termux:Widget,"
 say "     or long-press the Termux:Widget app icon and drag the 'SillyTavern' shortcut out."
 say "  3. Tap the SillyTavern shortcut: it starts SillyTavern and opens it."
+say "     'Update SillyTavern' updates it and starts it again; 'Stop SillyTavern' stops it."
 say ""
 say "Tip: in Android settings, set Termux's battery use to 'Unrestricted' so it isn't closed in the background."
 say "To undo all of this:  bash \"$HERE/$(basename "${BASH_SOURCE[0]}")\" --remove"

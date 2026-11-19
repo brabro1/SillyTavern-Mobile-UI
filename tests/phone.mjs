@@ -980,6 +980,80 @@ await step('a long lorebook shows every entry, and the Notes & tags tab keeps th
     if (tabs > 60) throw new Error(`the card's tabs are ${tabs}px tall on Notes & tags`);
 });
 
+await step('the character list view keeps rows apart, and the start screen can hide the message box', async () => {
+    // List view with long rows (many tags): the rows used to shrink to 64px and run into each other.
+    await showTabs();
+    await page.locator('.stmui-tab[data-tab="rightNavHolder"]').click();
+    await until(() => document.documentElement.dataset.stmuiPage === 'rightNavHolder');
+    await page.evaluate(() => document.getElementById('rm_button_characters')?.click());
+    await page.waitForTimeout(600);
+    const wasGrid = await page.evaluate(() => document.body.classList.contains('charListGrid'));
+    try {
+        const rows = await page.evaluate(() => {
+            document.body.classList.remove('charListGrid');
+            for (const row of document.querySelectorAll('#rm_print_characters_block .character_select')) {
+                const tags = row.querySelector('.tags');
+                if (tags) tags.insertAdjacentHTML('beforeend', ['Female', 'Submissive', 'AnyPOV', 'Angst', 'Dead Dove', 'nerd', 'glasses', 'OC'].map(name => `<span class="tag stmui-test-tag"><span class="tag_name">${name}</span></span>`).join(''));
+            }
+            return [...document.querySelectorAll('#rm_print_characters_block .character_select')].slice(0, 4).map(row => ({ h: Math.round(row.getBoundingClientRect().height), content: row.scrollHeight }));
+        });
+        const squeezed = rows.filter(row => row.content > row.h + 1);
+        if (!rows.length || squeezed.length) throw new Error(`list rows are squeezed: ${JSON.stringify(rows)}`);
+    } finally {
+        await page.evaluate(wasGrid => {
+            document.querySelectorAll('.stmui-test-tag').forEach(tag => tag.remove());
+            document.body.classList.toggle('charListGrid', wasGrid);
+        }, wasGrid);
+    }
+    // The start screen's eye hides the message box for more room, and shows it again.
+    await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="chat"]').click());
+    await page.waitForTimeout(400);
+    await page.evaluate(() => document.getElementById('option_close_chat')?.click());
+    await until(() => !!document.getElementById('stmui_home_box'), null, 10000);
+    try {
+        await page.locator('#stmui_home_box').click();
+        await until(() => getComputedStyle(document.getElementById('form_sheld')).display === 'none');
+        await page.locator('#stmui_home_box').click();
+        await until(() => getComputedStyle(document.getElementById('form_sheld')).display !== 'none');
+    } finally {
+        await page.evaluate(() => {
+            if (SillyTavern.getContext().extensionSettings.mobileUI.homeHideBox) document.getElementById('stmui_home_box')?.click();
+        });
+    }
+});
+
+await step('More can update Pocket Tavern in one tap and shows SillyTavern updates', async () => {
+    // SillyTavern's own extension endpoints, answered here so nothing is really pulled.
+    const asked = [];
+    await page.route('**/api/extensions/version', route => {
+        asked.push('version');
+        return route.fulfill({ json: { isUpToDate: false, currentBranchName: 'main', currentCommitHash: 'x', remoteUrl: '' } });
+    });
+    await page.route('**/api/extensions/update', route => {
+        asked.push('update');
+        return route.fulfill({ json: { isUpToDate: true } });
+    });
+    await page.route('https://api.github.com/repos/SillyTavern/SillyTavern/releases/latest', route => route.fulfill({ json: { tag_name: 'v99.0.0' } }));
+    try {
+        await showTabs();
+        await page.locator('.stmui-tab[data-tab="more"]').click();
+        await until(() => !!document.querySelector('#stmui-sheet .stmui-update-row'));
+        await page.locator('#stmui-sheet .stmui-update-row').click();
+        await until(() => /up to date/i.test(document.querySelector('#toast-container')?.textContent ?? ''), null, 10000);
+        if (asked.join(',') !== 'version,update') throw new Error(`asked SillyTavern for: ${asked.join(',')}`);
+        await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'SillyTavern updates' }).click();
+        await until(() => /99\.0\.0 is out/.test(document.querySelector('.stmui-update-status')?.textContent ?? ''), null, 10000);
+        const copy = await page.locator('#stmui-sheet .stmui-command-copy').count();
+        if (copy < 2) throw new Error('the update commands have no copy buttons');
+        await closeSheet();
+    } finally {
+        await page.unrouteAll({ behavior: 'ignoreErrors' });
+        if (await page.locator('#stmui-sheet').count()) await closeSheet();
+        // Its notifications sit where the next step's banner shows.
+        await page.evaluate(() => { globalThis.toastr?.clear(); document.getElementById('toast-container')?.replaceChildren(); });
+    }
+});
+
 await step('banner shows when the server stops answering', async () => {
     await page.route('**/api/ping*', route => route.abort());
     await page.evaluate(() => window.dispatchEvent(new Event('offline')));

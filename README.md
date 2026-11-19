@@ -85,8 +85,9 @@ It switches itself on and picks the right layout for each screen. Your character
 **⚡ Handy extras**
 - **Quick switch:** change persona, connection, model or preset in two taps.
 - **Search everything:** characters, chats, lorebooks and settings in one box.
-- **Recent chats** grouped by character on the start screen.
+- **Recent chats** grouped by character on the start screen, and an eye button there that hides the message box for more room.
 - A banner when SillyTavern stops answering (handy with Termux).
+- **Updates in one tap:** **More → Update Pocket Tavern**, and **More → SillyTavern updates** tells you when a new SillyTavern is out and how to update it.
 
 Every helper has its own switch. The full list of changes is in [CHANGELOG.md](CHANGELOG.md).
 
@@ -117,7 +118,7 @@ Then reload SillyTavern in your browser.
 
 </details>
 
-**Update:** **Extensions → Manage extensions**, then update Pocket Tavern. From version 2.21.0 on, the page reloads by itself once nothing is in progress (switch **Reload after updates** off to reload by hand). A short **What's new** list shows once.
+**Update:** **More → Update Pocket Tavern** (or **Extensions → Manage extensions**, then update Pocket Tavern). From version 2.21.0 on, the page reloads by itself once nothing is in progress (switch **Reload after updates** off to reload by hand). A short **What's new** list shows once.
 
 **Remove:** **Extensions → Manage extensions**, then delete Pocket Tavern.
 
@@ -129,6 +130,7 @@ Then reload SillyTavern in your browser.
 | Text size and every helper's switch | **More → Phone features** (**Features** on a computer) |
 | Turn it on or off, or choose where it runs | **More → Pocket Tavern settings** |
 | Search characters, chats, lorebooks and settings | **More → Search everything** (or **Ctrl+K** on a computer) |
+| Update Pocket Tavern, or check for a new SillyTavern | **More → Update Pocket Tavern** / **More → SillyTavern updates** |
 
 **Choose where it runs:** in Pocket Tavern settings, set "Use it on this device" to **Automatic** (phones and computers), **Phones only** (keeps the original SillyTavern on your computer) or **Off on this device**.
 
@@ -145,7 +147,7 @@ Set this up once to get a SillyTavern icon on your home screen. Tap it and Silly
    It asks whether to start SillyTavern whenever you open Termux, and when the phone turns on (that needs Termux:Boot).
 3. Long-press your home screen, pick **Widgets → Termux:Widget**, and choose **SillyTavern**.
 
-There's also a **Stop SillyTavern** shortcut. Set Termux's battery use to **Unrestricted** in Android's settings so it isn't closed in the background. SillyTavern in another folder? Add `--dir ~/your-folder`. To undo everything, run the same command with `--remove`.
+There are also **Update SillyTavern** (updates SillyTavern and starts it again) and **Stop SillyTavern** shortcuts. Already set up before? Run the command once more to get the update shortcut. Set Termux's battery use to **Unrestricted** in Android's settings so it isn't closed in the background. SillyTavern in another folder? Add `--dir ~/your-folder`. To undo everything, run the same command with `--remove`.
 
 </details>
 
@@ -194,7 +196,8 @@ In Pocket Tavern settings, set "Use it on this device" to **Phones only**.
 
 - Pocket Tavern only changes how SillyTavern looks. Your characters, chats, lorebooks and SillyTavern theme are never changed.
 - Its settings are saved with your SillyTavern settings. Unsent messages and the page width you choose on a computer stay in your browser.
-- **Translate** sends chat text to Google Translate, or to the service you chose in SillyTavern's Chat Translation. Nothing else is sent anywhere.
+- **Translate** sends chat text to Google Translate, or to the service you chose in SillyTavern's Chat Translation.
+- **More → SillyTavern updates** asks GitHub for the newest SillyTavern version when you open it. Nothing else is sent anywhere.
 
 ## Feedback
 

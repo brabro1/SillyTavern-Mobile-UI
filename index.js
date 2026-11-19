@@ -45,6 +45,7 @@ const DEFAULTS = Object.freeze({
     sendEffect: true,
     haptics: true,
     autoReload: true,
+    homeHideBox: false,
     jumpButton: true,
     messageMenu: true,
     saveDrafts: true,
@@ -2123,6 +2124,8 @@ function openMoreSheet() {
                 }, !inChat),
                 isStandalone() ? null : row('download', 'Install as an app', () => installApp()),
                 row('star', "What's new", () => openWhatsNew()),
+                updateRow(),
+                row('refresh', 'SillyTavern updates', () => openSillyTavernUpdates()),
                 row(isWide() ? 'desktop' : 'phone', 'Pocket Tavern settings', () => {
                     closeSheet(true);
                     openMobileSettings();
@@ -4272,6 +4275,66 @@ function placeAzStrip(strip, list, count) {
 // -- recent chats: search, pinned section, swipe to pin or delete
 
 const welcome = { observer: null };
+
+// -- start screen: hide the message box for more room (both layouts)
+
+const home = { observer: null };
+
+function syncHomeBox() {
+    const root = document.documentElement;
+    let button = document.getElementById('stmui_home_box');
+    if (!active || !settings.chatStyle) {
+        button?.remove();
+        root.classList.remove('stmui-home-nobox');
+        home.observer?.disconnect();
+        home.observer = null;
+        return;
+    }
+    const chat = document.getElementById('chat');
+    // The start screen comes and goes as chats open and close.
+    if (chat && !home.observer) {
+        home.observer = new MutationObserver(() => syncHomeBox());
+        home.observer.observe(chat, { childList: true });
+    }
+    const panel = document.querySelector('#chat .welcomePanel');
+    const hidden = !!settings.homeHideBox;
+    root.classList.toggle('stmui-home-nobox', hidden && !!panel);
+    const header = panel?.querySelector('.welcomeHeaderTitle');
+    if (!header) return;
+    if (!button || !header.contains(button)) {
+        button?.remove();
+        button = h('div', {
+            id: 'stmui_home_box',
+            class: 'mes_button stmui-home-box',
+            role: 'button',
+            tabindex: '0',
+            onclick: () => toggleHomeBox(),
+            onkeydown: event => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                toggleHomeBox();
+            },
+        });
+        const anchor = header.querySelector('.showRecentChats');
+        if (anchor) anchor.before(button);
+        else header.append(button);
+    }
+    const label = t(hidden ? 'Show the message box' : 'Hide the message box');
+    if (button.dataset.on !== String(hidden)) {
+        button.dataset.on = String(hidden);
+        button.replaceChildren(ui(hidden ? 'eye' : 'eye-off'));
+    }
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.setAttribute('aria-pressed', String(hidden));
+}
+
+function toggleHomeBox() {
+    buzz(6);
+    settings.homeHideBox = !settings.homeHideBox;
+    saveSettings();
+    syncHomeBox();
+}
 
 function syncWelcome() {
     const chat = document.getElementById('chat');
@@ -7708,6 +7771,7 @@ function syncExtras() {
     syncPromptEditorSession();
     syncPanelEdge();
     syncToolPanels();
+    syncHomeBox();
     if (!active || !settings.keepAwake) setAwake(false);
     if (!active || !settings.imageViewer) closeViewer(true);
     if (active) patchClipboard();
@@ -7916,19 +7980,156 @@ function updateReloadBlocked() {
     return isTypingField(focused) && !draftKept;
 }
 
-function reloadWhenIdle() {
-    if (!settings?.autoReload) {
+function reloadWhenIdle(force = false) {
+    if (!force && !settings?.autoReload) {
         updateReload.pending = false;
         return;
     }
     if (updateReloadBlocked()) {
-        updateReload.timer = window.setTimeout(reloadWhenIdle, 1500);
+        updateReload.timer = window.setTimeout(() => reloadWhenIdle(force), 1500);
         return;
     }
     // Settings SillyTavern has not written yet go first.
     ctx().saveSettingsDebounced?.();
     globalThis.toastr?.info(t('Reloading to finish the update…'), '', { timeOut: 2000 });
     window.setTimeout(() => location.reload(), 1500);
+}
+
+// -- More → Update Pocket Tavern, and SillyTavern updates (both layouts)
+
+/** Pocket Tavern's folder name, from where this file was loaded (scripts/extensions/third-party/<folder>/index.js). */
+function extensionFolder() {
+    const match = decodeURIComponent(new URL(import.meta.url).pathname).match(/\/third-party\/([^/]+)\//);
+    return match ? match[1] : 'SillyTavern-PocketTavern';
+}
+
+/** Asks SillyTavern's own extension endpoint; installed for one user or for everyone. */
+async function extensionRequest(endpoint, global) {
+    return fetch(`/api/extensions/${endpoint}`, {
+        method: 'POST',
+        headers: ctx().getRequestHeaders(),
+        body: JSON.stringify({ extensionName: extensionFolder(), global }),
+    });
+}
+
+function updateRow() {
+    return h('button', {
+        type: 'button',
+        class: 'stmui-menu-row stmui-update-row',
+        onclick: event => updatePocketTavern(event.currentTarget),
+    }, [
+        ui('download', 'stmui-menu-row-icon'),
+        h('span', { text: 'Update Pocket Tavern' }),
+        h('small', { class: 'stmui-menu-row-note', text: `v${VERSION}` }),
+        ui('chevron-right', 'stmui-menu-row-go'),
+    ]);
+}
+
+/**
+ * The same update as Extensions → Manage extensions → update, in one tap: SillyTavern's
+ * server pulls the new version, then the page reloads (once nothing is in progress).
+ */
+async function updatePocketTavern(button) {
+    if (button.disabled) return;
+    const note = button.querySelector('.stmui-menu-row-note');
+    const before = note?.textContent ?? '';
+    button.disabled = true;
+    if (note) note.textContent = t('Checking…');
+    buzz(6);
+    try {
+        let global = false;
+        let response = await extensionRequest('version', global);
+        if (response.status === 404) {
+            global = true;
+            response = await extensionRequest('version', global);
+        }
+        if (!response.ok) throw new Error((await response.text()) || response.statusText);
+        const info = await response.json();
+        if (info.isUpToDate) {
+            globalThis.toastr?.success(t('You have the newest version ({version}).', { version: VERSION }), t('Pocket Tavern is up to date'));
+            return;
+        }
+        if (note) note.textContent = t('Updating…');
+        response = await extensionRequest('update', global);
+        if (!response.ok) throw new Error((await response.text()) || response.statusText);
+        const result = await response.json();
+        if (result.isUpToDate) {
+            globalThis.toastr?.success(t('You have the newest version ({version}).', { version: VERSION }), t('Pocket Tavern is up to date'));
+            return;
+        }
+        closeSheet(true);
+        globalThis.toastr?.success(t('The page reloads by itself when nothing is in progress.'), t('Pocket Tavern was updated'), { timeOut: 6000 });
+        updateReload.pending = true;
+        window.clearTimeout(updateReload.timer);
+        updateReload.timer = window.setTimeout(() => reloadWhenIdle(true), 1500);
+    } catch (error) {
+        console.warn(LOG, 'Update failed', error);
+        globalThis.toastr?.error(String(error?.message ?? error).slice(0, 200), t('Could not update Pocket Tavern'));
+    } finally {
+        button.disabled = false;
+        if (note && button.isConnected && note.textContent !== before) note.textContent = before;
+    }
+}
+
+/**
+ * SillyTavern cannot update itself from the page: it has to be stopped and started
+ * again where it runs. This checks for a newer version (only when opened) and shows
+ * the quickest way for each kind of device.
+ */
+async function openSillyTavernUpdates() {
+    const state = { local: null, latest: null, failed: false };
+    const commandRow = (label, command) => h('div', { class: 'stmui-command' }, [
+        h('code', { text: command }),
+        h('button', {
+            type: 'button',
+            class: 'stmui-command-copy',
+            'aria-label': t('Copy {label}', { label }),
+            title: t('Copy'),
+            onclick: async () => {
+                const done = await copyText(command);
+                if (done) globalThis.toastr?.success(t('Copied. Paste it where SillyTavern runs.'), '', { timeOut: 2500 });
+            },
+        }, [ui('copy')]),
+    ]);
+    const updateSheet = new MenuSheet({
+        title: t('SillyTavern updates'),
+        subtitle: t('Check for a new version and see how to update'),
+        fill: body => {
+            let status = t('Checking for a new version…');
+            if (state.failed) status = t('Could not check for a new version. Are you online?');
+            else if (state.local && state.latest) {
+                status = compareVersions(state.latest, state.local) > 0
+                    ? t('SillyTavern {latest} is out. You have {local}.', { latest: state.latest, local: state.local })
+                    : t('You have the newest SillyTavern ({local}).', { local: state.local });
+            }
+            body.append(
+                h('p', { class: 'stmui-update-status', text: status }),
+                h('p', { class: 'stmui-menu-heading', text: t('On Android (Termux)') }),
+                h('p', { class: 'stmui-menu-foot', text: t('Tap the "Update SillyTavern" shortcut on your home screen (from the one-tap start setup), or run this in Termux:') }),
+                commandRow('Termux', 'cd ~/SillyTavern && git pull && npm install'),
+                h('p', { class: 'stmui-menu-heading', text: t('On Windows') }),
+                h('p', { class: 'stmui-menu-foot', text: t('Close SillyTavern, then double-click UpdateAndStart.bat in its folder (or use Update in SillyTavern Launcher).') }),
+                h('p', { class: 'stmui-menu-heading', text: t('On macOS or Linux') }),
+                h('p', { class: 'stmui-menu-foot', text: t('Close SillyTavern, then run this in its folder and start it again:') }),
+                commandRow('macOS or Linux', 'git pull && npm install'),
+                h('p', { class: 'stmui-menu-foot', text: t('Using SillyTavern from an iPhone or iPad? Update it on the computer or phone it runs on.') }),
+            );
+        },
+    });
+    showSheet(updateSheet);
+    try {
+        const [local, latest] = await Promise.all([
+            fetch('/version').then(response => response.json()),
+            // Only asked when this sheet opens: GitHub's list of SillyTavern releases.
+            fetch('https://api.github.com/repos/SillyTavern/SillyTavern/releases/latest', { headers: { Accept: 'application/vnd.github+json' } }).then(response => response.json()),
+        ]);
+        state.local = String(local.pkgVersion ?? '').trim() || null;
+        state.latest = String(latest.tag_name ?? '').replace(/^v/i, '').trim() || null;
+        if (!state.local || !state.latest) state.failed = true;
+    } catch {
+        state.failed = true;
+    }
+    if (sheet === updateSheet) updateSheet.refresh();
 }
 
 // -- desktop: drag the panel's edge to make it wider

@@ -169,7 +169,9 @@ Pocket Tavern on phones: Android, iPhone, and iPad held upright. Everything here
 - **Number boxes beside − and +:** no browser spin arrows (`appearance: textfield`; Firefox always draws them and they covered the number), tabular figures, 4.6em wide so seven digits fit.
 - **Chat Completion Tabs:** its Parameters and Prompts tabs are our segmented control: 44px, the active one in the soft accent with an accent hairline, an opaque `--stmui-solid` bar while it sticks to the top, no shadow, no lift on hover.
 - **Input History:** its buttons sit at the end of the text field (44px each); the arrows show only on an empty box or after they recalled a message; the field reserves room for whatever shows.
-- **Lists of records (characters, lorebook entries):** one row, one clear title, at most two lines of metadata. Status dots always have a label or a tooltip you can reach by tap.
+- **Lists of records (characters, lorebook entries):** one row, one clear title, at most two lines of metadata. Rows in a fixed-height column get `flex-shrink: 0`, or a `min-height` lets the browser squeeze them. In the Characters list view: 52px picture aligned with the name, two lines of description (14px `--stmui-muted`), tags as 12px chips on one line. Status dots always have a label or a tooltip you can reach by tap.
+- **Updates in More** (both layouts): "Update Pocket Tavern" (download icon, the version as its note, "Checking…" / "Updating…" while it works) uses SillyTavern's `/api/extensions/version` and `/update`, then the same safe reload as after an update. "SillyTavern updates" opens a sheet: a 16px status line, then one heading per device kind, with commands in a `--stmui-raised` box (monospace 14px, wraps) and a 44px copy button. It asks GitHub only when opened.
+- **Start screen eye** (both layouts): a 44px button beside SillyTavern's buttons in the welcome header hides `#form_sheld` on the start screen (`html.stmui-home-nobox`, remembered); `--stmui-muted` when off, the accent while the box is hidden. A chat always shows the box.
 
 ## Writing
 
