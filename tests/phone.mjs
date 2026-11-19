@@ -410,6 +410,8 @@ await step('in a chat the tabs tuck away; the arrow brings them back and typing 
 });
 
 await step('compact size and docked message box fit more chat and keep 44px buttons', async () => {
+    await setPref('stmui_size', 'comfortable');
+    await setPref('stmui_composer', 'floating');
     const before = await page.evaluate(() => document.querySelector('#chat .mes').getBoundingClientRect().height);
     await setPref('stmui_size', 'compact');
     await setPref('stmui_composer', 'docked');
@@ -446,6 +448,33 @@ await step('compact size and docked message box fit more chat and keep 44px butt
         await setPref('stmui_size', 'auto');
         await setPref('stmui_composer', 'floating');
     }
+});
+
+await step("another extension's buttons and a theme's CSS keep the text on its own row", async () => {
+    // Guided Generations puts a row of buttons in the box; some themes stop the box from wrapping.
+    const result = await page.evaluate(async () => {
+        const style = document.createElement('style');
+        style.id = 'test-hostile';
+        style.textContent = '#send_form { flex-wrap: nowrap !important; } #nonQRFormItems { display: flex !important; } #send_textarea { order: 9 !important; grid-area: auto !important; }';
+        document.head.append(style);
+        const row = document.createElement('div');
+        row.id = 'gg-action-button-container';
+        row.className = 'gg-action-buttons-container';
+        row.style.display = 'flex';
+        row.innerHTML = '<div class="gg-action-button fa-solid fa-dog"></div><div class="gg-action-button fa-solid fa-forward-fast"></div>';
+        const items = document.getElementById('nonQRFormItems');
+        items.parentNode.insertBefore(row, items.nextSibling);
+        await new Promise(resolve => setTimeout(resolve, 300));
+        const form = document.getElementById('send_form').getBoundingClientRect();
+        const text = document.getElementById('send_textarea').getBoundingClientRect();
+        const send = document.getElementById('send_but').getBoundingClientRect();
+        const button = row.querySelector('.gg-action-button').getBoundingClientRect();
+        row.remove();
+        style.remove();
+        return { share: text.width / form.width, ownRow: text.bottom <= send.top + 1, button: Math.min(button.width, button.height) };
+    });
+    if (result.share < 0.8 || !result.ownRow) throw new Error(`the text was squeezed: ${JSON.stringify(result)}`);
+    if (result.button < 44) throw new Error(`the extension's buttons are ${result.button}px`);
 });
 
 await step('banner shows when the server stops answering', async () => {

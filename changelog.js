@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.18.2',
+        items: [
+            "Fixed: with Guided Generations (or a theme that restyles the message box), the text was squeezed into a narrow strip beside the buttons. It always gets its own row now.",
+            "Guided Generations' buttons in the message box look and tap like Pocket Tavern's own (44px, no borders).",
+        ],
+    },
+    {
         version: '2.18.1',
         items: [
             "The docked message box is redone like a messaging app: your persona, the text field and Send in one row at the bottom, with the other tools in a row above.",

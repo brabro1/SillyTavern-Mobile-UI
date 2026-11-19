@@ -1941,27 +1941,46 @@ html.stmui-chat #send_textarea::placeholder {
 /* The text gets the whole width on top; the tools sit in a row along the bottom. */
 html.stmui-chat #nonQRFormItems {
     display: grid !important;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
     grid-template-areas:
         "text text text"
-        "left gap right";
+        "left gap right" !important;
     align-items: center;
     column-gap: 4px;
     row-gap: 0;
 }
 
-html.stmui-chat #send_textarea {
-    grid-area: text;
+/* Pinned (!important): themes and other extensions style these too, and must not pull the text into the tool row. */
+html.stmui-chat #nonQRFormItems > #send_textarea {
+    grid-area: text !important;
+    order: 0 !important;
 }
 
-html.stmui-chat #leftSendForm {
-    grid-area: left;
+html.stmui-chat #nonQRFormItems > #leftSendForm {
+    grid-area: left !important;
+    order: 0 !important;
     gap: 2px;
 }
 
-html.stmui-chat #rightSendForm {
-    grid-area: right;
+html.stmui-chat #nonQRFormItems > #rightSendForm {
+    grid-area: right !important;
+    order: 0 !important;
     gap: 6px;
+}
+
+/* Anything an extension puts straight into the box gets a row of its own. */
+html.stmui-chat #nonQRFormItems > :not(#send_textarea, #leftSendForm, #rightSendForm) {
+    grid-column: 1 / -1;
+}
+
+html.stmui-chat #send_form {
+    flex-wrap: wrap !important;
+}
+
+html.stmui-chat #send_form > #nonQRFormItems {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 0;
 }
 
 html.stmui-chat #leftSendForm,
@@ -2928,7 +2947,7 @@ html.stmui-on .mes_text video {
 /* Sideways phones are short: the message box goes back to one row (tools, text, ring and Send). */
 @media (orientation: landscape) and (max-height: 520px) and (min-aspect-ratio: 3/2) {
     html.stmui-chat #nonQRFormItems {
-        grid-template-areas: "left text right";
+        grid-template-areas: "left text right" !important;
     }
 
     html.stmui-chat #send_textarea {
@@ -8276,7 +8295,7 @@ html.stmui-chat.stmui-docked #send_textarea:focus {
         position: static;
         grid-template-areas:
             "left gap right"
-            "text text text";
+            "text text text" !important;
         row-gap: 4px;
     }
 
@@ -8343,6 +8362,57 @@ html.stmui-chat.stmui-docked.stmui-compact #send_form #rightSendForm > :is(#send
 
 html.stmui-chat.stmui-docked.stmui-compact #nonQRFormItems {
     row-gap: 2px;
+}
+
+/* ==========================================================================
+   Guided Generations: its row of buttons in the message box looks and taps
+   like the box's own tools (44px, no borders, muted icons).
+   ========================================================================== */
+
+html.stmui-chat #send_form > #gg-action-button-container {
+    flex: 1 1 100% !important;
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 0 0 4px;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+html.stmui-chat #gg-action-button-container::-webkit-scrollbar {
+    display: none;
+}
+
+html.stmui-chat #gg-action-button-container :is(.gg-menu-buttons-container, .gg-regular-buttons-container) {
+    gap: 4px;
+}
+
+html.stmui-chat #gg-action-button-container #gg-qr-container {
+    margin: 0;
+}
+
+html.stmui-chat #gg-action-button-container :is(.gg-action-button, .gg-menu-button) {
+    justify-content: center;
+    gap: 4px;
+    min-width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0 8px;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--stmui-muted);
+    font-size: 18px;
+}
+
+html.stmui-chat #gg-action-button-container :is(.gg-action-button, .gg-menu-button):active {
+    background: var(--stmui-raised-2);
+}
+
+html.stmui-chat #gg-action-button-container .pg-guide-counter {
+    margin: 0;
+    font-size: 14px;
 }
 
 /* ==========================================================================

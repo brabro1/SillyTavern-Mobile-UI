@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.18.2
+
+A compatibility patch for extensions and themes that change the message box.
+
+- **Fixed: the text squeezed into a narrow strip.** Guided Generations adds a row of buttons inside the message box, and some themes stop the box from wrapping onto a new line. Together they put the buttons and the text side by side, leaving the text a narrow strip next to them. Pocket Tavern now pins its message box layout (wrapping, the text row and the tool row), so the text always gets its own full-width row, whatever other CSS says. Anything an extension puts straight into the box gets a row of its own too.
+- **Guided Generations' buttons** look and tap like Pocket Tavern's own tools: 44px, no borders, muted icons, and the row scrolls sideways if it has more buttons than fit.
+- The phone test adds a Guided Generations-style row and a theme that rearranges the box, and checks that the text keeps its own row.
+
 ## 2.18.1
 
 The **Docked** message box, redone. In 2.18.0 it was the floating box flattened: the field on top, every tool and Send in a row under it, pressed against the bottom edge, and Send far from the text.

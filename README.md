@@ -154,7 +154,7 @@ There's also a **Stop SillyTavern** shortcut. In Android's settings, set Termux'
 | Chrome on Android (also with Termux) | ✅ Main target |
 | Other phone browsers | Should work, less tested |
 | Computers and tablets | ✅ On by itself: wide screens get the desktop layout. **Phones only** keeps the original SillyTavern there |
-| Other extensions | Work alongside it. Extensions with their own panels show up under **More**. |
+| Other extensions | Work alongside it. Extensions with their own panels show up under **More**, and buttons they add to the message box (like Guided Generations) fit in with its own. |
 
 ## Privacy and your data
 
