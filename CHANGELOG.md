@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.18.3
+
+Quick replies and Guided Generations, checked with the real extension installed this time.
+
+- **Slimmer quick reply buttons.** They were 44px pills with a border. They are now 32px chips with no border and less padding (even less in Compact), and each one still has a 44px tap area, because its row is 44px tall and the tap area fills it. On a 360px phone, seven short buttons now fit on one line.
+- **Nothing slides off the screen.** Quick replies used to scroll sideways in one line, so the last ones were hidden past the edge. They now wrap onto another line when they don't fit.
+- **Guided Generations with quick replies inside its row.** Guided Generations can take the quick reply bar into the middle of its own button row. There they squeezed between its buttons and pushed the ones on the right off the screen. Its own buttons now stay on one line (menus at the start, actions at the end), and the quick replies get the full line under them, as in SillyTavern without Pocket Tavern.
+
 ## 2.18.2
 
 A compatibility patch for extensions and themes that change the message box.

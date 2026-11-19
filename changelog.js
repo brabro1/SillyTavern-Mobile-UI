@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.18.3',
+        items: [
+            "Quick reply buttons are slimmer chips, and they wrap onto another line instead of sliding off the screen.",
+            "With Guided Generations, its buttons stay on one line and the quick replies get the line under them, instead of squeezing in between and pushing buttons off the screen.",
+        ],
+    },
+    {
         version: '2.18.2',
         items: [
             "Fixed: with Guided Generations (or a theme that restyles the message box), the text was squeezed into a narrow strip beside the buttons. It always gets its own row now.",

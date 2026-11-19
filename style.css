@@ -7258,37 +7258,49 @@ html.stmui-chat[data-stmui-look="flat"] body:not(.bubblechat):not(.documentstyle
    Quick Replies as a row of chips
    ========================================================================== */
 
+/* Slim chips that wrap onto another line instead of sliding off the screen. Each
+   chip is 32px tall but sits in a 44px row, and its tap area fills the row. */
 html.stmui-chat #qr--bar {
-    margin: 0 0 6px;
+    margin: 0;
     padding: 0;
     border: 0;
     background: transparent;
 }
 
 html.stmui-chat #qr--bar .qr--buttons {
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
     justify-content: flex-start !important;
-    gap: 8px;
-    padding: 0 2px;
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-html.stmui-chat #qr--bar .qr--buttons::-webkit-scrollbar {
-    display: none;
+    gap: 0 4px;
+    padding: 0;
+    overflow: visible;
 }
 
 html.stmui-chat #qr--bar .qr--button {
+    position: relative;
     flex: 0 0 auto;
-    height: 34px;
-    margin: 0;
-    padding: 0 14px;
-    border: 1px solid var(--stmui-line);
+    justify-content: center;
+    box-sizing: border-box;
+    min-width: 44px;
+    height: 32px;
+    min-height: 32px;
+    margin: 6px 0;
+    padding: 0 12px;
+    border: 0;
     border-radius: 999px;
-    background: var(--stmui-raised);
+    background: var(--stmui-raised-2);
     font-size: 14px;
     line-height: 32px;
     white-space: nowrap;
+}
+
+html.stmui-chat #qr--bar .qr--button::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+}
+
+html.stmui-chat.stmui-compact #qr--bar .qr--button {
+    padding: 0 8px;
 }
 
 /* ==========================================================================
@@ -8369,26 +8381,36 @@ html.stmui-chat.stmui-docked.stmui-compact #nonQRFormItems {
    like the box's own tools (44px, no borders, muted icons).
    ========================================================================== */
 
+/* Its own buttons on one line (menus at the start, actions at the end); quick
+   replies it takes in get the line under them, as in SillyTavern itself. */
 html.stmui-chat #send_form > #gg-action-button-container {
     flex: 1 1 100% !important;
+    flex-wrap: wrap;
     box-sizing: border-box;
     min-width: 0;
-    padding: 0 0 4px;
-    gap: 4px;
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-html.stmui-chat #gg-action-button-container::-webkit-scrollbar {
-    display: none;
+    padding: 0;
+    gap: 0 4px;
 }
 
 html.stmui-chat #gg-action-button-container :is(.gg-menu-buttons-container, .gg-regular-buttons-container) {
-    gap: 4px;
+    flex-wrap: wrap;
+    gap: 0 4px;
 }
 
-html.stmui-chat #gg-action-button-container #gg-qr-container {
+html.stmui-chat #gg-action-button-container > .gg-regular-buttons-container {
+    order: 1;
+    margin-inline-start: auto;
+}
+
+html.stmui-chat #gg-action-button-container > #gg-qr-container {
+    order: 2;
+    flex: 1 1 100%;
+    min-width: 0;
     margin: 0;
+}
+
+html.stmui-chat #gg-action-button-container > #gg-qr-container:empty {
+    display: none;
 }
 
 html.stmui-chat #gg-action-button-container :is(.gg-action-button, .gg-menu-button) {

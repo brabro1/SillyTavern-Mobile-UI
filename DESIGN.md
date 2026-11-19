@@ -118,6 +118,7 @@ On whenever Pocket Tavern is on (Automatic covers computers; **Phones only** kee
 - **Settings page:** opens on a list of sections (one grouped list, icon, title, one line on what is inside, chevron). A section shows only its own controls; the top bar shows its name and back returns to the list. Controls are marked, never moved, and anything unrecognised goes to the last general section.
 - **Menus:** SillyTavern's ☰ and wand pop-ups open as sheets. Items are grouped only when the groups mean something (Reply, This chat, Chats), each has a one-line description, and a destructive item goes last in danger colour.
 - **Placeholder avatars:** one tonal colour derived from the theme (not a random rainbow), with the initial. No half-body silhouette.
+- **Quick replies and other extensions' buttons in the message box:** quick replies are 32px chips (`--stmui-raised-2`, no border, pill) in 44px rows, with the tap area filling the row, and they wrap rather than scroll. Guided Generations' buttons are 44px with no border and `--stmui-muted` icons, on one line, with any quick replies it holds on the line below. The text field always keeps its own full-width row (the layout is pinned with `!important` against other CSS).
 - **Lists of records (characters, lorebook entries):** one row, one clear title, at most two lines of metadata. Status dots always have a label or a tooltip you can reach by tap.
 
 ## Writing
