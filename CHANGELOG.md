@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.20.0
+
+A fuller desktop layout, a full-screen prompt editor, and fixes from a Firefox user on a computer. On a phone, the prompt editor gets the same full-screen button and the same question before unsaved changes are lost; nothing else changes there.
+
+- **Every page on the rail.** On a computer the rail on the left had Chat, Characters, Lorebooks, Presets and More, and the rest of SillyTavern (API, Personas, Formatting, Settings, Backgrounds, Extensions) was two clicks away inside More. They are now on the rail too, under a thin line, with More at the bottom. On a shorter window the rail's buttons get shorter and those six show only their icon (hover for the name); on a laptop with about 620px of browser window, More still fits without scrolling. More no longer repeats them. Clicking Settings again while a section is open goes back to the list of sections.
+- **Pages can be made wider.** Drag the right edge of the open page (a line shows on hover) to make it wider, from 360px up to whatever still leaves the chat 480px. The width is remembered in this browser. Double-click the edge to reset it; with the keyboard, focus the edge and use the arrow keys. Lorebook entries and the prompt editor follow the same width.
+- **Full-screen prompt editor.** A new button next to Save gives the prompt text the whole editor: name, role and position step aside, and on a computer the editor takes everything right of the rail. Press it again, Escape or Back to leave full screen.
+- **No more lost prompt edits.** Leaving the prompt editor with unsaved changes, by another tab, Back or Escape, now asks: **Save**, **Keep editing** or **Discard changes**. Without changes it just closes.
+- **Fixed: the prompt editor stopped short of the bottom on a computer.** SillyTavern stops its panels 50px above the bottom of the screen to leave room for its message box. Pocket Tavern's editor is a full page and didn't undo that, so the prompt list showed through under Save. It also kept SillyTavern's 450px minimum, so it was wider than the page beside it. Both are fixed.
+- **Fixed: the prompt editor stayed open over the next page.** Switching tabs while editing a prompt left the editor on top of Characters or Lorebooks, on a computer and on a phone. It now closes (or asks, see above). On a computer, Escape leaves it too.
+- **Fixed: numbers hidden behind arrows in Firefox.** Firefox always shows its own up and down arrows in number boxes, and next to − and + they covered the number (a context size of 32768 read as "327"). The arrows are gone wherever − and + are, and the box has room for seven digits.
+- **Fixed: a second Triggers box on a computer.** SillyTavern's own Triggers box showed under Pocket Tavern's trigger chips in the prompt editor.
+- **The Extensions page is one column** in the page beside the chat, instead of two narrow ones.
+- **Chat Completion Tabs.** This extension puts Parameters and Prompts on two tabs at the top of the Presets page. Its tabs now look like Pocket Tavern's (44px, the active one highlighted, no lift on hover) and stay solid when they stick to the top. Find a setting switches to the tab that holds what you picked.
+- `tests/phone.mjs` checks the rail, the panel's edge, the editor's height, full screen, the unsaved-changes question and the number boxes, with a stand-in for Chat Completion Tabs.
+
 ## 2.19.2
 
 Moonlit Echoes and ScenePulse, checked on a phone. Nothing changes unless you use them.

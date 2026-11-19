@@ -26,9 +26,9 @@ It's made for phones first. The desktop layout is newer and may still have rough
 | **Compact size, docked message box** | **Themes** | **Context** |
 | ![Compact size with the docked message box](docs/screenshots/compact.jpg) | ![Theme picker](docs/screenshots/themes.jpg) | ![The Context page: how full the context is and what filled it](docs/screenshots/context.jpg) |
 
-**On a computer:** the tabs become a rail on the left, and pages open beside the chat.
+**On a computer:** the tabs and every SillyTavern page sit on a rail on the left, and pages open beside the chat. Drag a page's edge to make it wider.
 
-![Pocket Tavern on a computer: tabs as a rail, Presets beside the chat](docs/screenshots/desktop.jpg)
+![Pocket Tavern on a computer: every page on the rail, Presets beside the chat](docs/screenshots/desktop.jpg)
 
 <details>
 <summary>More screenshots</summary>
@@ -76,10 +76,11 @@ It's made for phones first. The desktop layout is newer and may still have rough
 - **Characters:** picture cards, search, sort, favorites on top, an A–Z strip, and page buttons when you have lots of characters. Sharp pictures, and GIFs that move.
 - **Character cards with tabs:** Description, First message and Notes, each with the whole page.
 - **Lorebooks:** a searchable picker with big checkboxes, and entries as cards with keyword chips.
-- **Presets:** − and + buttons on sliders, a line under each one on what it does, and a prompt editor that fits the screen.
+- **Presets:** − and + buttons on sliders, a line under each one on what it does, and a prompt editor that fits the screen, with a full-screen button for long prompts. It asks before unsaved changes are lost.
 
 ### On a computer
-- **A desktop layout of its own:** the tabs become a rail on the left, pages open as a panel beside the chat and stay open while you chat, and menus are dialogs in the middle. Escape closes things.
+- **A desktop layout of its own:** a rail on the left with the tabs and every SillyTavern page (API, Personas, Formatting, Settings, Backgrounds, Extensions), pages that open beside the chat and stay open while you chat, and menus as dialogs in the middle. Escape closes things.
+- **Wider pages when you need them:** drag the edge of a page to make it wider; double-click the edge to reset it.
 - **Tablets and unfolded foldables** get the chat as a centred column that's easy to read.
 
 ### Everything else
@@ -162,7 +163,7 @@ Pick **Compact** under **More → Themes → Size**, and try a smaller chat text
 In a chat they tuck away so you don't hit them by accident. Tap the arrow at the start of the message box's bottom row to bring them back, or turn off **Hide tabs in a chat** under **More → Phone features**.
 
 **Does it work with other extensions?**
-Most of them. Extensions with their own panels show up under **More**, and buttons added to the message box fit in with its own. With **Moonlit Echoes**, keep **More → Themes** on **Your theme** for its colours, and pick one of its chat styles under **More → Settings → Look → Chat Style** to let it draw the messages; Flat brings back Pocket Tavern's cards. **ScenePulse** opens from the wand (**Tools**) on a phone. If one doesn't work, [tell me](#feedback-and-bug-reports).
+Most of them. Extensions with their own panels show up under **More**, and buttons added to the message box fit in with its own. With **Moonlit Echoes**, keep **More → Themes** on **Your theme** for its colours, and pick one of its chat styles under **More → Settings → Look → Chat Style** to let it draw the messages; Flat brings back Pocket Tavern's cards. **ScenePulse** opens from the wand (**Tools**) on a phone. **Chat Completion Tabs** works as it is, with tabs that match Pocket Tavern's. If one doesn't work, [tell me](#feedback-and-bug-reports).
 
 **I use Guided Generations. Where did its buttons go?**
 They're in the guide button (the compass) next to Send. Type an instruction, tap the guide button, and pick an action; hold it to run the last one again. Prefer its own row of buttons? Turn off **Guided Generations button** under **More → Phone features**.
@@ -172,6 +173,9 @@ At the end of the text field. They show on an empty box and after you bring back
 
 **Does it work on iPhone and iPad?**
 Yes. With the keyboard up, the bars, chat and message editor stay in the part of the screen you can see. On an iPad held sideways you get the desktop layout; set how wide the chat is under **More → Themes → Chat width**. If something looks off on your device, [send a screenshot](#feedback-and-bug-reports).
+
+**The page beside the chat is too narrow on my computer.**
+Drag the page's right edge (a line shows when you point at it) to make it wider. Pocket Tavern remembers the width in that browser; double-click the edge to go back to the normal width. For a long prompt, the prompt editor has a full-screen button next to Save.
 
 **I don't want it on my computer.**
 In its settings, set "Use it on this device" to **Phones only**.
@@ -189,16 +193,17 @@ In its settings, set "Use it on this device" to **Phones only**.
 | Other extensions | Work alongside it. Extensions with their own panels show up under **More**, and buttons they add to the message box fit in with its own. |
 | Guided Generations, Input History, Quick Replies | ✅ Made to fit: a guide button with a menu for Guided Generations, Input History in the text field, quick replies as slim chips |
 | Moonlit Echoes, ScenePulse | ✅ Checked: Moonlit's colours and chat styles show; ScenePulse opens from the wand on a phone |
+| Chat Completion Tabs | ✅ Checked: its Parameters and Prompts tabs match Pocket Tavern's, and Find a setting switches tabs for you |
 
 ## Privacy and your data
 
 - Pocket Tavern only changes how SillyTavern looks and where things are. Your characters, chats, lorebooks and saved SillyTavern theme are never changed.
-- Its settings are saved with your SillyTavern settings. Unsent messages are kept in your browser.
+- Its settings are saved with your SillyTavern settings. Unsent messages, and the width you give pages on a computer, are kept in your browser.
 - **Translate** sends the chat text to Google Translate, or to the service you picked in SillyTavern's Chat Translation. Nothing else is sent anywhere.
 
 ## Feedback and bug reports
 
-Found a bug or have an idea? [Open an issue](https://github.com/brabro1/SillyTavern-PocketTavern/issues/new/choose). A screenshot, your phone and browser, your SillyTavern version, and any other extensions you use help a lot.
+Found a bug or have an idea? [Open an issue](https://github.com/brabro1/SillyTavern-PocketTavern/issues/new/choose). A screenshot, your device and browser, your SillyTavern version, and any other extensions you use help a lot.
 
 ## Support
 

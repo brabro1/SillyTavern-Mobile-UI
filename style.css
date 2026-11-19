@@ -122,7 +122,8 @@ html.stmui-on *::-webkit-scrollbar {
 /* ---- Lorebook picker (inline control that replaces a native <select>) ---- */
 
 .stmui-native-hidden,
-.stmui-native-hidden + .select2-container {
+.stmui-native-hidden + .select2-container,
+.stmui-trigger-chips + .select2-container {
     display: none !important;
 }
 
@@ -4056,8 +4057,12 @@ html.stmui-shell #completion_prompt_manager_popup {
     inset: var(--topBarBlockSize) 0 auto 0 !important;
     z-index: 3100 !important;
     width: auto !important;
+    /* SillyTavern gives every drawer a 450px minimum and caps it 50px short of the
+       screen (room for its message box); the editor is a page, so neither applies. */
+    min-width: 0 !important;
     max-width: none !important;
     height: var(--stmui-page-h) !important;
+    max-height: none !important;
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
@@ -4211,6 +4216,52 @@ html.stmui-touch #completion_prompt_manager_popup #completion_prompt_manager_pop
     height: 44px;
     margin: 0;
     font-size: 18px;
+}
+
+/* Full screen (the button beside Save): the prompt text fills the editor and
+   scrolls on its own; name, role and position step aside until it is left. */
+html.stmui-prompt-full #completion_prompt_manager_popup {
+    overflow: hidden;
+}
+
+html.stmui-prompt-full #completion_prompt_manager_popup_edit,
+html.stmui-prompt-full #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry,
+html.stmui-prompt-full #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form {
+    height: 100% !important;
+    min-height: 0 !important;
+}
+
+html.stmui-prompt-full #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .flex-container.gap10px {
+    display: none !important;
+}
+
+html.stmui-prompt-full #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt) {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+html.stmui-prompt-full #completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_prompt {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+html.stmui-prompt-full #completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer {
+    flex: 0 0 auto;
+}
+
+html.stmui-touch #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer > .stmui-prompt-full-btn {
+    border: 1px solid var(--stmui-line);
+    background: var(--stmui-raised);
+    color: var(--stmui-text);
+}
+
+html.stmui-touch #completion_prompt_manager_popup .stmui-prompt-full-btn .stmui-svg {
+    width: 20px;
+    height: 20px;
 }
 
 /* Prompt list: names get two lines instead of being cut after a few words. */
@@ -7744,10 +7795,24 @@ html.stmui-touch .range-block-counter.stmui-stepper {
 
 html.stmui-touch .range-block-counter.stmui-stepper input {
     flex: 0 0 auto;
-    width: 4.2em !important;
-    min-width: 4.2em;
+    width: 4.6em !important;
+    min-width: 4.6em;
     padding-inline: 2px !important;
     text-align: center;
+}
+
+/* − and + replace the browser's own arrows. Firefox always shows them, and they
+   covered the number (32768 read as "327"). */
+html.stmui-touch :is(.range-block-counter.stmui-stepper, .stmui-step-wrap) input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+    font-variant-numeric: tabular-nums;
+}
+
+html.stmui-touch :is(.range-block-counter.stmui-stepper, .stmui-step-wrap) input[type='number']::-webkit-inner-spin-button,
+html.stmui-touch :is(.range-block-counter.stmui-stepper, .stmui-step-wrap) input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .stmui-step {
@@ -9078,6 +9143,54 @@ html.stmui-chat #nonQRFormItems #options_button {
 }
 
 /* ==========================================================================
+   Chat Completion Tabs (another extension): Parameters and Prompts as two tabs
+   at the top of the Presets page. They become our segmented control: 44px
+   tabs, the active one in the soft accent, an opaque bar while it sticks to
+   the top, and no lift on hover.
+   ========================================================================== */
+
+html.stmui-touch #ai-config-button .openai-tab-buttons {
+    gap: 4px;
+    margin: 8px 0 0;
+    padding: 4px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 12px;
+    background: var(--stmui-solid);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    z-index: 5;
+}
+
+html.stmui-touch #ai-config-button .openai-tab-button {
+    gap: 8px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 12px;
+    border-radius: 8px;
+    color: var(--stmui-muted);
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 1;
+    box-shadow: none;
+    transform: none;
+    transition: background-color 0.16s var(--stmui-ease), color 0.16s var(--stmui-ease);
+}
+
+html.stmui-touch #ai-config-button .openai-tab-button.active {
+    background: color-mix(in srgb, var(--stmui-accent) 22%, var(--stmui-surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--stmui-accent) 60%, transparent);
+    color: var(--stmui-text);
+}
+
+@media (hover: hover) {
+    html.stmui-wide #ai-config-button .openai-tab-button:not(.active):hover {
+        background: var(--stmui-raised-2);
+        color: var(--stmui-text);
+    }
+}
+
+/* ==========================================================================
    iPhone and iPad (html.stmui-ios). Safari does not shrink the page for the
    keyboard; it covers the bottom and pans the visible part. While the keyboard
    is up (html.stmui-ios-kb) everything is sized to the visible part, from the
@@ -9162,6 +9275,7 @@ html.stmui-lorecards.stmui-ios-kb #world_popup_entries_list .world_entry.stmui-e
 
 html.stmui-wide {
     --stmui-rail-w: 88px;
+    --stmui-rail-item: 64px;
     --stmui-panel-w: clamp(380px, 30vw, 460px);
     --stmui-bottom: 0px;
     --stmui-left: var(--stmui-rail-w);
@@ -9174,8 +9288,18 @@ html.stmui-wide.stmui-page-open {
     --stmui-left: calc(var(--stmui-rail-w) + var(--stmui-panel-w));
 }
 
+/* A width dragged by hand (the panel's edge): never under 360px, and never so
+   wide that the chat gets less than 480px. */
+html.stmui-wide.stmui-panel-sized {
+    --stmui-panel-w: clamp(360px, var(--stmui-panel-saved), max(360px, min(760px, 100vw - var(--stmui-rail-w) - 480px)));
+}
+
 /* -- The rail ------------------------------------------------------------- */
 
+/* Chat, Characters, Lorebooks and Presets, a rule, SillyTavern's other pages
+   (phones keep those in More), and More at the bottom. On a short window the
+   tabs get shorter, the pages drop their labels (they keep a tooltip), and
+   below that the rail scrolls. */
 html.stmui-wide .stmui-tabbar {
     inset: var(--topBarBlockSize) auto 0 0;
     flex-direction: column;
@@ -9183,28 +9307,100 @@ html.stmui-wide .stmui-tabbar {
     width: var(--stmui-rail-w);
     height: auto;
     padding: 12px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
     border-top: 0;
     border-right: 1px solid var(--stmui-line);
+    scrollbar-width: none;
+}
+
+html.stmui-wide .stmui-tabbar::-webkit-scrollbar {
+    display: none;
 }
 
 html.stmui-wide .stmui-tab {
-    flex: 0 0 72px;
+    flex: 0 0 var(--stmui-rail-item);
     gap: 4px;
     padding: 0 4px;
 }
 
+html.stmui-wide .stmui-tab-icon {
+    height: 32px;
+}
+
+html.stmui-wide .stmui-tab[data-tab='more'] {
+    margin-top: auto;
+}
+
+.stmui-tab-page,
+.stmui-rail-rule {
+    display: none;
+}
+
+html.stmui-wide .stmui-tab-page {
+    display: flex;
+}
+
+html.stmui-wide .stmui-rail-rule {
+    display: block;
+    flex: 0 0 1px;
+    width: 40px;
+    margin: 8px auto;
+    background: var(--stmui-line);
+}
+
+@media (max-height: 800px) {
+    html.stmui-wide {
+        --stmui-rail-item: 56px;
+    }
+}
+
+@media (max-height: 712px) {
+    html.stmui-wide .stmui-tab-page {
+        flex-basis: 48px;
+    }
+
+    html.stmui-wide .stmui-tab-page .stmui-tab-label {
+        display: none;
+    }
+}
+
+/* A laptop with browser bars (about 620px tall) still shows More without scrolling. */
+@media (max-height: 660px) {
+    html.stmui-wide {
+        --stmui-rail-item: 52px;
+    }
+
+    html.stmui-wide .stmui-tabbar {
+        padding: 8px 0;
+    }
+
+    html.stmui-wide .stmui-tab {
+        gap: 2px;
+    }
+
+    html.stmui-wide .stmui-tab-page {
+        flex-basis: 44px;
+    }
+
+    html.stmui-wide .stmui-rail-rule {
+        margin: 4px auto;
+    }
+}
+
+/* The pill sits on the active tab's icon (placed by script: the tabs differ in height). */
 html.stmui-wide .stmui-tab-indicator {
-    top: 12px;
+    top: 0;
     left: 0;
     width: 100%;
-    height: 72px;
-    transform: translateY(calc(var(--stmui-tab-index, 0) * 72px));
+    height: 32px;
+    transform: translateY(var(--stmui-tab-y, 12px));
 }
 
 html.stmui-wide .stmui-tab-indicator::before {
     width: 56px;
     height: 32px;
-    margin-top: 11px;
+    margin-top: 0;
 }
 
 /* -- The chat: a centred column in the space beside the rail and the panel -- */
@@ -9247,13 +9443,14 @@ html.stmui-wide.stmui-motion-full.stmui-shell #top-settings-holder .drawer-conte
 /* SillyTavern lays some pages out in two or three columns on a computer; the panel is one column. */
 html.stmui-wide #user-settings-block-content,
 html.stmui-wide #rm_api_block > div,
-html.stmui-wide #extensions_settings_block,
+html.stmui-wide #rm_extensions_block .extensions_block,
 html.stmui-wide .drawer-content.openDrawer .flex-container.spaceEvenly {
     flex-direction: column;
     flex-wrap: nowrap;
 }
 
 html.stmui-wide #user-settings-block-content > *,
+html.stmui-wide #rm_extensions_block :is(#extensions_settings, #extensions_settings2),
 html.stmui-wide .drawer-content.openDrawer .flex-container.spaceEvenly > * {
     width: 100% !important;
     min-width: 0 !important;
@@ -9268,6 +9465,73 @@ html.stmui-wide .drawer-content.openDrawer .flex-container.spaceEvenly > * {
     }
 }
 
+/* The panel's edge: drag it to make the panel wider (double-click resets).
+   It shows a line on hover and while dragging. On a touch screen it is wider. */
+.stmui-panel-edge {
+    display: none;
+}
+
+html.stmui-wide.stmui-page-open:not(.stmui-prompt-full) .stmui-panel-edge {
+    position: fixed;
+    top: var(--topBarBlockSize);
+    bottom: 0;
+    left: calc(var(--stmui-rail-w) + var(--stmui-panel-w) - 4px);
+    z-index: 3200;
+    display: block;
+    width: 12px;
+    cursor: col-resize;
+    touch-action: none;
+}
+
+.stmui-panel-edge::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: transparent;
+    transition: background-color 0.15s ease;
+}
+
+.stmui-panel-edge:hover::after {
+    background: color-mix(in srgb, var(--stmui-text) 30%, transparent);
+}
+
+.stmui-panel-edge:focus-visible {
+    outline: none;
+}
+
+.stmui-panel-edge:focus-visible::after,
+html.stmui-resizing .stmui-panel-edge::after {
+    background: var(--stmui-accent);
+}
+
+@media (pointer: coarse) {
+    html.stmui-wide.stmui-page-open:not(.stmui-prompt-full) .stmui-panel-edge {
+        left: calc(var(--stmui-rail-w) + var(--stmui-panel-w) - 12px);
+        width: 28px;
+    }
+
+    .stmui-panel-edge::after {
+        left: 11px;
+    }
+}
+
+/* While dragging: no text selection, no slide-ins, and the chat follows at once. */
+html.stmui-resizing,
+html.stmui-resizing * {
+    cursor: col-resize !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+}
+
+html.stmui-resizing #sheld,
+html.stmui-resizing #top-settings-holder .drawer-content.openDrawer {
+    animation: none !important;
+    transition: none !important;
+}
+
 /* Lorebook entries and the prompt editor fill the panel they belong to. */
 html.stmui-wide.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open {
     inset: var(--topBarBlockSize) auto 0 var(--stmui-rail-w);
@@ -9279,6 +9543,22 @@ html.stmui-wide #completion_prompt_manager_popup {
     right: auto !important;
     width: var(--stmui-panel-w) !important;
     border-right: 1px solid var(--stmui-line) !important;
+}
+
+/* Full screen on a computer: the editor takes everything right of the rail. */
+html.stmui-wide.stmui-prompt-full #completion_prompt_manager_popup {
+    right: 0 !important;
+    width: auto !important;
+    border-right: 0 !important;
+}
+
+html.stmui-wide.stmui-prompt-full #completion_prompt_manager_popup_edit {
+    padding-inline: 24px;
+}
+
+html.stmui-wide.stmui-prompt-full #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer {
+    margin-inline: -24px;
+    padding-inline: 24px;
 }
 
 /* SillyTavern's bigger panels (advanced definitions, the lorebook editor) take the space right of the rail. */

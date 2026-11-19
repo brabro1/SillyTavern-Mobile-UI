@@ -450,6 +450,17 @@ const STRINGS = {
     'After you use an action, hold the guide button to run it again.': ['Después de usar una acción, mantén pulsado el botón de guía para repetirla.', 'Depois de usar uma ação, segure o botão de guia para repeti-la.', 'После действия удерживайте кнопку гайда, чтобы повторить его.', '用过一个操作后，按住指南按钮即可再次运行。', '操作を使ったあと、ガイドボタンを長押しするともう一度実行します。', 'بعد استخدام إجراء، اضغط مطولًا على زر الدليل لتشغيله مرة أخرى.'],
     'Chat width': ['Ancho del chat', 'Largura do chat', 'Ширина чата', '聊天宽度', 'チャットの幅', 'عرض الدردشة'],
     "How much of a wide screen the chat uses. The same as Chat width in SillyTavern's settings.": ['Cuánto de una pantalla ancha usa el chat. Es lo mismo que Ancho del chat en los ajustes de SillyTavern.', 'Quanto de uma tela larga o chat usa. É o mesmo que Largura do chat nas configurações do SillyTavern.', 'Какую часть широкого экрана занимает чат. То же, что «Ширина чата» в настройках SillyTavern.', '聊天在宽屏上占多少宽度。与 SillyTavern 设置中的“聊天宽度”相同。', '広い画面でチャットが使う幅です。SillyTavern の設定の「チャットの幅」と同じです。', 'كم تأخذ الدردشة من الشاشة العريضة. مثل «عرض الدردشة» في إعدادات SillyTavern.'],
+    // Prompt editor and the desktop panel
+    'Leave without saving?': ['¿Salir sin guardar?', 'Sair sem salvar?', 'Выйти без сохранения?', '不保存就离开？', '保存せずに移動しますか？', 'المغادرة دون حفظ؟'],
+    'Save the prompt, then go on.': ['Guarda el prompt y continúa.', 'Salva o prompt e continua.', 'Сохранить промпт и продолжить.', '保存提示词，然后继续。', 'プロンプトを保存してから進みます。', 'احفظ الموجّه ثم تابع.'],
+    'Keep editing': ['Seguir editando', 'Continuar editando', 'Продолжить редактирование', '继续编辑', '編集を続ける', 'متابعة التعديل'],
+    'Stay in the editor.': ['Quédate en el editor.', 'Fica no editor.', 'Остаться в редакторе.', '留在编辑器中。', 'エディターに戻ります。', 'ابقَ في المحرر.'],
+    'Discard changes': ['Descartar cambios', 'Descartar alterações', 'Отменить изменения', '放弃更改', '変更を破棄', 'تجاهل التغييرات'],
+    'Close the editor without saving.': ['Cierra el editor sin guardar.', 'Fecha o editor sem salvar.', 'Закрыть редактор без сохранения.', '不保存，关闭编辑器。', '保存せずにエディターを閉じます。', 'أغلق المحرر دون حفظ.'],
+    'Full screen': ['Pantalla completa', 'Tela cheia', 'Во весь экран', '全屏', '全画面', 'ملء الشاشة'],
+    'Exit full screen': ['Salir de pantalla completa', 'Sair da tela cheia', 'Выйти из полноэкранного режима', '退出全屏', '全画面を終了', 'الخروج من ملء الشاشة'],
+    'Panel width': ['Ancho del panel', 'Largura do painel', 'Ширина панели', '面板宽度', 'パネルの幅', 'عرض اللوحة'],
+    'Drag to change the width. Double-click to reset.': ['Arrastra para cambiar el ancho. Doble clic para restablecerlo.', 'Arraste para mudar a largura. Clique duas vezes para redefinir.', 'Перетащите, чтобы изменить ширину. Двойной щелчок — сброс.', '拖动以更改宽度。双击恢复默认。', 'ドラッグで幅を変更。ダブルクリックで元に戻します。', 'اسحب لتغيير العرض. انقر مرتين لإعادة الضبط.'],
 };
 
 LANGS.forEach((code, column) => {

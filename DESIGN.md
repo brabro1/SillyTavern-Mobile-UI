@@ -87,8 +87,9 @@ Multiples of 4: `4, 8, 12, 16, 24`. Page gutter is 16px on every page, including
 
 On whenever Pocket Tavern is on (Automatic covers computers; **Phones only** keeps a computer on the original interface) and the screen is at least 960 × 560 px; a sideways phone is short and keeps the phone layout. Everything is an override under `html.stmui-wide`, so the phone layout never changes because of it.
 
-- **Rail:** the tab bar is a vertical rail on the left (`--stmui-rail-w`), 72px per tab, same active pill.
-- **Panel:** a page opens beside the rail (`--stmui-panel-w`, 380–460px), one column, and stays open while the chat is used. Back, the tab or Escape closes it.
+- **Rail:** the tab bar is a vertical rail on the left (`--stmui-rail-w`): Chat, Characters, Lorebooks and Presets, a 1px `--stmui-line` rule, SillyTavern's other pages (API, Personas, Formatting, Settings, Backgrounds, Extensions; phones keep them in More, and More drops their tiles here), then More at the bottom. Tabs are `--stmui-rail-item` tall: 64px, 56px under 800px of window height, 52px under 660px. Under 712px the six pages show only their icon (48px, then 44px) with the name as a tooltip; below about 610px the rail scrolls. The pill is placed by script on the active tab's icon (`--stmui-tab-y`), not by index, because the tabs differ in height.
+- **Panel:** a page opens beside the rail (`--stmui-panel-w`, 380–460px), one column, and stays open while the chat is used. Back, the tab or Escape closes it. Its right edge (`.stmui-panel-edge`, 12px wide, 28px on a touch screen) drags it wider, from 360px to whatever leaves the chat 480px (760px at most). The width is kept per browser; a double-click (or Home on the focused edge) resets it, the arrow keys move it. The edge's line is `--stmui-text` at 30% on hover and the accent while dragging or focused. Everything that sits in the panel (lorebook entries, the prompt editor) follows `--stmui-panel-w`.
+- **Prompt editor:** a page, without SillyTavern's 450px minimum and its cap 50px above the bottom. Footer: Close, Reset, Full screen, Save. Full screen (`html.stmui-prompt-full`) hides the settings rows and lets the prompt text fill the editor; on the desktop layout the editor takes everything right of the rail. Escape and Back leave full screen first. Leaving with unsaved changes (another tab, Back, Escape) asks in a sheet: Save, Keep editing, Discard changes (danger, last).
 - **Chat column:** centred in the space right of the rail and panel, `--stmui-col` wide (SillyTavern's chat width, 560px at least). The composer, the message editor and search follow it.
 - **Sheets and popups:** dialogs in the middle (560px, popups 640px, wide popups 1040px), all corners 16px, no grab handle; they fade and rise 12px.
 
@@ -114,7 +115,7 @@ On whenever Pocket Tavern is on (Automatic covers computers; **Phones only** kee
 
 ## Components
 
-- **Tabs:** icon above label, active state is a filled soft-accent pill. Max five.
+- **Tabs:** icon above label, active state is a filled soft-accent pill. Max five on the phone's tab bar (the desktop rail adds SillyTavern's pages, see above).
 - **Message cards:** header (avatar, name, date), full-width text, actions in one row. Action icons ("…", edit) are real controls: use `--stmui-muted`, not `--stmui-faint`.
 - **Swipe pill:** shown only when there is more than one swipe, or when the last message offers a new one.
 - **Composer:** the border is neutral at rest and accent only while focused. The context ring shows the number with its unit or a label on tap.
@@ -129,6 +130,8 @@ On whenever Pocket Tavern is on (Automatic covers computers; **Phones only** kee
 - **Other chat styles:** the message cards apply only in SillyTavern's Flat style. Bubbles, Document and Moonlit Echoes' five styles (body classes `echostyle`, `whisperstyle`, `hushstyle`, `ripplestyle`, `tidestyle`) draw the messages themselves; the card selectors list them in one `:not(...)` (same specificity as before). A chat style from another extension gets added there.
 - **The row next to Send is full on a phone:** Send never shrinks. An extension button that lands in that row (ScenePulse) is hidden and offered in the wand's Tools sheet instead, with its own icon and a one-line note. Floating buttons from extensions never sit over the message box.
 - **Theme pins:** `--topBarBlockSize`, the arrow's display, ☰'s size and the message box's opacity are pinned with `!important`, because theme extensions set them too. The editor is a page of its own: while it is open, a mask on `#chat` is turned off (it clipped the editor, which is fixed inside the chat) and its padding, widths and frame are pinned.
+- **Number boxes beside − and +:** no browser spin arrows (`appearance: textfield`; Firefox always draws them and they covered the number), tabular figures, 4.6em wide so seven digits fit.
+- **Chat Completion Tabs:** its Parameters and Prompts tabs are our segmented control: 44px, the active one in the soft accent with an accent hairline, an opaque `--stmui-solid` bar while it sticks to the top, no shadow, no lift on hover.
 - **Input History:** its buttons sit at the end of the text field (44px each); the arrows show only on an empty box or after they recalled a message; the field reserves room for whatever shows.
 - **Lists of records (characters, lorebook entries):** one row, one clear title, at most two lines of metadata. Status dots always have a label or a tooltip you can reach by tap.
 

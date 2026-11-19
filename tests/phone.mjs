@@ -82,7 +82,8 @@ await step('Pocket Tavern turns on for a phone', async () => {
 
 await step('top bar and five tabs are shown', async () => {
     await page.locator('#stmui-appbar').waitFor({ state: 'visible' });
-    const tabs = await page.locator('.stmui-tab').count();
+    // The desktop rail's extra pages are in the bar too, hidden on a phone.
+    const tabs = await page.locator('.stmui-tab:visible').count();
     if (tabs !== 5) throw new Error(`found ${tabs} tabs`);
 });
 
@@ -823,6 +824,96 @@ await step("Moonlit Echoes and ScenePulse: their chat styles draw the messages, 
     }
 });
 
+await step('the prompt editor reaches the tabs, opens full screen and asks before unsaved changes are lost; number boxes show the whole number', async () => {
+    const api = await page.evaluate(() => document.getElementById('main_api').value);
+    const setApi = want => page.evaluate(value => {
+        const select = document.getElementById('main_api');
+        if (select.value === value) return;
+        select.value = value;
+        select.dispatchEvent(new Event('change'));
+    }, want);
+    try {
+        await setApi('openai');
+        await page.waitForTimeout(800);
+        await showTabs();
+        await page.locator('.stmui-tab[data-tab="ai-config-button"]').click();
+        await until(() => document.documentElement.dataset.stmuiPage === 'ai-config-button');
+        await until(() => !!document.querySelector('#completion_prompt_manager_list .prompt-manager-edit-action'), null, 15000);
+        // Beside − and +: no browser arrows over the number (Firefox always shows them), and room for seven digits.
+        const box = await page.evaluate(() => {
+            const input = [...document.querySelectorAll('#ai-config-button .range-block-counter.stmui-stepper input[type="number"]')].find(box => box.getClientRects().length);
+            const style = getComputedStyle(input);
+            const measure = document.createElement('canvas').getContext('2d');
+            measure.font = style.font;
+            return { appearance: style.appearance, room: input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight), need: Math.ceil(measure.measureText('1000000').width) };
+        });
+        if (box.appearance !== 'textfield' || box.room < box.need) throw new Error(`number box: ${JSON.stringify(box)}`);
+        // Chat Completion Tabs (a stand-in when it is not installed): its tabs are 44px.
+        const tabHeight = await page.evaluate(() => {
+            let bar = document.querySelector('#ai-config-button .openai-tab-buttons');
+            const made = !bar;
+            if (made) {
+                bar = document.createElement('div');
+                bar.className = 'openai-tab-buttons';
+                bar.innerHTML = '<button class="openai-tab-button active">Parameters</button><button class="openai-tab-button">Prompts</button>';
+                (document.getElementById('openai_api-presets') ?? document.getElementById('left-nav-panel')).append(bar);
+            }
+            const height = Math.round(bar.querySelector('.openai-tab-button').getBoundingClientRect().height);
+            if (made) bar.remove();
+            else document.getElementById('openai-tab-btn-prompts')?.click();
+            return height;
+        });
+        if (tabHeight < 44) throw new Error(`the Parameters and Prompts tabs are ${tabHeight}px`);
+        const edit = page.locator('#completion_prompt_manager_list .prompt-manager-edit-action').first();
+        await edit.scrollIntoViewIfNeeded();
+        await edit.click();
+        await until(() => document.documentElement.classList.contains('stmui-prompt-editor'));
+        await page.waitForTimeout(600);
+        // SillyTavern stops its drawers 50px short of the bottom; the editor is a page and reaches the tabs.
+        const fit = await page.evaluate(() => ({
+            bottom: Math.round(document.getElementById('completion_prompt_manager_popup').getBoundingClientRect().bottom),
+            tabs: Math.round(document.getElementById('stmui-tabbar').getBoundingClientRect().top),
+        }));
+        if (Math.abs(fit.bottom - fit.tabs) > 2) throw new Error(`the editor ends at ${fit.bottom}px, the tabs start at ${fit.tabs}px`);
+        // Full screen: the prompt text gets the page, and back leaves full screen, not the editor.
+        await page.locator('#stmui_prompt_full').click();
+        await until(() => document.documentElement.classList.contains('stmui-prompt-full'));
+        const full = await page.evaluate(() => ({
+            fields: getComputedStyle(document.querySelector('#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form > .flex-container')).display,
+            text: Math.round(document.getElementById('completion_prompt_manager_popup_entry_form_prompt').getBoundingClientRect().height),
+        }));
+        if (full.fields !== 'none' || full.text < 400) throw new Error(`full screen: ${JSON.stringify(full)}`);
+        await page.waitForTimeout(400);
+        await page.goBack();
+        await until(() => !document.documentElement.classList.contains('stmui-prompt-full'));
+        await page.waitForTimeout(500);
+        if (!(await page.evaluate(() => document.documentElement.classList.contains('stmui-prompt-editor')))) throw new Error('back closed the editor instead of leaving full screen');
+        // A change, then another tab: it asks. Keep editing stays; Discard changes goes on.
+        const prompt = page.locator('#completion_prompt_manager_popup_entry_form_prompt');
+        await prompt.tap();
+        await prompt.press('End');
+        await page.keyboard.type(' (test)');
+        await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="rightNavHolder"]').click());
+        await until(() => /without saving/.test(document.querySelector('#stmui-sheet')?.textContent ?? ''));
+        await page.locator('#stmui-sheet .stmui-action-row', { hasText: 'Keep editing' }).click();
+        await until(() => !document.getElementById('stmui-sheet'));
+        await page.waitForTimeout(300);
+        if (await page.evaluate(() => document.documentElement.dataset.stmuiPage) !== 'ai-config-button') throw new Error('Keep editing left the editor');
+        await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="rightNavHolder"]').click());
+        await until(() => !!document.getElementById('stmui-sheet'));
+        await page.locator('#stmui-sheet .stmui-action-row', { hasText: 'Discard changes' }).click();
+        await until(() => document.documentElement.dataset.stmuiPage === 'rightNavHolder');
+        await until(() => document.getElementById('completion_prompt_manager_popup').style.display === 'none');
+    } finally {
+        if (await page.locator('#stmui-sheet').count()) await closeSheet();
+        await setApi(api);
+        // SillyTavern saves a second later; the desktop step reloads the settings.
+        await page.waitForTimeout(1500);
+        await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="chat"]')?.click());
+        await page.waitForTimeout(400);
+    }
+});
+
 await step('banner shows when the server stops answering', async () => {
     await page.route('**/api/ping*', route => route.abort());
     await page.evaluate(() => window.dispatchEvent(new Event('offline')));
@@ -845,7 +936,7 @@ await step('turning Pocket Tavern off leaves nothing behind, and on again works'
     await until(() => document.documentElement.classList.contains('stmui-on'));
 });
 
-await step('desktop layout: tabs as a rail, pages beside the chat that stay open', async () => {
+await step('desktop layout: a rail with every page, a panel that stays open and can be widened, a prompt editor that fills it', async () => {
     // Automatic covers computers now: no setting needed. The one-time notice says so.
     await page.evaluate(async () => {
         const context = SillyTavern.getContext();
@@ -907,6 +998,98 @@ await step('desktop layout: tabs as a rail, pages beside the chat that stay open
         });
         if (side.top < side.bar) throw new Error(`ScenePulse's panel starts at ${side.top}px, under the top bar (${side.bar}px)`);
         if (side.arrow !== 'none') throw new Error(`the tabs arrow shows in the desktop layout (${side.arrow})`);
+        // The rail lists SillyTavern's other pages too, the pill follows, and More does not repeat them.
+        const railTabs = await tab.locator('.stmui-tab:visible').count();
+        if (railTabs < 10) throw new Error(`the rail shows ${railTabs} tabs`);
+        await tab.locator('.stmui-tab[data-tab="user-settings-button"]').click();
+        await tab.waitForFunction(() => document.documentElement.dataset.stmuiPage === 'user-settings-button');
+        await tab.waitForTimeout(800);
+        const pill = await tab.evaluate(() => ({
+            pill: Math.round(document.querySelector('.stmui-tab-indicator').getBoundingClientRect().top),
+            icon: Math.round(document.querySelector('.stmui-tab[data-tab="user-settings-button"] .stmui-tab-icon').getBoundingClientRect().top),
+        }));
+        if (Math.abs(pill.pill - pill.icon) > 2) throw new Error(`the rail's pill is not on Settings: ${JSON.stringify(pill)}`);
+        // The panel's edge drags it wider, the width is kept, and a double-click puts it back.
+        const widthOf = () => tab.evaluate(() => Math.round(document.querySelector('#user-settings-button > .drawer-content').getBoundingClientRect().width));
+        const edge = await tab.evaluate(() => {
+            const rect = document.getElementById('stmui-panel-edge').getBoundingClientRect();
+            return { x: rect.left + rect.width / 2, y: rect.top + 300 };
+        });
+        const start = await widthOf();
+        await tab.mouse.move(edge.x, edge.y);
+        await tab.mouse.down();
+        await tab.mouse.move(edge.x + 150, edge.y, { steps: 6 });
+        await tab.mouse.up();
+        await tab.waitForTimeout(300);
+        const wider = await widthOf();
+        const kept = await tab.evaluate(() => localStorage.getItem('stmui_panel_w'));
+        if (wider - start < 140 || Number(kept) !== wider) throw new Error(`dragging the edge: ${start}px to ${wider}px, kept "${kept}"`);
+        await tab.mouse.dblclick(edge.x + 150, edge.y);
+        await tab.waitForTimeout(300);
+        if (Math.abs(await widthOf() - start) > 1 || await tab.evaluate(() => localStorage.getItem('stmui_panel_w'))) throw new Error('a double-click on the edge did not reset the panel');
+        // Extensions: one column in the panel.
+        await tab.locator('.stmui-tab[data-tab="extensions-settings-button"]').click();
+        await tab.waitForFunction(() => document.documentElement.dataset.stmuiPage === 'extensions-settings-button');
+        await tab.waitForTimeout(600);
+        const columns = await tab.evaluate(() => [document.getElementById('extensions_settings'), document.getElementById('extensions_settings2')].map(node => Math.round(node.getBoundingClientRect().left)));
+        if (columns[0] !== columns[1]) throw new Error(`the Extensions page has two columns: ${columns}`);
+        await tab.locator('.stmui-tab[data-tab="more"]').click();
+        await tab.waitForFunction(() => !!document.getElementById('stmui-sheet'));
+        const tiles = await tab.locator('#stmui-sheet .stmui-tile-label').allInnerTexts();
+        if (tiles.some(label => ['API', 'Settings', 'Extensions', 'Personas'].includes(label.trim()))) throw new Error(`More repeats the rail: ${tiles}`);
+        await tab.keyboard.press('Escape');
+        await tab.waitForFunction(() => !document.getElementById('stmui-sheet'));
+        await tab.keyboard.press('Escape');
+        await tab.waitForFunction(() => !document.documentElement.dataset.stmuiPage);
+        // A laptop window with browser bars: More still fits on the rail.
+        await tab.setViewportSize({ width: 1280, height: 620 });
+        await tab.waitForTimeout(500);
+        const short = await tab.evaluate(() => ({
+            more: Math.round(document.querySelector('.stmui-tab[data-tab="more"]').getBoundingClientRect().bottom),
+            rail: Math.round(document.getElementById('stmui-tabbar').getBoundingClientRect().bottom),
+        }));
+        if (short.more > short.rail) throw new Error(`More is cut off at 620px tall: ${JSON.stringify(short)}`);
+        await tab.setViewportSize({ width: 1440, height: 900 });
+        await tab.waitForTimeout(500);
+        // The prompt editor fills the panel to the bottom, full screen takes the width, and Escape leaves it step by step.
+        const api = await tab.evaluate(() => document.getElementById('main_api').value);
+        const setApi = want => tab.evaluate(value => {
+            const select = document.getElementById('main_api');
+            if (select.value === value) return;
+            select.value = value;
+            select.dispatchEvent(new Event('change'));
+        }, want);
+        try {
+            await setApi('openai');
+            await tab.waitForTimeout(800);
+            await tab.locator('.stmui-tab[data-tab="ai-config-button"]').click();
+            await tab.waitForFunction(() => !!document.querySelector('#completion_prompt_manager_list .prompt-manager-edit-action'), null, { timeout: 15000 });
+            await tab.evaluate(() => document.getElementById('openai-tab-btn-prompts')?.click());
+            const edit = tab.locator('#completion_prompt_manager_list .prompt-manager-edit-action').first();
+            await edit.scrollIntoViewIfNeeded();
+            await edit.click();
+            await tab.waitForFunction(() => document.documentElement.classList.contains('stmui-prompt-editor'));
+            await tab.waitForTimeout(600);
+            const editor = await tab.evaluate(() => ({
+                bottom: Math.round(document.getElementById('completion_prompt_manager_popup').getBoundingClientRect().bottom),
+                width: Math.round(document.getElementById('completion_prompt_manager_popup').getBoundingClientRect().width),
+                panel: Math.round(document.querySelector('#ai-config-button > .drawer-content').getBoundingClientRect().width),
+                screen: innerHeight,
+            }));
+            if (editor.bottom !== editor.screen || editor.width !== editor.panel) throw new Error(`the prompt editor does not fill the panel: ${JSON.stringify(editor)}`);
+            await tab.locator('#stmui_prompt_full').click();
+            await tab.waitForTimeout(400);
+            const fullWidth = await tab.evaluate(() => Math.round(document.getElementById('completion_prompt_manager_popup').getBoundingClientRect().width));
+            if (fullWidth < 1200) throw new Error(`full screen is ${fullWidth}px wide`);
+            await tab.keyboard.press('Escape');
+            await tab.waitForFunction(() => !document.documentElement.classList.contains('stmui-prompt-full'));
+            await tab.keyboard.press('Escape');
+            await tab.waitForFunction(() => document.getElementById('completion_prompt_manager_popup').style.display === 'none');
+        } finally {
+            await setApi(api);
+            // SillyTavern saves a second later; wait, or closing the window loses the change.
+            await tab.waitForTimeout(2000);
+        }
     } finally {
         await desk.close();
     }

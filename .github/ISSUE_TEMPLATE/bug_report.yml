@@ -37,8 +37,8 @@ body:
   - type: input
     id: device
     attributes:
-      label: Phone and browser
-      placeholder: "Pixel 7, Chrome 142, SillyTavern running in Termux"
+      label: Device and browser
+      placeholder: "Pixel 7, Chrome 142, SillyTavern running in Termux (or: Windows PC, Firefox 145)"
     validations:
       required: true
   - type: textarea

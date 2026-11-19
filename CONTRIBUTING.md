@@ -4,7 +4,7 @@ Thanks for wanting to help! Pocket Tavern is in alpha, so bug reports, ideas and
 
 ## Reporting bugs and ideas
 
-Use the [issue forms](https://github.com/brabro1/SillyTavern-PocketTavern/issues/new/choose). A screenshot, your phone and browser, and your SillyTavern version help the most. Please never share private chats, API keys or other personal data.
+Use the [issue forms](https://github.com/brabro1/SillyTavern-PocketTavern/issues/new/choose). A screenshot, your device and browser, and your SillyTavern version help the most. Please never share private chats, API keys or other personal data.
 
 ## How the code is laid out
 

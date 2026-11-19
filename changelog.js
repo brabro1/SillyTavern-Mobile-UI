@@ -1,6 +1,16 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.20.0',
+        items: [
+            "On a computer, every page is on the rail: API, Personas, Formatting, Settings, Backgrounds and Extensions are one click away instead of inside More.",
+            "On a computer, drag the edge of a page to make it wider. Pocket Tavern remembers the width; double-click the edge to reset it.",
+            "The prompt editor has a full-screen button for long prompts. If you leave it with unsaved changes (another tab, Back or Escape), it asks whether to save, keep editing or discard.",
+            "Fixed: on a computer the prompt editor stopped short of the bottom, and it stayed open over the next page when you switched tabs.",
+            "Fixed: in Firefox the browser's own arrows covered the numbers next to − and +. With Chat Completion Tabs installed, its Parameters and Prompts tabs fit in.",
+        ],
+    },
+    {
         version: '2.19.2',
         items: [
             "Moonlit Echoes: pick one of its chat styles (Echo, Whisper, Hush, Ripple, Tide) under Settings → Look → Chat Style and it draws the messages, instead of clashing with Pocket Tavern's cards. The message box no longer looks greyed out, and the top bar and ☰ keep their size.",

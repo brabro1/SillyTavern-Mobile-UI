@@ -215,6 +215,13 @@ const MORE_ORDER = [
     'extensions-settings-button',
 ];
 
+/** The desktop layout has room on the rail for these too; phones keep them in More. */
+const RAIL_PAGES = MORE_ORDER;
+
+function isWide() {
+    return document.documentElement.classList.contains('stmui-wide');
+}
+
 const LONG_SELECT_MIN_OPTIONS = 14;
 /** Visible height (px) below which the sheet drops secondary chrome: landscape or keyboard open. */
 const COMPACT_BELOW = 520;
@@ -988,7 +995,8 @@ const nav = { depth: 0, suppress: 0, timer: 0, guard: 0, observer: null };
  * The prompt editor comes first: it sits on top of the Presets page.
  */
 const OVERLAYS = [
-    { selector: '#completion_prompt_manager_popup', close: () => closePromptEditor(), open: () => promptEditorOpen() },
+    // Back leaves full screen first, then the editor (asking if there are unsaved changes).
+    { selector: '#completion_prompt_manager_popup', close: () => (promptFull() ? setPromptFull(false) : leavePromptEditor()), open: () => promptEditorOpen() },
     { selector: '#shadow_select_chat_popup', close: '#select_chat_cross' },
     { selector: '#character_popup', close: '#character_cross' },
 ];
@@ -1074,6 +1082,114 @@ function closePromptEditor() {
     if (button) button.click();
     else $j()(PROMPT_EDITOR).slideUp(150).removeClass('openDrawer');
     return true;
+}
+
+/** What the edit form held when it opened, to tell whether leaving would lose changes. */
+const promptEdit = { open: false, snapshot: '' };
+
+function promptFormState() {
+    const form = document.querySelector('#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form');
+    if (!form) return '';
+    return JSON.stringify(Array.from(form.querySelectorAll('input, select, textarea:not(#stmui_prompt_name)'), field => {
+        if (field.type === 'checkbox' || field.type === 'radio') return field.checked;
+        if (field.multiple) return Array.from(field.selectedOptions, option => option.value).join('|');
+        return field.value;
+    }));
+}
+
+function promptEditorDirty() {
+    return promptEdit.open && promptEditorMode() === 'edit' && promptFormState() !== promptEdit.snapshot;
+}
+
+/**
+ * Leaves the prompt editor (Back, Escape, another tab). With unsaved changes it
+ * asks first: save, keep editing or discard. `then` runs once the editor is left.
+ */
+function leavePromptEditor(then) {
+    if (!promptEditorDirty()) {
+        closePromptEditor();
+        then?.();
+        return;
+    }
+    const name = document.getElementById('completion_prompt_manager_popup_entry_form_name')?.value?.trim();
+    showSheet(new MenuSheet({
+        title: t('Leave without saving?'),
+        subtitle: name || t('New prompt'),
+        fill: body => body.append(h('div', { class: 'stmui-menu-list' }, [
+            actionRow(ui('save', 'stmui-menu-row-icon'), t('Save'), t('Save the prompt, then go on.'), () => {
+                closeSheet(true);
+                // SillyTavern's Save also closes the editor.
+                document.getElementById('completion_prompt_manager_popup_entry_form_save')?.click();
+                then?.();
+            }),
+            actionRow(ui('pencil', 'stmui-menu-row-icon'), t('Keep editing'), t('Stay in the editor.'), () => closeSheet()),
+            actionRow(ui('trash', 'stmui-menu-row-icon'), t('Discard changes'), t('Close the editor without saving.'), () => {
+                closeSheet(true);
+                closePromptEditor();
+                then?.();
+            }, true),
+        ])),
+    }));
+}
+
+function promptFull() {
+    return document.documentElement.classList.contains('stmui-prompt-full');
+}
+
+/** Full screen: the prompt text gets the whole editor (and on a computer, the whole width). */
+function setPromptFull(on) {
+    if (promptFull() === on) return;
+    document.documentElement.classList.toggle('stmui-prompt-full', on);
+    syncPromptFullButton();
+    // A mouse goes straight to the text; on a phone the keyboard waits for a tap.
+    if (on && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        document.getElementById('completion_prompt_manager_popup_entry_form_prompt')?.focus({ preventScroll: true });
+    }
+}
+
+function syncPromptFullButton() {
+    const footer = document.querySelector('#completion_prompt_manager_popup_edit .completion_prompt_manager_popup_entry_form_footer');
+    let button = document.getElementById('stmui_prompt_full');
+    if (!active || !settings.appShell || !settings.touchSizing || !footer) {
+        button?.remove();
+        document.documentElement.classList.remove('stmui-prompt-full');
+        return;
+    }
+    if (!button) {
+        button = h('button', {
+            type: 'button',
+            id: 'stmui_prompt_full',
+            class: 'menu_button stmui-prompt-full-btn',
+            onclick: () => {
+                buzz(6);
+                setPromptFull(!promptFull());
+            },
+        });
+        footer.insertBefore(button, document.getElementById('completion_prompt_manager_popup_entry_form_save'));
+    }
+    const on = promptFull();
+    const label = t(on ? 'Exit full screen' : 'Full screen');
+    if (button.dataset.on !== String(on)) {
+        button.dataset.on = String(on);
+        button.replaceChildren(ui(on ? 'minimize' : 'maximize'));
+    }
+    button.setAttribute('aria-label', label);
+    button.setAttribute('aria-pressed', String(on));
+    button.title = label;
+}
+
+/** Runs when the editor opens or closes: remember what it opened with, and leave full screen when it closes. */
+function syncPromptEditorSession() {
+    const mode = active ? promptEditorMode() : null;
+    if (mode === 'edit' && !promptEdit.open) {
+        promptEdit.open = true;
+        promptEdit.snapshot = promptFormState();
+    } else if (mode !== 'edit' && promptEdit.open) {
+        promptEdit.open = false;
+        promptEdit.snapshot = '';
+    }
+    if (mode !== 'edit') document.documentElement.classList.remove('stmui-prompt-full');
+    syncPromptFullButton();
 }
 
 /**
@@ -1342,7 +1458,11 @@ class Shell {
         // Checked right away on resize, before the frame is drawn: the tab bar
         // steps aside and the chat starts its slide in the frame the window
         // changes, so there is one move, not two.
-        this.onResize = () => this.checkKeyboard();
+        this.onResize = () => {
+            this.checkKeyboard();
+            // The rail's tabs change height with the window.
+            if (isWide()) this.placeRailPill();
+        };
         this.lastHeight = window.innerHeight;
         this.onFocusIn = event => {
             if (isTypingField(event.target)) setTimeout(() => this.checkKeyboard(), 400);
@@ -1478,9 +1598,30 @@ class Shell {
             this.tabs.set(tab.id, button);
             return button;
         });
+        // The desktop rail also lists SillyTavern's other pages, between the tabs and More.
+        this.pageTabs = new Map();
+        const pageButtons = RAIL_PAGES.filter(id => drawerById(id)).map(id => {
+            const info = PAGES[id];
+            const button = h('button', {
+                type: 'button',
+                class: 'stmui-tab stmui-tab-page',
+                'data-tab': id,
+                'aria-label': info.title,
+                title: info.title,
+                onclick: () => this.onTab(id),
+            }, [
+                h('span', { class: 'stmui-tab-icon' }, [ui(info.icon)]),
+                h('span', { class: 'stmui-tab-label', text: info.title }),
+            ]);
+            this.pageTabs.set(id, button);
+            return button;
+        });
+        const rule = h('span', { class: 'stmui-rail-rule', 'aria-hidden': 'true' });
         // One pill slides between tabs instead of each tab fading its own background.
         this.indicator = h('span', { class: 'stmui-tab-indicator', 'aria-hidden': 'true' });
-        this.tabbar = h('nav', { id: 'stmui-tabbar', class: 'stmui-tabbar', 'aria-label': 'Main', 'data-stmui': '1' }, [this.indicator, ...tabButtons]);
+        this.tabbar = h('nav', { id: 'stmui-tabbar', class: 'stmui-tabbar', 'aria-label': 'Main', 'data-stmui': '1' }, [
+            this.indicator, ...tabButtons.slice(0, -1), rule, ...pageButtons, tabButtons[tabButtons.length - 1],
+        ]);
 
         for (const el of [this.appbar, this.tabbar]) shieldFromDrawerAutoClose(el);
 
@@ -1585,7 +1726,7 @@ class Shell {
         this.appbar.remove();
         this.tabbar.remove();
         const root = document.documentElement;
-        root.classList.remove('stmui-page-open', 'stmui-keyboard', 'stmui-prompt-editor', 'stmui-tabs-tucked', 'stmui-tabs-tuckable');
+        root.classList.remove('stmui-page-open', 'stmui-keyboard', 'stmui-prompt-editor', 'stmui-prompt-full', 'stmui-tabs-tucked', 'stmui-tabs-tuckable');
         syncTabsButton();
         delete root.dataset.stmuiPage;
     }
@@ -1677,6 +1818,16 @@ class Shell {
             openMoreSheet();
             return;
         }
+        // The prompt editor sits over the Presets page and would stay over the next one.
+        if (promptEditorOpen()) {
+            if (sheet) closeSheet(true);
+            leavePromptEditor(() => this.goTab(id));
+            return;
+        }
+        this.goTab(id);
+    }
+
+    goTab(id) {
         if (sheet) closeSheet(true);
         if (id === 'chat') {
             if (!currentPageId() && this.tabsOut) this.tuckAgain();
@@ -1687,6 +1838,7 @@ class Shell {
         if (open === id) {
             // Tapping the current tab goes "home" within it.
             if (id === 'rightNavHolder') showCharacterList();
+            else if (id === 'user-settings-button' && closeSettingsSection()) return;
             else document.querySelector(`#${id} > .drawer-content`)?.scrollTo?.({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -1694,6 +1846,17 @@ class Shell {
         // instead of showing the open character's card and then changing.
         if (id === 'rightNavHolder') showCharacterList();
         openPage(id);
+    }
+
+    /**
+     * On the rail the pill is placed on the active tab's icon: the rail's tabs are
+     * not all the same height, and on a short window the rail scrolls.
+     */
+    placeRailPill() {
+        const button = this.tabs.get(this.railTab) ?? this.pageTabs.get(this.railTab);
+        const iconBox = button?.querySelector('.stmui-tab-icon');
+        if (!iconBox || !button.offsetParent) return;
+        this.tabbar.style.setProperty('--stmui-tab-y', `${button.offsetTop + iconBox.offsetTop}px`);
     }
 
     /** Called when SillyTavern switches chats. */
@@ -1754,14 +1917,18 @@ class Shell {
         if (pageId) root.dataset.stmuiPage = pageId;
         else delete root.dataset.stmuiPage;
 
-        const tabId = !pageId ? 'chat' : (this.tabs.has(pageId) ? pageId : 'more');
+        const wide = isWide();
+        let tabId = 'chat';
+        if (pageId) tabId = this.tabs.has(pageId) || (wide && this.pageTabs.has(pageId)) ? pageId : 'more';
         this.tabbar.style.setProperty('--stmui-tab-index', String(TABS.findIndex(tab => tab.id === tabId)));
-        for (const [id, button] of this.tabs) {
+        for (const [id, button] of [...this.tabs, ...this.pageTabs]) {
             const on = id === tabId;
             button.classList.toggle('stmui-tab-on', on);
             if (on) button.setAttribute('aria-current', 'page');
             else button.removeAttribute('aria-current');
         }
+        this.railTab = tabId;
+        if (wide) this.placeRailPill();
 
         if (pageId) {
             const drawer = drawerById(pageId);
@@ -1881,8 +2048,10 @@ function openMoreSheet() {
         title: 'More',
         subtitle: '',
         fill: body => {
+            // On the desktop layout the rail already lists SillyTavern's pages.
+            const onRail = id => isWide() && RAIL_PAGES.includes(id);
             const drawers = Array.from(document.querySelectorAll('#top-settings-holder > .drawer'))
-                .filter(drawer => drawer.id && !TABS.some(tab => tab.id === drawer.id));
+                .filter(drawer => drawer.id && !TABS.some(tab => tab.id === drawer.id) && !onRail(drawer.id));
             drawers.sort((a, b) => {
                 const ai = MORE_ORDER.indexOf(a.id);
                 const bi = MORE_ORDER.indexOf(b.id);
@@ -1913,7 +2082,7 @@ function openMoreSheet() {
                 class: 'stmui-search-field',
                 onclick: () => openGlobalSearch(),
             }, [ui('search'), h('span', { text: 'Search everything' })]));
-            body.append(h('div', { class: 'stmui-tiles' }, tiles));
+            if (tiles.length) body.append(h('div', { class: 'stmui-tiles' }, tiles));
 
             const context = ctx();
             const inChat = !!(context.groupId || context.characterId !== undefined);
@@ -6821,6 +6990,9 @@ function settingItems(root) {
 }
 
 function revealSetting(row) {
+    // Chat Completion Tabs keeps Parameters and Prompts apart: switch to the tab that holds it.
+    const tab = row.closest('.openai-tab-content:not(.active)');
+    if (tab) document.getElementById(tab.id.replace('-content-', '-btn-'))?.click();
     const section = row.closest('[data-stmui-sec]')?.dataset.stmuiSec;
     if (section && setnav.home && setnav.view !== section) openSettingsSection(section);
     // Open any folded sections around it first.
@@ -7485,6 +7657,8 @@ function syncExtras() {
     syncJumpButton();
     syncPersonaTabs();
     syncPromptNameBox();
+    syncPromptEditorSession();
+    syncPanelEdge();
     if (!active || !settings.keepAwake) setAwake(false);
     if (!active || !settings.imageViewer) closeViewer(true);
     if (active) patchClipboard();
@@ -7501,6 +7675,7 @@ function syncExtras() {
                 timer = 0;
                 syncPromptNameBox();
                 syncTriggerChips();
+                syncPromptEditorSession();
                 shell?.update();
             }, 60);
         }).observe(editor, { attributes: true, attributeFilter: ['style', 'class'] });
@@ -7512,6 +7687,7 @@ function syncExtras() {
     matchMedia(WIDE_QUERY).addEventListener?.('change', () => {
         setFeatureClasses();
         shell?.syncTuck();
+        shell?.update();
         updateStatusLine();
         scheduleHistorySync();
     });
@@ -7661,12 +7837,146 @@ function onChatMouseDown(event) {
     if (!event.target.closest?.('.drawer-content')) event.stopPropagation();
 }
 
+// -- desktop: drag the panel's edge to make it wider
+
+const PANEL_WIDTH_KEY = 'stmui_panel_w';
+const PANEL_MIN = 360;
+let panelEdge = null;
+
+function savedPanelWidth() {
+    try {
+        return Number(localStorage.getItem(PANEL_WIDTH_KEY)) || 0;
+    } catch {
+        return 0;
+    }
+}
+
+/** The stylesheet keeps it between 360px and what leaves the chat 480px. */
+function applyPanelWidth(width) {
+    const root = document.documentElement;
+    if (width) root.style.setProperty('--stmui-panel-saved', `${Math.round(width)}px`);
+    else root.style.removeProperty('--stmui-panel-saved');
+    root.classList.toggle('stmui-panel-sized', !!width);
+}
+
+function storePanelWidth(width) {
+    try {
+        if (width) localStorage.setItem(PANEL_WIDTH_KEY, String(Math.round(width)));
+        else localStorage.removeItem(PANEL_WIDTH_KEY);
+    } catch { /* private mode: the width lasts until reload */ }
+}
+
+/** The panel's current width as drawn (the stylesheet clamps the saved one). */
+function panelWidthNow() {
+    const panel = document.querySelector('#top-settings-holder > .drawer > .drawer-content.openDrawer');
+    return panel ? panel.getBoundingClientRect().width : 0;
+}
+
+function syncPanelEdge() {
+    const want = active && settings.appShell;
+    if (!want) {
+        panelEdge?.remove();
+        panelEdge = null;
+        applyPanelWidth(0);
+        document.documentElement.classList.remove('stmui-resizing');
+        return;
+    }
+    applyPanelWidth(savedPanelWidth());
+    if (panelEdge) return;
+    panelEdge = h('div', {
+        id: 'stmui-panel-edge',
+        class: 'stmui-panel-edge',
+        role: 'separator',
+        'aria-orientation': 'vertical',
+        'aria-label': 'Panel width',
+        title: 'Drag to change the width. Double-click to reset.',
+        tabindex: '0',
+        'data-stmui': '1',
+    });
+    shieldFromDrawerAutoClose(panelEdge);
+    let frame = 0;
+    let dragX = 0;
+    // Where on the edge it was grabbed, so the edge stays under the pointer instead of jumping to it.
+    let grab = 0;
+    let moved = false;
+    const railRight = () => document.getElementById('stmui-tabbar')?.getBoundingClientRect().right ?? 88;
+    const dragged = () => Math.max(PANEL_MIN, dragX - grab - railRight());
+    const onMove = event => {
+        dragX = event.clientX;
+        moved = true;
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+            frame = 0;
+            applyPanelWidth(dragged());
+        });
+    };
+    const onUp = event => {
+        panelEdge.releasePointerCapture?.(event.pointerId);
+        panelEdge.removeEventListener('pointermove', onMove);
+        panelEdge.removeEventListener('pointerup', onUp);
+        panelEdge.removeEventListener('pointercancel', onUp);
+        cancelAnimationFrame(frame);
+        frame = 0;
+        document.documentElement.classList.remove('stmui-resizing');
+        // A click without a drag (half of a double-click) changes nothing.
+        if (!moved) return;
+        applyPanelWidth(dragged());
+        // Keep what is drawn, so a width past the limit does not linger unseen.
+        const width = Math.round(panelWidthNow() || dragged());
+        applyPanelWidth(width);
+        storePanelWidth(width);
+    };
+    panelEdge.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        dragX = event.clientX;
+        moved = false;
+        grab = event.clientX - railRight() - (panelWidthNow() || PANEL_MIN);
+        panelEdge.setPointerCapture?.(event.pointerId);
+        document.documentElement.classList.add('stmui-resizing');
+        panelEdge.addEventListener('pointermove', onMove);
+        panelEdge.addEventListener('pointerup', onUp);
+        panelEdge.addEventListener('pointercancel', onUp);
+    });
+    panelEdge.addEventListener('dblclick', () => {
+        applyPanelWidth(0);
+        storePanelWidth(0);
+    });
+    panelEdge.addEventListener('keydown', event => {
+        const step = event.shiftKey ? 64 : 16;
+        let width = 0;
+        if (event.key === 'ArrowRight') width = panelWidthNow() + step;
+        else if (event.key === 'ArrowLeft') width = panelWidthNow() - step;
+        else if (event.key === 'Home') width = -1;
+        else return;
+        event.preventDefault();
+        if (width < 0) {
+            applyPanelWidth(0);
+            storePanelWidth(0);
+            return;
+        }
+        applyPanelWidth(Math.max(PANEL_MIN, width));
+        const drawn = Math.round(panelWidthNow() || Math.max(PANEL_MIN, width));
+        applyPanelWidth(drawn);
+        storePanelWidth(drawn);
+    });
+    document.body.append(panelEdge);
+}
+
 /** Escape on the desktop layout: back one step (a settings section, then the page). */
 function onWideKeyDown(event) {
     if (event.key !== 'Escape' || event.defaultPrevented) return;
     if (!document.documentElement.classList.contains('stmui-wide')) return;
     // Open sheets and SillyTavern's popups close themselves on Escape.
-    if (sheet || viewer || document.querySelector('dialog[open]') || editorOpen() || openOverlays().length) return;
+    if (sheet || viewer || document.querySelector('dialog[open]') || editorOpen()) return;
+    // The prompt editor: full screen first, then the editor (asking if there are unsaved changes).
+    if (promptEditorOpen()) {
+        event.preventDefault();
+        if (promptFull()) setPromptFull(false);
+        else leavePromptEditor();
+        return;
+    }
+    if (openOverlays().length) return;
     const guidedPopup = openGuidedPopups().pop();
     if (guidedPopup) {
         closeGuidedPopup(guidedPopup);

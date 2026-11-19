@@ -4,8 +4,8 @@
 // (never your own chats): the test instance has the Seraphina demo chat and
 // sample lorebooks.
 //   ST_URL=http://127.0.0.1:8000 CHROME_CHANNEL=chrome node screenshots.mjs [name ...]
-// With names, only those screenshots are taken. prompt-editor.jpg needs a Chat
-// Completion API and is not retaken here.
+// With names, only those screenshots are taken. prompt-editor.jpg switches the
+// API to Chat Completion for a moment (its prompt list lives there) and back.
 import { chromium, devices } from 'playwright';
 import { fileURLToPath } from 'node:url';
 
@@ -21,7 +21,7 @@ const context = await browser.newContext({ ...devices['Pixel 7'], viewport: { wi
 const hideTestExtensions = () => {
     const hide = () => {
         const style = document.createElement('style');
-        style.textContent = '#gg-action-button-container, #qr--bar, .stih--history { display: none !important; }';
+        style.textContent = '#gg-action-button-container, #qr--bar, .stih--history, .openai-tab-buttons { display: none !important; } .openai-tab-content { display: block !important; }';
         document.head.append(style);
     };
     if (document.head) hide();
@@ -268,6 +268,32 @@ if (want('presets')) {
     });
     await shot('presets');
     await tab('chat');
+}
+
+if (want('prompt-editor')) {
+    const api = await page.evaluate(() => document.getElementById('main_api').value);
+    const setApi = want => page.evaluate(value => {
+        const select = document.getElementById('main_api');
+        if (select.value === value) return;
+        select.value = value;
+        select.dispatchEvent(new Event('change'));
+    }, want);
+    try {
+        await setApi('openai');
+        await page.waitForTimeout(800);
+        await tab('ai-config-button');
+        await until(() => document.querySelector('#completion_prompt_manager_list .prompt-manager-edit-action'));
+        await page.evaluate(() => document.querySelector('#completion_prompt_manager_list .prompt-manager-edit-action').click());
+        await until(() => document.documentElement.classList.contains('stmui-prompt-editor'));
+        await shot('prompt-editor');
+        await page.evaluate(() => document.getElementById('completion_prompt_manager_popup_entry_form_close')?.click());
+        await settle(400);
+        await tab('chat');
+    } finally {
+        await setApi(api);
+        // SillyTavern saves a second later.
+        await page.waitForTimeout(2000);
+    }
 }
 
 if (want('personas')) {
