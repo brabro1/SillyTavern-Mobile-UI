@@ -1169,6 +1169,12 @@ html.stmui-shell.stmui-keyboard .stmui-tabbar {
     display: none;
 }
 
+/* Gone at once when the keyboard opens: sliding away, it covered the message box above the keyboard. */
+html.stmui-shell.stmui-keyboard .stmui-tabbar,
+html.stmui-shell.stmui-keyboard.stmui-tabs-tucked .stmui-tabbar {
+    transition: none;
+}
+
 .stmui-tab {
     display: flex;
     flex: 1 1 0;

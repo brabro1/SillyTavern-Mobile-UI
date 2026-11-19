@@ -1339,15 +1339,25 @@ class Shell {
         this.keyboardBase = { width: 0, height: 0 };
         this.focusAt = 0;
         this.resizeFrame = 0;
-        // The keyboard slides in over many frames; look once per frame at most.
-        // Checked right away on resize: the tab bar steps aside in the same frame
-        // the screen shrinks for the keyboard, so there is one change, not two.
+        // Checked right away on resize, before the frame is drawn: the tab bar
+        // steps aside and the chat starts its slide in the frame the window
+        // changes, so there is one move, not two.
         this.onResize = () => this.checkKeyboard();
         this.lastHeight = window.innerHeight;
         this.onFocusIn = event => {
             if (isTypingField(event.target)) setTimeout(() => this.checkKeyboard(), 400);
-            // Writing a message: the tabs go away again.
-            if (event.target?.id === 'send_textarea') this.tuckAgain();
+            // Writing a message: the tabs go away again. With the on-screen
+            // keyboard they go when it opens (one move, not two); with a
+            // hardware keyboard there is no keyboard to wait for.
+            if (event.target?.id === 'send_textarea' && this.tabsOut) {
+                this.tabsOut = false;
+                this.tuckPending = true;
+                window.setTimeout(() => {
+                    if (!this.tuckPending) return;
+                    this.tuckPending = false;
+                    this.syncTuck(true);
+                }, 500);
+            }
         };
         this.tabsOut = false;
         this.inChat = false;
@@ -1570,6 +1580,8 @@ class Shell {
         chat?.removeEventListener('touchmove', this.onChatTouchMove);
         chat?.removeEventListener('wheel', this.onChatWheel);
         cancelAnimationFrame(this.resizeFrame);
+        this.tuckPending = false;
+        this.endGlide();
         this.appbar.remove();
         this.tabbar.remove();
         const root = document.documentElement;
@@ -1578,10 +1590,16 @@ class Shell {
         delete root.dataset.stmuiPage;
     }
 
-    /** Hides the tab bar while the on-screen keyboard is up (the layout shrinks with it). */
+    /**
+     * The on-screen keyboard opened or closed (Android shrinks the window for it).
+     * The tab bar steps aside, and the chat and the message box slide together,
+     * as one piece, to their new place, so nothing jumps and nothing gaps.
+     */
     checkKeyboard() {
-        if (document.documentElement.classList.contains('stmui-wide')) {
-            document.documentElement.classList.remove('stmui-keyboard');
+        const root = document.documentElement;
+        if (root.classList.contains('stmui-wide')) {
+            this.endGlide();
+            root.classList.remove('stmui-keyboard');
             this.lastHeight = window.innerHeight;
             return;
         }
@@ -1593,25 +1611,64 @@ class Shell {
         // iPhones and iPads keep the page height and shrink only the visible part.
         const visible = IS_IOS && window.visualViewport ? window.visualViewport.height : height;
         const keyboard = typing && visible < (IS_IOS ? height : this.keyboardBase.height) * (IS_IOS ? 0.85 : 0.78);
-        const root = document.documentElement;
         const was = root.classList.contains('stmui-keyboard');
-        const tabbar = this.tabbar?.offsetHeight || this.tabH || 0;
-        if (!was && tabbar) this.tabH = tabbar;
         const before = this.lastHeight;
         this.lastHeight = height;
-        root.classList.toggle('stmui-keyboard', keyboard);
         if (height === before && keyboard === was) return;
-        // Reading the newest message: stay there while the screen changes.
+        const sheld = document.getElementById('sheld');
         const chat = document.getElementById('chat');
-        if (chat && extras.atBottom !== false) chat.scrollTop = chat.scrollHeight;
-        // The message box glides from where it was to its new place (movement
-        // only), so it follows the keyboard instead of jumping.
-        const form = document.getElementById('form_sheld');
-        if (!form || !motionAllowed() || keyboard === was) return;
-        const tab = root.classList.contains('stmui-tabs-tucked') ? 0 : (this.tabH || 0);
-        const shift = (height - (keyboard ? 0 : tab)) - (before - (was ? 0 : tab));
-        if (Math.abs(shift) < 8) return;
-        form.animate([{ transform: `translate3d(0, ${-shift}px, 0)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+        this.endGlide();
+        // Where the chat ended on the screen before: the window already has its
+        // new height here, so take the change back out.
+        const oldBottom = sheld ? sheld.getBoundingClientRect().bottom - (height - before) : 0;
+        root.classList.toggle('stmui-keyboard', keyboard);
+        // Tabs that were out when you started typing go away with the keyboard, in the same frame.
+        if (keyboard && this.tuckPending) {
+            this.tuckPending = false;
+            this.syncTuck();
+        }
+        if (!sheld || !chat) return;
+        const shift = Math.round(sheld.getBoundingClientRect().bottom - oldBottom);
+        // Reading the newest message: stay there. (Further up, SillyTavern itself
+        // keeps the line at the bottom edge in place when the chat changes height.)
+        // (Known while the jump-to-newest button watches the chat; otherwise assume so, as before.)
+        const atBottom = extras.jump ? extras.atBottom !== false : true;
+        const keepBottom = () => {
+            if (atBottom) chat.scrollTop = chat.scrollHeight;
+        };
+        keepBottom();
+        const glide = Math.abs(shift) >= 8 && motionAllowed() && !IS_IOS
+            && !root.classList.contains('stmui-editing') && !currentPageId() && !sheet;
+        if (!glide) return;
+        const timing = { duration: 240, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' };
+        if (shift < 0) {
+            // Opening: the chat keeps its old height while it slides up (the top
+            // goes under the top bar), then takes its new height when it lands.
+            const tall = `${sheld.offsetHeight - shift}px`;
+            sheld.style.setProperty('height', tall, 'important');
+            sheld.style.setProperty('max-height', tall, 'important');
+            keepBottom();
+            this.glide = sheld.animate([{ transform: 'none' }, { transform: `translate3d(0, ${shift}px, 0)` }], timing);
+            this.glideLand = keepBottom;
+        } else {
+            // Closing: the chat already has its new height; it starts where it
+            // was and slides down, showing more of the chat above.
+            this.glide = sheld.animate([{ transform: `translate3d(0, ${-shift}px, 0)` }, { transform: 'none' }], timing);
+            this.glideLand = null;
+        }
+        this.glide.onfinish = () => this.endGlide();
+    }
+
+    /** Ends a keyboard slide: the chat back to its normal size, in place. */
+    endGlide() {
+        if (!this.glide) return;
+        const sheld = document.getElementById('sheld');
+        this.glide.cancel();
+        this.glide = null;
+        sheld?.style.removeProperty('height');
+        sheld?.style.removeProperty('max-height');
+        this.glideLand?.();
+        this.glideLand = null;
     }
 
     onTab(id) {
@@ -4562,6 +4619,11 @@ const pictures = {
     swapFrame: 0,
     // The picture last shown in each kind of spot ("grid|avatar|Aria.png" → url).
     last: new Map(),
+    // Animated picture links that failed to load (the file was deleted, or the
+    // card came from someone else's SillyTavern), and characters whose sharp
+    // picture failed. Those show SillyTavern's thumbnail instead.
+    broken: new Set(),
+    noSharp: new Set(),
 };
 
 /** Which kind of spot a picture sits in; pictures in the same kind of spot have the same size. */
@@ -4633,7 +4695,7 @@ function thumbInfo(src) {
 function animatedPictureFor(file) {
     const character = (ctx().characters ?? []).find(item => item.avatar === file);
     const url = character?.data?.extensions?.[GIF_KEY];
-    return typeof url === 'string' && url ? url : null;
+    return typeof url === 'string' && url && !pictures.broken.has(url) ? url : null;
 }
 
 function fullPictureUrl({ type, file }) {
@@ -4708,9 +4770,29 @@ function upgradePicture(img) {
     const shown = img.getBoundingClientRect().width || img.clientWidth;
     const needed = shown * (window.devicePixelRatio || 1);
     // The thumbnail is 96 pixels wide; only bigger pictures need the original.
-    if (needed <= 100) return;
+    if (needed <= 100 || pictures.noSharp.has(info.file)) return;
     const width = needed <= 200 ? 200 : needed <= 400 ? 400 : 640;
     sharpPicture(info, width).then(url => swapPicture(img, url)).catch(() => {});
+}
+
+/**
+ * One of Pocket Tavern's pictures failed to load. Put SillyTavern's thumbnail
+ * back before SillyTavern sees the error, which would swap the picture for its
+ * crossed-out "missing picture" icon until the chat is reopened.
+ */
+function onPictureError(event) {
+    const img = event.target;
+    if (!(img instanceof HTMLImageElement) || !img.dataset.stmuiThumb) return;
+    const src = img.getAttribute('src') ?? '';
+    const info = thumbInfo(img.dataset.stmuiThumb);
+    if (!src || !info || src === img.dataset.stmuiThumb) return;
+    event.stopImmediatePropagation();
+    if (src.startsWith('blob:')) pictures.noSharp.add(info.file);
+    else pictures.broken.add(src);
+    for (const map of [pictures.cache, pictures.last]) {
+        for (const [key, url] of map) if (url === src) map.delete(key);
+    }
+    img.setAttribute('src', img.dataset.stmuiThumb);
 }
 
 function watchPicture(img) {
@@ -4758,6 +4840,7 @@ function syncPictures() {
         pictures.observer?.disconnect();
         pictures.seen?.disconnect();
         document.removeEventListener('scroll', scheduleVisibleCheck, { capture: true });
+        document.removeEventListener('error', onPictureError, { capture: true });
         pictures.observer = null;
         pictures.seen = null;
         pictures.near.clear();
@@ -4809,6 +4892,7 @@ function syncPictures() {
         });
         pictures.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
         document.addEventListener('scroll', scheduleVisibleCheck, { capture: true, passive: true });
+        document.addEventListener('error', onPictureError, { capture: true });
     }
     // Pictures already on the page, and a refresh after the animated picture changed.
     for (const img of document.querySelectorAll('img[data-stmui-watched]')) {

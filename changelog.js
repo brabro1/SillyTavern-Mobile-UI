@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.19.1',
+        items: [
+            "Opening and closing the keyboard is smoother: the chat and the message box slide together as one piece, and the tabs step aside at once instead of sliding over the box.",
+            "Fixed: if a character's animated picture file was deleted, or the card came from someone else's SillyTavern, the chat showed a crossed-out person instead of the character. It now shows the normal picture.",
+        ],
+    },
+    {
         version: '2.19.0',
         items: [
             "With Guided Generations installed, its row of icons becomes one guide button next to Send, with a menu that explains every action. Its guides, tools and popups fit the screen, and holding the button repeats your last guided action.",

@@ -137,6 +137,36 @@ await step('picture viewer opens from an avatar and closes with back', async () 
     await until(() => !document.querySelector('dialog.stmui-viewer'));
 });
 
+await step("a character's animated picture that no longer exists falls back to its normal picture", async () => {
+    // Before: SillyTavern swapped the failed picture for its crossed-out "missing picture" icon.
+    const was = await page.evaluate(async () => {
+        if (SillyTavern.getContext().characterId === undefined) await SillyTavern.getContext().selectCharacterById('0');
+        const c = SillyTavern.getContext();
+        const s = c.extensionSettings.mobileUI;
+        const character = c.characters[c.characterId];
+        const before = { animated: s.animatedPictures, link: character.data.extensions.stmui_animated_avatar };
+        s.animatedPictures = true;
+        character.data.extensions.stmui_animated_avatar = '/user/files/deleted-test-picture.gif';
+        await c.reloadCurrentChat();
+        return before;
+    });
+    try {
+        await page.waitForTimeout(2500);
+        const r = await page.evaluate(() => [...document.querySelectorAll('#chat .mes[is_user="false"]')].map(m => ({ missing: !!m.querySelector('.missing-avatar'), src: m.querySelector('.avatar img')?.getAttribute('src') ?? '' })));
+        if (!r.length) throw new Error('no AI messages to check');
+        const bad = r.filter(m => m.missing || m.src.includes('deleted-test-picture'));
+        if (bad.length) throw new Error(JSON.stringify(bad));
+    } finally {
+        await page.evaluate(async before => {
+            const c = SillyTavern.getContext();
+            c.extensionSettings.mobileUI.animatedPictures = before.animated;
+            c.characters[c.characterId].data.extensions.stmui_animated_avatar = before.link;
+            await c.reloadCurrentChat();
+        }, was);
+        await page.waitForTimeout(1000);
+    }
+});
+
 await step('quick switch shows persona and connection', async () => {
     await page.locator('.stmui-ab-quick').click();
     const rows = await page.locator('#stmui-sheet .stmui-menu-row').allInnerTexts();
@@ -407,6 +437,54 @@ await step('in a chat the tabs tuck away; the arrow brings them back and typing 
     await page.evaluate(() => document.activeElement?.blur());
     const covered = await lastMessageCovered();
     if (covered > 1) throw new Error(`the newest message is ${covered}px under the message box`);
+});
+
+await step('the keyboard: chat and message box slide as one piece, and the tabs go at once', async () => {
+    // Before: the chat jumped while the box slid on its own, leaving a gap (opening) or an overlap (closing).
+    const size = page.viewportSize();
+    const record = () => page.evaluate(() => {
+        window.__kb = [];
+        const t0 = performance.now();
+        const tick = () => {
+            const last = [...document.querySelectorAll('#chat .mes')].pop().getBoundingClientRect().bottom;
+            const box = document.getElementById('form_sheld').getBoundingClientRect();
+            const root = document.documentElement;
+            window.__kb.push({ gap: Math.round(box.top - last), bottom: Math.round(box.bottom), vh: innerHeight, kb: root.classList.contains('stmui-keyboard'), tabs: getComputedStyle(document.querySelector('.stmui-tabbar')).display !== 'none' });
+            if (performance.now() - t0 < 700) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    });
+    const frames = async () => {
+        await page.waitForTimeout(900);
+        return page.evaluate(() => window.__kb);
+    };
+    const steady = (rows, label) => {
+        const gaps = rows.map(r => r.gap);
+        if (Math.max(...gaps) - Math.min(...gaps) > 3) throw new Error(`${label}: the gap between the newest message and the box went ${Math.min(...gaps)}–${Math.max(...gaps)}px`);
+        const end = rows.at(-1);
+        if (end.bottom > end.vh + 1) throw new Error(`${label}: the box ends at ${end.bottom}, below the screen (${end.vh})`);
+    };
+    try {
+        await page.locator('.stmui-tabs-btn').click();
+        await page.locator('.stmui-tab[data-tab="WI-SP-button"]').waitFor({ state: 'visible' });
+        await page.evaluate(() => { const chat = document.getElementById('chat'); chat.scrollTop = chat.scrollHeight; });
+        await page.waitForTimeout(300);
+        await record();
+        await page.locator('#send_textarea').focus();
+        await page.setViewportSize({ width: size.width, height: size.height - 330 });
+        const open = await frames();
+        if (open.some(r => r.kb && r.tabs)) throw new Error('the tab bar was still showing above the keyboard');
+        steady(open, 'opening');
+        if (await page.evaluate(() => document.getElementById('sheld').style.height)) throw new Error('the chat kept a size from the slide');
+        await record();
+        await page.setViewportSize(size);
+        const close = await frames();
+        steady(close, 'closing');
+    } finally {
+        await page.setViewportSize(size);
+        await page.evaluate(() => document.activeElement?.blur());
+        await page.waitForTimeout(400);
+    }
 });
 
 await step('editing the last message keeps the editor and the top bar on the screen', async () => {

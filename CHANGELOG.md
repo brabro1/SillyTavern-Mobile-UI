@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.19.1
+
+A smoother keyboard, and a fix for character pictures in the chat.
+
+- **The keyboard, smoother.** When the keyboard opened, the chat jumped up in one go while the message box slid up on its own a moment later, so a gap opened between the newest message and the box (and closing, the box slid over the messages). Now the chat and the box slide together as one piece, in the same quarter second, and the newest message stays right above the box the whole way. Tabs that were showing step aside at once instead of sliding down over the box, and they no longer move once when you tap the box and again when the keyboard arrives. With motion turned off (More → Themes, or your phone's reduce-motion setting), everything moves in one step.
+- **Fixed: a crossed-out person instead of the character's picture.** Pocket Tavern can show an animated picture for a character, kept as a link in the character card. When that file no longer existed (deleted, or the card was made on someone else's SillyTavern and shared), the picture failed to load and SillyTavern replaced it with its "missing picture" icon on every message until the chat was reopened. Pocket Tavern now catches that and shows the character's normal picture; the same goes for the sharper copies it makes of small pictures. To use an animated picture again, pick it once more from the character's page.
+
 ## 2.19.0
 
 Guided Generations and Input History, made for a phone. Everything here only happens when those extensions are installed; without them nothing changes.
