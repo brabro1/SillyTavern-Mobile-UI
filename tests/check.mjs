@@ -28,6 +28,11 @@ try {
     const changelog = await readFile(new URL('CHANGELOG.md', root), 'utf8');
     if (changelog.includes(`## ${VERSION}`)) ok('CHANGELOG.md lists this version');
     else fail(`CHANGELOG.md has no "## ${VERSION}" section`);
+    // SillyTavern calls manifest hooks by name after an update; a typo would silently stop the reload.
+    const index = await import(new URL('index.js', root));
+    const missing = Object.values(manifest.hooks ?? {}).filter(name => typeof index[name] !== 'function');
+    if (missing.length) fail(`manifest.json hooks name functions index.js does not export: ${missing.join(', ')}`);
+    else ok('manifest.json hooks point at exported functions');
 } catch (error) {
     fail('manifest.json is valid', error);
 }

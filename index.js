@@ -44,6 +44,7 @@ const DEFAULTS = Object.freeze({
     textSize: 'normal',
     sendEffect: true,
     haptics: true,
+    autoReload: true,
     jumpButton: true,
     messageMenu: true,
     saveDrafts: true,
@@ -103,7 +104,7 @@ const EXTRAS = [
     { key: 'loreCards', id: 'stmui_lorecards', label: 'Lorebook entry cards', hint: 'Entries as cards with keyword chips; an opened entry fills the page.' },
     { key: 'sharpPictures', id: 'stmui_sharp', label: 'Sharp character pictures', hint: 'Shows the full-quality picture instead of the small thumbnail, sized for your screen.' },
     { key: 'animatedPictures', id: 'stmui_gifs', label: 'Animated pictures', hint: 'Pick a GIF or animated WebP as a character picture and it moves everywhere.' },
-    { key: 'charPage', id: 'stmui_charpage', label: 'New character pages', hint: 'Big avatar, labeled tools and tabs on character cards; names under favorites; an A–Z strip on the list.' },
+    { key: 'charPage', id: 'stmui_charpage', label: 'New character pages', hint: 'Big avatar, labeled tools and tabs on character cards and personas; names under favorites; an A–Z strip on the list.' },
     { key: 'recentTools', id: 'stmui_recenttools', label: 'Chat list helpers', hint: 'Search and swipe in Recent chats; chat history grouped by date.' },
     { key: 'longPress', id: 'stmui_longpress', label: 'Long-press for message menu', hint: 'Hold a message for its menu. Turn off if you prefer long-press to select text.' },
     { key: 'serverWatch', id: 'stmui_server', label: 'Connection check', hint: 'Shows a banner when SillyTavern stops answering, for example when Termux was closed.' },
@@ -115,6 +116,7 @@ const EXTRAS = [
     { key: 'niceToasts', id: 'stmui_toasts', label: 'Nicer notifications', hint: 'Cards with an icon and color; swipe one sideways to dismiss it.' },
     { key: 'sendEffect', id: 'stmui_sendfx', label: 'Send animation', hint: 'A little launch effect when you send.' },
     { key: 'haptics', id: 'stmui_haptics', label: 'Vibration', hint: 'A short buzz on send and tab taps (Android).' },
+    { key: 'autoReload', id: 'stmui_autoreload', label: 'Reload after updates', hint: 'After Pocket Tavern updates, the page reloads by itself once nothing is in progress.' },
 ];
 
 const MOTION_LABELS = {
@@ -1628,12 +1630,13 @@ class Shell {
         document.body.append(this.appbar, this.tabbar);
 
         // The Characters page switches between list, editor and group views without events.
-        // Picking someone from the list should land in their chat, like a messaging app.
+        // On a phone, picking someone from the list lands in their chat, like a messaging app.
+        // On a computer the chat is already beside the page, so the page stays and shows their card.
         this.jumpAt = 0;
         this.onPanelClick = event => {
             const entry = event.target.closest?.('#rm_print_characters_block .character_select, #rm_print_characters_block .group_select');
             const bulk = document.querySelector('#rm_print_characters_block.group_overlay_mode_select');
-            if (entry && !bulk && !event.target.closest('.ch_fav_icon, .tag, .bulk_select_checkbox')) {
+            if (entry && !bulk && !isWide() && !event.target.closest('.ch_fav_icon, .tag, .bulk_select_checkbox')) {
                 this.jumpAt = Date.now();
                 // Tapping the character you are already chatting with does not change chats.
                 const current = ctx().characterId;
@@ -2081,7 +2084,7 @@ function openMoreSheet() {
                 type: 'button',
                 class: 'stmui-search-field',
                 onclick: () => openGlobalSearch(),
-            }, [ui('search'), h('span', { text: 'Search everything' })]));
+            }, [ui('search'), h('span', { text: 'Search everything' }), isWide() ? h('kbd', { class: 'stmui-kbd', text: IS_MAC ? '⌘K' : 'Ctrl K' }) : null]));
             if (tiles.length) body.append(h('div', { class: 'stmui-tiles' }, tiles));
 
             const context = ctx();
@@ -2109,7 +2112,7 @@ function openMoreSheet() {
                     closePages();
                     document.getElementById('option_start_new_chat')?.click();
                 }, !inChat),
-                row('phone', 'Phone features', () => openExtrasSheet()),
+                isWide() ? row('list', 'Features', () => openExtrasSheet()) : row('phone', 'Phone features', () => openExtrasSheet()),
                 row('zap', 'Quick switch', () => openQuickSwitch()),
                 row('languages', 'Translate chat', () => openTranslateSheet(), !inChat),
                 row('search', 'Search this chat', () => {
@@ -2120,7 +2123,7 @@ function openMoreSheet() {
                 }, !inChat),
                 isStandalone() ? null : row('download', 'Install as an app', () => installApp()),
                 row('star', "What's new", () => openWhatsNew()),
-                row('phone', 'Pocket Tavern settings', () => {
+                row(isWide() ? 'desktop' : 'phone', 'Pocket Tavern settings', () => {
                     closeSheet(true);
                     openMobileSettings();
                 }),
@@ -2403,13 +2406,13 @@ function choiceControl(key, names, label) {
 function openThemeSheet() {
     showSheet(new MenuSheet({
         title: 'Themes',
-        subtitle: 'Changes the look on your phone. Your SillyTavern theme stays saved.',
+        subtitle: isWide() ? 'Changes how Pocket Tavern looks. Your SillyTavern theme stays saved.' : 'Changes the look on your phone. Your SillyTavern theme stays saved.',
         fill: body => {
             body.append(h('div', { class: 'stmui-themes' }, [themeCard(null, settings.theme), ...THEMES.map(theme => themeCard(theme, settings.theme))]));
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Look and feel' }));
             body.append(h('div', { class: 'stmui-menu-list' }, [
                 switchRow('themeBackdrop', 'Theme background', 'Use the theme\'s backdrop instead of your chat background.'),
-                switchRow('modernFont', 'Modern font', 'Your phone\'s own system font, crisp at every size.'),
+                switchRow('modernFont', 'Modern font', isWide() ? "Your computer's own system font, crisp at every size." : 'Your phone\'s own system font, crisp at every size.'),
                 switchRow('customIcons', 'New icons', 'Rounded line icons everywhere.'),
             ]));
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Chat look' }));
@@ -3075,10 +3078,30 @@ function openMessageMenu(message) {
 
 // -- personas: list and editor on separate tabs
 
+/** The current persona's tools get a short label under their icon, like a character card's. */
+const PERSONA_TOOLS = [
+    ['#persona_rename_button', 'Rename'],
+    ['#sync_name_button', 'Sync name'],
+    ['#persona_lore_button', 'Lore'],
+    ['#persona_set_image_button', 'Picture'],
+    ['#persona_duplicate_button', 'Duplicate'],
+    ['#persona_delete_button', 'Delete'],
+];
+
 function syncPersonaTabs() {
     const block = document.getElementById('persona-management-block');
     let bar = document.getElementById('stmui_persona_tabs');
     const want = active && settings.touchSizing && block;
+    // With the new character pages on, personas look like them: picture cards and a card with labeled tools.
+    const look = !!(want && settings.charPage);
+    document.documentElement.classList.toggle('stmui-personapage', look);
+    for (const [selector, label] of PERSONA_TOOLS) {
+        const button = document.querySelector(selector);
+        const tag = button?.querySelector(':scope > .stmui-btn-label');
+        if (look && button && !tag) button.append(h('span', { class: 'stmui-btn-label', text: label }));
+        else if (!look) tag?.remove();
+    }
+    if (!look) document.querySelectorAll('#user_avatar_block .stmui-default-badge').forEach(node => node.remove());
     if (!want) {
         bar?.remove();
         document.querySelector('#persona_controls .stmui-persona-face')?.remove();
@@ -3128,6 +3151,15 @@ function updatePersonaTabs() {
             const label = name && name !== '[Persona Name]' ? t('Edit {name}', { name }) : t('Edit current');
             const text = button.querySelector('.stmui-seg-text');
             if (text.textContent !== label) text.textContent = label;
+        }
+    }
+    // Picture cards: a crown on your default persona (SillyTavern only rings its picture in gold).
+    if (document.documentElement.classList.contains('stmui-personapage')) {
+        for (const card of document.querySelectorAll('#user_avatar_block .avatar-container')) {
+            const badge = card.querySelector(':scope > .stmui-default-badge');
+            const isDefault = card.classList.contains('default_persona');
+            if (isDefault && !badge) card.append(h('span', { class: 'stmui-default-badge', title: t('Default persona'), 'aria-label': t('Default persona') }, [ui('crown')]));
+            else if (!isDefault && badge) badge.remove();
         }
     }
     // The current persona's picture next to its name.
@@ -7115,7 +7147,9 @@ function buildSettingsHome(block) {
     setnav.home = h('div', { class: 'stmui-set-home', 'data-stmui': '1' }, [
         h('button', { type: 'button', class: 'stmui-search-field', onclick: () => openSettingSearch() }, [ui('search'), h('span', { text: 'Search settings' })]),
         h('div', { class: 'stmui-menu-list' }, sections.map(section => row(section.icon, section.title, section.note, () => openSettingsSection(section.id)))),
-        h('div', { class: 'stmui-menu-list' }, [row('phone', 'Pocket Tavern', 'Phone layout, gestures and helpers', () => openMobileSettings())]),
+        h('div', { class: 'stmui-menu-list' }, [isWide()
+            ? row('desktop', 'Pocket Tavern', 'Desktop layout, helpers and themes', () => openMobileSettings())
+            : row('phone', 'Pocket Tavern', 'Phone layout, gestures and helpers', () => openMobileSettings())]),
     ]);
     // The block on top holds the title, language, account and version; the list goes first in it.
     const top = block.querySelector('#settingsSearch')?.closest('#user-settings-block > *');
@@ -7261,9 +7295,14 @@ const EXTENSION_NOTES = {
     stmui_settings: 'The phone layout you are using now',
 };
 
+/** The same notes where they differ on the desktop layout. */
+const EXTENSION_NOTES_WIDE = {
+    stmui_settings: 'The desktop layout you are using now',
+};
+
 function describeExtensions() {
     if (!active || !settings.touchSizing) return;
-    for (const [id, note] of Object.entries(EXTENSION_NOTES)) {
+    for (const [id, note] of Object.entries({ ...EXTENSION_NOTES, ...(isWide() ? EXTENSION_NOTES_WIDE : {}) })) {
         const header = document.querySelector(`#${id} .inline-drawer-header`);
         if (!header || header.querySelector('.stmui-ext-note')) continue;
         header.append(h('small', { class: 'stmui-ext-note stmui-skip', 'data-stmui': '1', text: note }));
@@ -7499,7 +7538,16 @@ async function installApp() {
     showSheet(new MenuSheet({
         title: t('Install as an app'),
         subtitle: t('Open SillyTavern from your home screen, full screen, without the browser bar.'),
-        fill: body => body.append(h('div', { class: 'stmui-steps' }, [
+        // Each device installs a site its own way: Safari on iPhone and iPad, Chrome on Android, a computer's browser.
+        fill: body => body.append(h('div', { class: 'stmui-steps' }, IS_IOS ? [
+            h('p', { text: t('1. Tap Safari\'s Share button (the square with an arrow).') }),
+            h('p', { text: t('2. Tap "Add to Home Screen".') }),
+            h('p', { text: t('3. Tap Add. SillyTavern now has its own icon.') }),
+        ] : isWide() ? [
+            h('p', { text: t('1. In Chrome or Edge, click the install icon at the right of the address bar, or open the browser menu.') }),
+            h('p', { text: t('2. Choose "Install" or "Install page as app".') }),
+            h('p', { class: 'stmui-menu-foot', text: t('Firefox cannot install sites as apps; open SillyTavern in Chrome or Edge for this.') }),
+        ] : [
             h('p', { text: t('1. Tap Chrome\'s ⋮ menu (top right).') }),
             h('p', { text: t('2. Tap "Add to Home screen" or "Install app".') }),
             h('p', { text: t('3. Tap Install. SillyTavern now has its own icon.') }),
@@ -7659,6 +7707,7 @@ function syncExtras() {
     syncPromptNameBox();
     syncPromptEditorSession();
     syncPanelEdge();
+    syncToolPanels();
     if (!active || !settings.keepAwake) setAwake(false);
     if (!active || !settings.imageViewer) closeViewer(true);
     if (active) patchClipboard();
@@ -7684,6 +7733,7 @@ function syncExtras() {
     document.addEventListener('pointerdown', onSendPointerDown, true);
     document.body.addEventListener('mousedown', onChatMouseDown);
     document.addEventListener('keydown', onWideKeyDown);
+    document.addEventListener('keydown', onWideShortcut);
     matchMedia(WIDE_QUERY).addEventListener?.('change', () => {
         setFeatureClasses();
         shell?.syncTuck();
@@ -7744,8 +7794,8 @@ function textSizeControl() {
 
 function openExtrasSheet() {
     showSheet(new MenuSheet({
-        title: 'Phone features',
-        subtitle: 'Small helpers that make SillyTavern nicer on a phone.',
+        title: isWide() ? 'Features' : 'Phone features',
+        subtitle: isWide() ? 'Small helpers that make SillyTavern nicer to use.' : 'Small helpers that make SillyTavern nicer on a phone.',
         fill: body => {
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Chat text size' }));
             body.append(textSizeControl());
@@ -7835,6 +7885,50 @@ function onChatMouseDown(event) {
     // SillyTavern closes open panels on any mousedown that reaches <html>; stop it at <body>.
     // Back, the tab again, or Escape still close the page.
     if (!event.target.closest?.('.drawer-content')) event.stopPropagation();
+}
+
+// -- reload by itself after an update
+
+/**
+ * SillyTavern runs this after it updated Pocket Tavern (the "update" hook in
+ * manifest.json); this is still the old code, so the new one needs a reload.
+ * It waits until nothing is in progress: the extension list or another dialog
+ * open (Update all may still be updating others), a reply being written, a
+ * message or prompt being edited, or a text box in use other than the message
+ * box (unsent messages are kept). A few seconds first, so a batch of updates
+ * can finish.
+ */
+const updateReload = { pending: false, timer: 0 };
+
+export function onPocketTavernUpdate() {
+    if (!settings?.autoReload || updateReload.pending) return;
+    updateReload.pending = true;
+    globalThis.toastr?.info(t('The page reloads by itself when nothing is in progress.'), t('Pocket Tavern was updated'), { timeOut: 6000 });
+    window.clearTimeout(updateReload.timer);
+    updateReload.timer = window.setTimeout(reloadWhenIdle, 4000);
+}
+
+function updateReloadBlocked() {
+    if (document.querySelector('dialog[open]') || sheet || viewer) return true;
+    if (extras.generating || editorOpen() || promptEditorDirty()) return true;
+    const focused = document.activeElement;
+    const draftKept = focused?.id === 'send_textarea' && settings.saveDrafts;
+    return isTypingField(focused) && !draftKept;
+}
+
+function reloadWhenIdle() {
+    if (!settings?.autoReload) {
+        updateReload.pending = false;
+        return;
+    }
+    if (updateReloadBlocked()) {
+        updateReload.timer = window.setTimeout(reloadWhenIdle, 1500);
+        return;
+    }
+    // Settings SillyTavern has not written yet go first.
+    ctx().saveSettingsDebounced?.();
+    globalThis.toastr?.info(t('Reloading to finish the update…'), '', { timeOut: 2000 });
+    window.setTimeout(() => location.reload(), 1500);
 }
 
 // -- desktop: drag the panel's edge to make it wider
@@ -7963,6 +8057,87 @@ function syncPanelEdge() {
     document.body.append(panelEdge);
 }
 
+// -- desktop: SillyTavern's floating tool panels (Author's Note, CFG, token
+// probabilities, extension pop-outs) dock in a column right of the chat, which
+// moves over to make room. SillyTavern drew them in the top-left corner, under
+// the top bar and the rail. With SillyTavern's MovingUI on they stay where you put them.
+
+const TOOL_PANELS = '#movingDivs > div';
+const tools = { observer: null, frame: 0, watched: new WeakSet() };
+
+function dockedToolPanels() {
+    if (document.body.classList.contains('movingUI')) return [];
+    return [...document.querySelectorAll(TOOL_PANELS)]
+        .filter(panel => !panel.classList.contains('maximized') && panel.style.display !== 'none' && getComputedStyle(panel).display !== 'none');
+}
+
+function layoutToolPanels() {
+    tools.frame = 0;
+    const open = active && settings.appShell ? dockedToolPanels() : [];
+    document.documentElement.classList.toggle('stmui-tools-open', open.length > 0);
+    // Two or more share the column, one above the other. Only written when it changes:
+    // the panels' style is what this watches.
+    open.forEach((panel, index) => {
+        if (panel.style.getPropertyValue('--stmui-tool-i') !== String(index)) panel.style.setProperty('--stmui-tool-i', String(index));
+        if (panel.style.getPropertyValue('--stmui-tool-n') !== String(open.length)) panel.style.setProperty('--stmui-tool-n', String(open.length));
+    });
+}
+
+function watchToolPanel(panel) {
+    if (tools.watched.has(panel)) return;
+    tools.watched.add(panel);
+    tools.observer.observe(panel, { attributes: true, attributeFilter: ['style', 'class'] });
+}
+
+function syncToolPanels() {
+    const holder = document.getElementById('movingDivs');
+    if (!active || !settings.appShell || !holder) {
+        tools.observer?.disconnect();
+        tools.observer = null;
+        tools.watched = new WeakSet();
+        document.documentElement.classList.remove('stmui-tools-open');
+        document.querySelectorAll(TOOL_PANELS).forEach(panel => {
+            panel.style.removeProperty('--stmui-tool-i');
+            panel.style.removeProperty('--stmui-tool-n');
+        });
+        return;
+    }
+    if (!tools.observer) {
+        tools.observer = new MutationObserver(records => {
+            for (const record of records) {
+                for (const node of record.addedNodes ?? []) if (node.parentElement === holder && node.nodeType === 1) watchToolPanel(node);
+            }
+            if (!tools.frame) tools.frame = requestAnimationFrame(layoutToolPanels);
+        });
+        tools.observer.observe(holder, { childList: true });
+        tools.observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        [...holder.children].forEach(watchToolPanel);
+    }
+    layoutToolPanels();
+}
+
+/** Closes the newest docked tool panel the way its own × does. */
+function closeToolPanel() {
+    const panel = dockedToolPanels().pop();
+    if (!panel) return false;
+    const close = panel.querySelector('.floating_panel_close, #logprobsViewerClose, .dragClose, [id$="Close"]');
+    if (close) close.click();
+    else panel.style.display = 'none';
+    return true;
+}
+
+/** Ctrl+K (⌘K on a Mac) on the desktop layout: Search everything, when you are not typing. */
+const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+function onWideShortcut(event) {
+    if (event.defaultPrevented || event.code !== 'KeyK' || event.shiftKey || event.altKey) return;
+    if (!(IS_MAC ? event.metaKey : event.ctrlKey) || !isWide() || !active) return;
+    // In a text box SillyTavern uses Ctrl+K for inline code.
+    if (isTypingField(document.activeElement) || sheet || document.querySelector('dialog[open]')) return;
+    event.preventDefault();
+    openGlobalSearch();
+}
+
 /** Escape on the desktop layout: back one step (a settings section, then the page). */
 function onWideKeyDown(event) {
     if (event.key !== 'Escape' || event.defaultPrevented) return;
@@ -7980,6 +8155,11 @@ function onWideKeyDown(event) {
     const guidedPopup = openGuidedPopups().pop();
     if (guidedPopup) {
         closeGuidedPopup(guidedPopup);
+        event.preventDefault();
+        return;
+    }
+    // Typing in a tool panel (Author's Note) keeps Escape for the text box.
+    if (!isTypingField(document.activeElement) && closeToolPanel()) {
         event.preventDefault();
         return;
     }
@@ -8078,7 +8258,7 @@ function buildSettings() {
                     h('select', { id: 'stmui_motion', class: 'text_pole' }, Object.entries(MOTION_LABELS).map(([value, text]) => h('option', { value, text }))),
                 ]),
                 check('stmui_backdrop', 'Theme background', "Use the theme's backdrop instead of your chat background."),
-                check('stmui_font', 'Modern font', "Your phone's own system font."),
+                check('stmui_font', 'Modern font', matchMedia(WIDE_QUERY).matches ? "Your computer's own system font." : "Your phone's own system font."),
                 check('stmui_icons', 'New icons', 'Rounded line icons everywhere.'),
                 h('label', { class: 'stmui-field', for: 'stmui_size' }, [
                     h('span', { class: 'stmui-field-label', text: 'Size' }),

@@ -864,6 +864,9 @@ await step('the prompt editor reaches the tabs, opens full screen and asks befor
             return height;
         });
         if (tabHeight < 44) throw new Error(`the Parameters and Prompts tabs are ${tabHeight}px`);
+        // Chat Completion Tabs (when installed) builds its tabs up to 2 seconds after the API switch and may hide the list on Parameters.
+        await page.waitForTimeout(2200);
+        await page.evaluate(() => document.getElementById('openai-tab-btn-prompts')?.click());
         const edit = page.locator('#completion_prompt_manager_list .prompt-manager-edit-action').first();
         await edit.scrollIntoViewIfNeeded();
         await edit.click();
@@ -912,6 +915,69 @@ await step('the prompt editor reaches the tabs, opens full screen and asks befor
         await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="chat"]')?.click());
         await page.waitForTimeout(400);
     }
+});
+
+await step('a long lorebook shows every entry, and the Notes & tags tab keeps the tabs their size', async () => {
+    const name = 'Pocket Tavern test lorebook';
+    try {
+        await page.evaluate(async name => {
+            const context = SillyTavern.getContext();
+            await context.saveWorldInfo(name, { entries: {} }, true);
+            await context.updateWorldInfoList();
+        }, name);
+        await showTabs();
+        await page.locator('.stmui-tab[data-tab="WI-SP-button"]').click();
+        await until(() => document.documentElement.dataset.stmuiPage === 'WI-SP-button');
+        await page.evaluate(name => {
+            const select = document.getElementById('world_editor_select');
+            select.value = [...select.options].find(option => option.textContent === name).value;
+            jQuery(select).trigger('change');
+        }, name);
+        await until(() => document.getElementById('world_popup_new')?.offsetParent, null, 10000);
+        // SillyTavern stopped the editor at the screen's height, so entries past the third or fourth could not be reached.
+        for (let i = 0; i < 12; i++) {
+            await page.evaluate(() => document.getElementById('world_popup_new').click());
+            await page.waitForTimeout(150);
+        }
+        await until(() => document.querySelectorAll('#world_popup_entries_list .world_entry').length >= 12, null, 10000);
+        const reach = await page.evaluate(() => {
+            const panel = document.querySelector('#WI-SP-button > .drawer-content');
+            const entries = [...document.querySelectorAll('#world_popup_entries_list .world_entry')];
+            const last = entries[entries.length - 1];
+            const bottom = last.getBoundingClientRect().bottom - panel.getBoundingClientRect().top + panel.scrollTop;
+            return { entries: entries.length, bottom: Math.round(bottom), scroll: panel.scrollHeight };
+        });
+        if (reach.bottom > reach.scroll + 2) throw new Error(`the last entry is out of reach: ${JSON.stringify(reach)}`);
+    } finally {
+        await page.evaluate(async name => {
+            const context = SillyTavern.getContext();
+            const select = document.getElementById('world_editor_select');
+            select.value = '';
+            jQuery(select).trigger('change');
+            await fetch('/api/worldinfo/delete', { method: 'POST', headers: context.getRequestHeaders(), body: JSON.stringify({ name }) });
+            await context.updateWorldInfoList();
+        }, name);
+        await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="chat"]')?.click());
+        await page.waitForTimeout(400);
+    }
+    // The character card's tabs: Notes & tags has no big text box, and the tabs grew to fill the space.
+    await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        if (context.characterId === undefined && !context.groupId) await context.selectCharacterById('0');
+    });
+    await page.waitForTimeout(800);
+    await page.locator('.stmui-ab-who').click();
+    await until(() => document.documentElement.dataset.stmuiPage === 'rightNavHolder');
+    // The page keeps its last view (the list); open the card.
+    await page.evaluate(() => document.getElementById('rm_button_selected_ch')?.click());
+    await until(() => !!document.getElementById('stmui_card_tabs')?.offsetParent, null, 10000);
+    await page.locator('#stmui_card_tabs .stmui-seg[data-tab="notes"]').click();
+    await page.waitForTimeout(400);
+    const tabs = await page.evaluate(() => Math.round(document.getElementById('stmui_card_tabs').getBoundingClientRect().height));
+    await page.locator('#stmui_card_tabs .stmui-seg[data-tab="desc"]').click();
+    await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="chat"]')?.click());
+    await page.waitForTimeout(400);
+    if (tabs > 60) throw new Error(`the card's tabs are ${tabs}px tall on Notes & tags`);
 });
 
 await step('banner shows when the server stops answering', async () => {
@@ -1064,6 +1130,8 @@ await step('desktop layout: a rail with every page, a panel that stays open and 
             await tab.waitForTimeout(800);
             await tab.locator('.stmui-tab[data-tab="ai-config-button"]').click();
             await tab.waitForFunction(() => !!document.querySelector('#completion_prompt_manager_list .prompt-manager-edit-action'), null, { timeout: 15000 });
+            // Chat Completion Tabs (when installed) builds its tabs up to 2 seconds after the API switch.
+            await tab.waitForTimeout(2200);
             await tab.evaluate(() => document.getElementById('openai-tab-btn-prompts')?.click());
             const edit = tab.locator('#completion_prompt_manager_list .prompt-manager-edit-action').first();
             await edit.scrollIntoViewIfNeeded();
@@ -1090,6 +1158,86 @@ await step('desktop layout: a rail with every page, a panel that stays open and 
             // SillyTavern saves a second later; wait, or closing the window loses the change.
             await tab.waitForTimeout(2000);
         }
+    } finally {
+        await desk.close();
+    }
+});
+
+await step('desktop layout: tool panels dock beside the chat, the Token Counter fits, personas look like characters, picking a character keeps its card', async () => {
+    const desk = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+    const tab = await desk.newPage();
+    tab.on('pageerror', error => {
+        if (/Mobile-UI|PocketTavern|stmui/i.test(`${error.stack ?? ''} ${error.message}`)) extensionErrors.push(`desktop: ${error.message}`);
+    });
+    const settle = (ms = 500) => tab.waitForTimeout(ms);
+    try {
+        await tab.goto(ST_URL, { waitUntil: 'domcontentloaded' });
+        await tab.waitForFunction(() => document.documentElement.classList.contains('stmui-wide') && window.SillyTavern?.getContext, null, { timeout: 120000 });
+        await settle(2500);
+        await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+        await tab.evaluate(async () => {
+            const context = SillyTavern.getContext();
+            if (context.characterId === undefined && !context.groupId) await context.selectCharacterById('0');
+        });
+        await settle(1500);
+        // Token probabilities (a tool panel) docks in a column on the right, and the chat moves over.
+        const chatBefore = await tab.evaluate(() => Math.round(document.getElementById('sheld').getBoundingClientRect().right));
+        await tab.evaluate(() => document.getElementById('option_toggle_logprobs').click());
+        await tab.waitForFunction(() => document.documentElement.classList.contains('stmui-tools-open'), null, { timeout: 5000 });
+        await settle();
+        const docked = await tab.evaluate(() => {
+            const panel = document.getElementById('logprobsViewer').getBoundingClientRect();
+            return { left: Math.round(panel.left), right: Math.round(panel.right), top: Math.round(panel.top), bar: Math.round(document.getElementById('stmui-appbar').getBoundingClientRect().bottom), chat: Math.round(document.getElementById('sheld').getBoundingClientRect().right), screen: innerWidth };
+        });
+        if (docked.right < docked.screen - 24 || docked.top < docked.bar || docked.chat > docked.left) throw new Error(`Token probabilities is not docked beside the chat: ${JSON.stringify({ ...docked, chatBefore })}`);
+        await tab.mouse.click(docked.screen / 2, 450);
+        await tab.keyboard.press('Escape');
+        await tab.waitForFunction(() => !document.documentElement.classList.contains('stmui-tools-open'), null, { timeout: 5000 });
+        // The Token Counter is a dialog as tall as what it holds, not the whole screen.
+        await tab.evaluate(() => document.getElementById('token_counter')?.click());
+        await tab.waitForFunction(() => !!document.querySelector('dialog[open] #token_counter_textarea'), null, { timeout: 5000 });
+        await settle();
+        const counter = await tab.evaluate(() => Math.round(document.querySelector('dialog[open]').getBoundingClientRect().height));
+        if (counter > 760) throw new Error(`the Token Counter is ${counter}px tall`);
+        await tab.keyboard.press('Escape');
+        await settle();
+        // Picking someone on the Characters page keeps the page open and shows their card.
+        await tab.locator('.stmui-tab[data-tab="rightNavHolder"]').click();
+        await tab.waitForFunction(() => document.documentElement.dataset.stmuiPage === 'rightNavHolder');
+        await tab.evaluate(() => document.getElementById('rm_button_characters')?.click());
+        await settle(800);
+        await tab.locator('#rm_print_characters_block .character_select').first().click();
+        await settle(2500);
+        if (await tab.evaluate(() => document.documentElement.dataset.stmuiPage) !== 'rightNavHolder') throw new Error('picking a character closed the page');
+        // Personas: labeled tools like a character card, and on a wide page the list and the card side by side.
+        await tab.locator('.stmui-tab[data-tab="persona-management-button"]').click();
+        await tab.waitForFunction(() => document.documentElement.dataset.stmuiPage === 'persona-management-button');
+        await settle(600);
+        if (!(await tab.locator('#persona_rename_button .stmui-btn-label').count())) throw new Error('the persona tools have no labels');
+        const edge = await tab.evaluate(() => {
+            const rect = document.getElementById('stmui-panel-edge').getBoundingClientRect();
+            return { x: rect.left + rect.width / 2, y: rect.top + 300 };
+        });
+        await tab.mouse.move(edge.x, edge.y);
+        await tab.mouse.down();
+        await tab.mouse.move(edge.x + 400, edge.y, { steps: 6 });
+        await tab.mouse.up();
+        await settle(500);
+        const side = await tab.evaluate(() => ['.persona_management_left_column', '.persona_management_right_column'].map(sel => getComputedStyle(document.querySelector(`#persona-management-block > ${sel}`)).display));
+        await tab.mouse.dblclick(edge.x + 400, edge.y);
+        if (side.includes('none')) throw new Error(`the persona list and card are not side by side on a wide page: ${side}`);
+        // Backgrounds: Auto-select, New folder and Add background are 44px icons.
+        await tab.locator('.stmui-tab[data-tab="backgrounds-button"]').click();
+        await tab.waitForFunction(() => document.documentElement.dataset.stmuiPage === 'backgrounds-button');
+        await settle(600);
+        const bg = await tab.evaluate(() => [...document.querySelectorAll('#Backgrounds .bg-header-row-1 > .menu_button_icon')].map(button => ({ w: Math.round(button.getBoundingClientRect().width), text: getComputedStyle(button.querySelector('span')).display })));
+        if (!bg.length || bg.some(button => button.w < 44 || button.text !== 'none')) throw new Error(`the Backgrounds buttons: ${JSON.stringify(bg)}`);
+        // On a computer, More says Features, not Phone features.
+        await tab.locator('.stmui-tab[data-tab="more"]').click();
+        await tab.waitForFunction(() => !!document.getElementById('stmui-sheet'));
+        const rows = await tab.locator('#stmui-sheet .stmui-menu-row').allInnerTexts();
+        if (rows.some(row => row.includes('Phone features')) || !rows.some(row => row.includes('Features'))) throw new Error('More still says Phone features on a computer');
+        await tab.keyboard.press('Escape');
     } finally {
         await desk.close();
     }

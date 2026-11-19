@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.21.0
+
+A second desktop round from the same Firefox user's report, checked screen by screen, and personas that look like your characters. Two fixes (long lorebooks, the Cancel button) also help on a phone.
+
+### Desktop
+
+- **Tool panels beside the chat.** Author's Note, CFG, Token probabilities and the pop-outs of extensions (Summarize, the gallery, group members) are floating panels in SillyTavern. On a computer Pocket Tavern left them where SillyTavern puts them: the top-left corner, under the top bar and the rail, mostly hidden. They now open in a column on the right, the chat moves over to make room, and two or more share the column one above the other. Maximized, one covers the chat column. Escape closes the newest one. With SillyTavern's MovingUI on, they stay where you put them.
+- **Fixed: picking a character on a computer.** Clicking someone in the Characters list showed their card for a moment and then closed the page (on a phone it closes so you land in the chat). On a computer the chat is already beside the page, so the page stays and shows their card.
+- **Advanced definitions on a computer.** Its text boxes ran the full width of the screen. The content is now a readable column in the middle, with a 44px close button.
+- **Chat history.** On a computer it is as tall as its chats instead of always nearly the full screen, stays in the middle, and its names, dates and previews are readable sizes.
+- **Desktop words.** On a computer, More shows **Features** instead of Phone features, the Themes sheet says it changes how Pocket Tavern looks, and the Settings page calls its section "Desktop layout, helpers and themes".
+- **Ctrl+K** (⌘K on a Mac) opens Search everything on a computer when you are not typing; More shows the shortcut.
+
+### Phone
+
+- **Install as an app on iPhone and iPad.** More → Install as an app showed Chrome-on-Android steps on every device. It now shows Safari's steps (Share → Add to Home Screen) on iPhone and iPad, and the browser's install steps on a computer.
+
+### Both
+
+- **Two layouts, one core.** From this version on, Pocket Tavern on phones (Android, iPhone, iPad held upright) and Pocket Tavern on desktop (computers, tablets held sideways) are designed as two layouts on one shared core: the same themes, settings and features underneath, with each layout's own navigation, pages and menus. Every change now says which layout it is for, and iPhone and iPad are checked like Android with every phone change. The README, design guide and bug form say so too.
+- **Personas like Characters.** In grid view the personas are picture cards like your characters, the one you use has an accent ring and your default one wears a crown. In list view they are quiet rows like the Characters list. The persona you use is a card: a big picture, its name, and its tools in an even grid with labels (Rename, Sync name, Lore, Picture, Duplicate, Delete), then the More menu. Delete is quiet like a character card's, and a linked lorebook is a small dot on Lore instead of green. Create is the accent + of the Characters list. On a computer with the page dragged wider, the list and the card sit side by side without tabs. (Follows the **New character pages** switch.)
+- **Fixed: long lorebooks were cut off.** A lorebook showed three or four entries and the rest could not be reached, even with 25 on a page. An old rule from when SillyTavern's lorebook editor was a separate popup gave it the screen's height and hid everything below that; in SillyTavern 1.19 the editor sits inside the Lorebooks page. The page now scrolls through every entry, on a computer and on a phone.
+- **Fixed: the Notes & tags tab grew.** On a character card, Notes & tags made the tab bar about 200px tall, because the tabs took the room the Description box takes on the other tabs.
+- **Token Counter.** It opened as a screen-sized popup with plain labels. It is now a dialog as tall as what it holds (720px wide on a computer), with a real text box, the count in big numbers, the tokens as chips on a card and the IDs in a quiet monospace box.
+- **Backgrounds.** Auto-select, New folder and Add background are 44px icons (with their names as tooltips); their text overflowed the buttons. On small thumbnails (zoomed out with −), the name steps aside for the hover tools instead of sitting under them.
+- **Smaller things.** The delete skull in chat history no longer spins and glows while the mouse is over it; it turns the danger colour. Cancel in the message editor is a plain button next to Save instead of a red one. Pocket Tavern's own buttons show an accent ring when you move to them with the keyboard.
+- **Reload after updates.** After SillyTavern updates Pocket Tavern, the page now reloads by itself, so the new version is running without a manual reload. It waits while the extension list or another dialog is open (Update all may still be updating other extensions), while a reply is being written, and while you edit a message or a prompt; unsent messages are kept. It starts with the update after this one, because the version that does the reloading has to be installed first. Switch it off under **More → Phone features → Reload after updates** (Features on a computer).
+- **README and banner.** The README is shorter and grouped (phone, computer, chatting, characters, look, extras), with a "Where to find things" table. The banner now shows a laptop with the desktop layout next to a phone.
+- `tests/phone.mjs` checks a long lorebook (it makes and deletes its own), the card's tabs, docked tool panels, the Token Counter's height, character picking, persona labels and side by side, the Backgrounds buttons and the desktop wording.
+
 ## 2.20.0
 
 A fuller desktop layout, a full-screen prompt editor, and fixes from a Firefox user on a computer. On a phone, the prompt editor gets the same full-screen button and the same question before unsaved changes are lost; nothing else changes there.

@@ -2,9 +2,32 @@
 
 Rules for any change to how Pocket Tavern looks. Read this before touching `style.css`, `themes.js`, or the markup in `index.js`. The `frontend-design` skill in `.claude/skills/` works inside these rules. Where this file is specific, this file wins.
 
+## Two layouts, one core
+
+Pocket Tavern is two products that share one core: **Pocket Tavern on phones** and **Pocket Tavern on desktop**. They have the same DNA (the tokens, themes, icons, words and the logic underneath), but they are designed separately, because a thumb on a 6-inch screen and a mouse on a 24-inch screen need different things.
+
+| | Phone layout | Desktop layout (`html.stmui-wide`) |
+| --- | --- | --- |
+| Devices | Android phones (Chrome), iPhone (Safari), iPad held upright, small tablets | Computers (Windows, macOS, Linux; any up-to-date browser), iPad and tablets held sideways |
+| Navigation | Tab bar at the bottom, More for the rest, back gesture | Sidebar with every page, pages beside the chat, Escape, Ctrl+K |
+| Pages | Full screen, one at a time | A panel beside the chat that stays open and can be widened |
+| Menus | Bottom sheets | Dialogs in the middle |
+| Input | Touch: 44px targets, no hover | Mouse and keyboard: hover feedback, focus rings, shortcuts (44px targets still, for touch screens) |
+| Shared | Tokens, themes, type scale, icons, words, translations, settings, and the code that talks to SillyTavern | |
+
+**Every change starts by deciding where it belongs: Phone, Desktop, or Both.**
+
+- **Phone:** styles under `html:not(.stmui-wide)` (or a phone-only class) when they would not suit a computer. Check Android and iPhone/iPad sizes.
+- **Desktop:** styles under `html.stmui-wide`, so the phone layout cannot change because of them. Check 1366 × 700, 1440 × 900 and 1920 × 1080.
+- **Both:** shared styles and logic, checked in both layouts. A feature that is "Both" may still look different in each (a bottom sheet on a phone, a dialog on a computer).
+- Words follow the device: never "phone" on the desktop layout, never "click" on the phone layout.
+- The changelog says which layout each change is for.
+
+**iPhone and iPad are core devices, not extras.** Safari does not shrink the page for the keyboard, so anything fixed to the screen follows `--stmui-ios-top` / `--stmui-ios-h` while `html.stmui-ios-kb` is on (see the Phone layout). Every phone change is checked with `tests/ios.mjs` in Chrome and in WebKit (Safari's engine).
+
 ## What this is
 
-- **Subject:** a phone-first layer over SillyTavern, used for long roleplay and story chats on Android (Termux), often one-handed, often at night.
+- **Subject:** a layer over SillyTavern, used for long roleplay and story chats on Android (often through Termux), iPhone, iPad and computers, often one-handed on a phone, often at night.
 - **Primary job:** reading and writing chat messages comfortably. Everything else (characters, lorebooks, presets, settings) is a quick detour that gets you back to the chat.
 - **Audience:** people who spend hours in one conversation and tweak settings often. They know SillyTavern. They do not want a "cute" app, they want one that disappears.
 
@@ -12,7 +35,7 @@ Rules for any change to how Pocket Tavern looks. Read this before touching `styl
 
 1. **The chat is the hero.** Message text is the biggest, most readable thing on the screen. Chrome (bars, tabs, buttons) stays quiet.
 2. **Spend colour in one place.** One accent per theme, used only for meaning (see *Accent*). If everything is accented, nothing is.
-3. **Thumb first.** Reachable controls sit at the bottom. Nothing you tap is smaller than 44px.
+3. **Thumb first on a phone, pointer first on a computer.** On a phone reachable controls sit at the bottom; on a computer they sit where the eye already is (the sidebar, the panel, the top bar). Nothing you tap or click is smaller than 44px.
 4. **Dense where you work, calm where you read.** Settings pages may be compact. Chat never is.
 5. **Every change must survive all themes.** Light and dark, translucent and opaque.
 6. **Decoration has to carry information.** Borders, dividers, badges, dots and glows exist because they tell the user something. Otherwise delete them.
@@ -85,15 +108,22 @@ Multiples of 4: `4, 8, 12, 16, 24`. Page gutter is 16px on every page, including
 
 ## Desktop layout (`html.stmui-wide`)
 
-On whenever Pocket Tavern is on (Automatic covers computers; **Phones only** keeps a computer on the original interface) and the screen is at least 960 × 560 px; a sideways phone is short and keeps the phone layout. Everything is an override under `html.stmui-wide`, so the phone layout never changes because of it.
+Pocket Tavern on desktop. On whenever Pocket Tavern is on (Automatic covers computers; **Phones only** keeps a computer on the original interface) and the screen is at least 960 × 560 px; a sideways phone is short and keeps the phone layout. Everything is an override under `html.stmui-wide`, so the phone layout never changes because of it.
 
 - **Rail:** the tab bar is a vertical rail on the left (`--stmui-rail-w`): Chat, Characters, Lorebooks and Presets, a 1px `--stmui-line` rule, SillyTavern's other pages (API, Personas, Formatting, Settings, Backgrounds, Extensions; phones keep them in More, and More drops their tiles here), then More at the bottom. Tabs are `--stmui-rail-item` tall: 64px, 56px under 800px of window height, 52px under 660px. Under 712px the six pages show only their icon (48px, then 44px) with the name as a tooltip; below about 610px the rail scrolls. The pill is placed by script on the active tab's icon (`--stmui-tab-y`), not by index, because the tabs differ in height.
 - **Panel:** a page opens beside the rail (`--stmui-panel-w`, 380–460px), one column, and stays open while the chat is used. Back, the tab or Escape closes it. Its right edge (`.stmui-panel-edge`, 12px wide, 28px on a touch screen) drags it wider, from 360px to whatever leaves the chat 480px (760px at most). The width is kept per browser; a double-click (or Home on the focused edge) resets it, the arrow keys move it. The edge's line is `--stmui-text` at 30% on hover and the accent while dragging or focused. Everything that sits in the panel (lorebook entries, the prompt editor) follows `--stmui-panel-w`.
+- **Tool panels** (`#movingDivs > div`: Author's Note, CFG, token probabilities, extension pop-outs): a column on the right (`--stmui-tool-w`, 320–420px, 12px from the edges, 16px radius, `--stmui-solid`, hairline, no shadow), and the chat column moves over (`--stmui-right`). Two or more split the column's height. Maximized, one covers the chat column. Their close, maximize and fold buttons are 44px. Escape closes the newest. Not with SillyTavern's MovingUI.
+- **Characters page:** picking someone from the list keeps the page open on their card (on a phone it closes to land in the chat).
+- **Advanced definitions:** a page right of the rail with its content in an 880px centred column.
+- **Dialogs that fit their content** (chat history, Token Counter): `height: fit-content`, because popups are pinned to all four edges and `auto` would stretch them.
+- **Words:** on the desktop layout nothing says "phone": More shows Features, Themes and the Settings section speak of Pocket Tavern or the desktop layout. Ctrl+K (⌘K) opens Search everything when you are not typing, and More shows the shortcut as a 12px key cap.
 - **Prompt editor:** a page, without SillyTavern's 450px minimum and its cap 50px above the bottom. Footer: Close, Reset, Full screen, Save. Full screen (`html.stmui-prompt-full`) hides the settings rows and lets the prompt text fill the editor; on the desktop layout the editor takes everything right of the rail. Escape and Back leave full screen first. Leaving with unsaved changes (another tab, Back, Escape) asks in a sheet: Save, Keep editing, Discard changes (danger, last).
 - **Chat column:** centred in the space right of the rail and panel, `--stmui-col` wide (SillyTavern's chat width, 560px at least). The composer, the message editor and search follow it.
 - **Sheets and popups:** dialogs in the middle (560px, popups 640px, wide popups 1040px), all corners 16px, no grab handle; they fade and rise 12px.
 
-## Size, message box and tucked tabs
+## Phone layout
+
+Pocket Tavern on phones: Android, iPhone, and iPad held upright. Everything here applies when `html.stmui-wide` is off.
 
 - **Compact (`html.stmui-compact`):** top bar 48px, tab bar 52px, header picture 28px, name 14px, card padding 8 / 12px and 4px between cards, message line height 1.5. The chat text size itself does not change (that is the Chat text size setting). Every tap area stays 44px: buttons overlap the card padding with negative margins rather than shrinking. **Automatic** picks Compact when the screen's short side is under 380px (`SMALL_PHONE_BELOW`), read from `screen`, never the window, so the keyboard cannot flip it.
 - **Compact start screen:** logo 28px, the version on one line (12px), title 16px, shortcuts as 32px chips in 44px rows (no border, `--stmui-raised-2`), recent chat cards with a 40px picture, 12px radius and a one-line preview.
@@ -130,6 +160,12 @@ On whenever Pocket Tavern is on (Automatic covers computers; **Phones only** kee
 - **Other chat styles:** the message cards apply only in SillyTavern's Flat style. Bubbles, Document and Moonlit Echoes' five styles (body classes `echostyle`, `whisperstyle`, `hushstyle`, `ripplestyle`, `tidestyle`) draw the messages themselves; the card selectors list them in one `:not(...)` (same specificity as before). A chat style from another extension gets added there.
 - **The row next to Send is full on a phone:** Send never shrinks. An extension button that lands in that row (ScenePulse) is hidden and offered in the wand's Tools sheet instead, with its own icon and a one-line note. Floating buttons from extensions never sit over the message box.
 - **Theme pins:** `--topBarBlockSize`, the arrow's display, ☰'s size and the message box's opacity are pinned with `!important`, because theme extensions set them too. The editor is a page of its own: while it is open, a mask on `#chat` is turned off (it clipped the editor, which is fixed inside the chat) and its padding, widths and frame are pinned.
+- **Personas (with New character pages on):** grid view is picture cards exactly like the character grid (the one you use gets a 2px accent ring, the default one a crown badge), list view is quiet rows like the character list, and the current persona is a card: 112px picture, 26px name, tools in a three-column grid of 60px labeled buttons, Delete quiet in the danger colour, a linked lorebook as a dot on Lore. Create is the accent +. On a page at least 720px wide the list and the card sit side by side (container query).
+- **Backgrounds:** the header is one row: fitting, then Auto-select, New folder and Add background as 44px icons with tooltips. Thumbnails under 130px wide hide their name while the hover tools show.
+- **Token Counter:** a dialog as tall as its content; labels 14px `--stmui-muted`, the count 20px bold, the tokens on a `--stmui-raised` card, the IDs monospace.
+- **Focus:** Pocket Tavern's own controls show a 2px accent ring (inset) on `:focus-visible`.
+- **Message editor:** Cancel is a plain `--stmui-raised` button, never filled; Save is the accent.
+- **Reload after updates:** the manifest's `update` hook (`onPocketTavernUpdate`) shows one info toast, waits 4 seconds, then reloads only when no dialog or sheet is open, no reply is being written, no message or prompt is being edited, and no text box other than the message box has focus. `tests/check.mjs` checks that every manifest hook names an exported function.
 - **Number boxes beside − and +:** no browser spin arrows (`appearance: textfield`; Firefox always draws them and they covered the number), tabular figures, 4.6em wide so seven digits fit.
 - **Chat Completion Tabs:** its Parameters and Prompts tabs are our segmented control: 44px, the active one in the soft accent with an accent hairline, an opaque `--stmui-solid` bar while it sticks to the top, no shadow, no lift on hover.
 - **Input History:** its buttons sit at the end of the text field (44px each); the arrows show only on an empty box or after they recalled a message; the field reserves room for whatever shows.
@@ -145,11 +181,11 @@ On whenever Pocket Tavern is on (Automatic covers computers; **Phones only** kee
 
 ## Before you ship a UI change
 
-1. Run `node tests/screenshots.mjs` (see the header of that file) and look at the changed screens on a 375px viewport, in at least one dark and one light theme.
+1. Say which layout it is for: Phone, Desktop, or Both. Run `node tests/screenshots.mjs` (see the header of that file) and look at the changed screens: on a 375px viewport for the phone layout, at 1440 × 900 for the desktop layout, in at least one dark and one light theme.
 2. No new raw colour, radius, font size or spacing value outside this guide.
 3. No tappable thing under 44px. No tappable thing using `--stmui-faint`.
 4. Accent appears only in the roles listed above.
-5. `node tests/check.mjs` and `node tests/phone.mjs` pass.
+5. `node tests/check.mjs` and `node tests/phone.mjs` pass, and for phone changes `node tests/ios.mjs` passes in Chrome and in WebKit.
 6. Remove one decoration. If nothing was missed, leave it removed.
 
 ## Known gaps (from the November 2026 audit)

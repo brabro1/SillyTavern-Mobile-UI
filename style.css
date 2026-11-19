@@ -1314,13 +1314,26 @@ html.stmui-shell #left-nav-panel .scrollableInner {
     max-height: none;
 }
 
-/* Character popup, world popup and similar full panels sit between the bars too. */
-html.stmui-shell #character_popup,
-html.stmui-shell #world_popup {
+/* Character popup and similar full panels sit between the bars too. */
+html.stmui-shell #character_popup {
     top: var(--topBarBlockSize) !important;
     height: var(--stmui-page-h) !important;
     max-height: var(--stmui-page-h) !important;
     border-radius: 0;
+}
+
+/* The lorebook editor sits inside the Lorebooks page (SillyTavern 1.19), so the page
+   scrolls it as one. Given a screen height of its own, it hid every entry past the
+   third or fourth. */
+html.stmui-shell #WorldInfo #world_popup {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible;
+}
+
+html.stmui-shell #WorldInfo #world_popup_entries_list {
+    flex: 0 0 auto;
+    overflow: visible;
 }
 
 /* Toasts: below the app bar, full width, rounded. */
@@ -2822,6 +2835,14 @@ html.stmui-touch #select_chat_popup .select_chat_block .mes_button,
 html.stmui-touch #select_chat_popup .select_chat_block [class*='fa-'].opacity50p {
     min-width: 38px;
     min-height: 38px;
+}
+
+/* SillyTavern spins the delete skull and makes it glow while the mouse is over it; here it only turns the danger colour. */
+html.stmui-on #select_chat_popup .PastChat_cross:not(.disabled):hover {
+    animation: none;
+    filter: none;
+    color: var(--stmui-danger);
+    opacity: 1;
 }
 
 /* -- Popups: bottom sheets with big buttons -------------------------------- */
@@ -4899,11 +4920,14 @@ html.stmui-touch #persona_pagination_container {
 
 html.stmui-touch #persona_grid_toggle {
     grid-area: grid;
+    align-self: start;
     margin: 0;
 }
 
+/* On a narrow phone the page size goes under the page buttons instead of under the grid switch. */
 html.stmui-touch #persona_pagination_container .paginationjs {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    gap: 8px 4px;
     min-width: 0;
 }
 
@@ -5038,6 +5062,314 @@ html.stmui-touch #persona_connections_buttons .menu_button > div {
 
 html.stmui-touch #persona_description {
     min-height: 32dvh;
+}
+
+/* -- Personas like characters (html.stmui-personapage, with the new character pages on) --
+   The list is picture cards in grid view and quiet rows in list view, exactly like
+   the Characters list; the current persona is a card: big picture, name, labeled
+   tools. On a wide page (desktop, dragged wider) the list and the card sit side by side. */
+
+/* The top bar already says "Personas"; Usage stats, Backup and Restore share one row. */
+html.stmui-shell.stmui-personapage #persona-management-button h3:has(a[href*="personas"]) {
+    display: none;
+}
+
+html.stmui-personapage #persona-management-button :is(.user_stats_button, #personas_backup, #personas_restore) {
+    flex: 1 1 auto;
+    padding-inline: 8px;
+    justify-content: center;
+    min-width: 0;
+    height: 44px;
+    margin: 0;
+    font-size: 14px;
+}
+
+html.stmui-personapage #persona-management-button :is(.user_stats_button, #personas_backup, #personas_restore) > span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Create: the accent + like the Characters list's. */
+html.stmui-personapage #create_dummy_persona {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-color: transparent !important;
+    border-radius: 999px !important;
+    background: var(--stmui-accent) !important;
+    color: var(--stmui-on-accent) !important;
+}
+
+html.stmui-personapage #create_dummy_persona > div {
+    display: none;
+}
+
+/* Grid view: the picture is the card, the name sits on a soft fade. */
+html.stmui-personapage #user_avatar_block.gridView {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 8px;
+    padding: 2px 0 12px;
+}
+
+html.stmui-personapage #user_avatar_block.gridView .avatar-container {
+    position: relative;
+    display: block;
+    aspect-ratio: 3 / 4;
+    width: auto !important;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 16px;
+    background: var(--stmui-raised);
+    overflow: hidden;
+    cursor: pointer;
+}
+
+html.stmui-personapage #user_avatar_block.gridView .avatar-container .avatar {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0;
+    border-radius: 0;
+    outline: 0;
+}
+
+html.stmui-personapage #user_avatar_block.gridView .avatar-container .avatar img {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    object-fit: cover;
+    object-position: center 20%;
+}
+
+html.stmui-personapage #user_avatar_block.gridView .avatar-container .character_select_container {
+    position: absolute;
+    inset: auto 0 0 0;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 28px 8px 8px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
+}
+
+html.stmui-personapage #user_avatar_block.gridView .avatar-container .ch_name {
+    max-width: none;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+html.stmui-personapage #user_avatar_block.gridView .avatar-container :is(.ch_description, .ch_additional_info) {
+    display: none !important;
+}
+
+/* The persona you are using: an accent ring on its card. */
+html.stmui-personapage #user_avatar_block.gridView .avatar-container.selected {
+    outline: 2px solid var(--stmui-accent);
+    outline-offset: -2px;
+    background: var(--stmui-raised);
+}
+
+/* Locked to this chat or character: the small labels sit in the top corner. */
+html.stmui-personapage #user_avatar_block.gridView .avatar-container .avatar_container_states {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    gap: 4px;
+}
+
+html.stmui-personapage #user_avatar_block.gridView .avatar-container .avatar_state .label {
+    display: none;
+}
+
+/* Your default persona wears a crown. */
+html.stmui-personapage #user_avatar_block .stmui-default-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #ffd54f;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+html.stmui-personapage #user_avatar_block:not(.gridView) .stmui-default-badge {
+    position: static;
+    flex: 0 0 auto;
+    order: 3;
+    background: var(--stmui-raised-2);
+}
+
+/* List view: quiet rows like the Characters list. */
+html.stmui-personapage #user_avatar_block:not(.gridView) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+html.stmui-personapage #user_avatar_block:not(.gridView) .avatar-container {
+    min-height: 64px;
+    margin: 0;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+}
+
+html.stmui-personapage #user_avatar_block:not(.gridView) .avatar-container.selected {
+    background: var(--stmui-accent-soft);
+    outline: 1px solid color-mix(in srgb, var(--stmui-accent) 55%, transparent);
+    outline-offset: -1px;
+}
+
+/* Add a persona from a picture: a dashed card, like an empty slot. */
+html.stmui-personapage #user_avatar_block .avatar_upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: auto;
+    height: auto;
+    min-height: 64px;
+    margin: 0;
+    border: 2px dashed var(--stmui-line);
+    border-radius: 16px;
+    background: transparent;
+    color: var(--stmui-muted);
+    font-size: 26px;
+}
+
+html.stmui-personapage #user_avatar_block.gridView .avatar_upload {
+    aspect-ratio: 3 / 4;
+}
+
+/* The current persona as a card: big picture, its name, then the tools in an even grid. */
+html.stmui-personapage #persona_controls {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 12px;
+}
+
+html.stmui-personapage #persona_controls .stmui-persona-face {
+    align-self: center;
+    width: 112px;
+    height: 112px;
+    margin-top: 4px;
+}
+
+html.stmui-personapage #persona_controls #your_name {
+    flex: 0 0 auto;
+    font-size: 26px;
+    text-align: center;
+    white-space: normal;
+}
+
+html.stmui-personapage #persona_controls .persona_controls_buttons_block {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+html.stmui-personapage #persona_controls .persona_controls_buttons_block .menu_button {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 60px;
+    border-radius: 12px;
+    font-size: 18px;
+}
+
+/* Delete is quiet like the character card's (SillyTavern fills it red with !important), and a
+   linked lorebook is a small dot on Lore instead of SillyTavern's green. */
+html.stmui-personapage #persona_controls #persona_delete_button {
+    border-color: var(--stmui-line) !important;
+    background-color: var(--stmui-raised) !important;
+    color: var(--stmui-danger) !important;
+}
+
+html.stmui-personapage #persona_controls #persona_lore_button {
+    position: relative;
+    color: var(--stmui-text) !important;
+}
+
+html.stmui-personapage #persona_controls #persona_lore_button.world_set::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--stmui-accent);
+}
+
+/* The "Current persona" heading repeats the tab's name. */
+html.stmui-personapage .persona_management_current_persona > h4.standoutHeader:first-child {
+    display: none;
+}
+
+@media (hover: hover) {
+    html.stmui-personapage #user_avatar_block:not(.gridView) .avatar-container:not(.selected):hover {
+        background: var(--stmui-raised);
+    }
+}
+
+/* Side by side when the page is wide enough (the desktop layout, page dragged wider). */
+html.stmui-wide.stmui-personapage #persona-management-button > .drawer-content {
+    container: stmui-persona / inline-size;
+}
+
+@container stmui-persona (min-width: 720px) {
+    html.stmui-wide.stmui-personapage .stmui-persona-tabs {
+        display: none;
+    }
+
+    html.stmui-wide.stmui-personapage #persona-management-block.stmui-persona-split {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 24px;
+    }
+
+    html.stmui-wide.stmui-personapage #persona-management-block.stmui-persona-split > :is(.persona_management_left_column, .persona_management_right_column) {
+        display: block !important;
+        flex: 1 1 0;
+        width: auto;
+    }
+}
+
+/* The shortcut for Search everything, shown on a computer. */
+.stmui-kbd {
+    margin-left: auto;
+    padding: 2px 8px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 8px;
+    background: var(--stmui-raised-2);
+    color: var(--stmui-muted);
+    font-family: inherit;
+    font-size: 12px;
+}
+
+/* Keyboard focus: an accent ring on Pocket Tavern's own controls (SillyTavern rings only its fields). */
+html.stmui-on :is(.stmui-tab, .stmui-ab-btn, .stmui-ab-who, .stmui-menu-row, .stmui-tile, .stmui-seg, .stmui-step, .stmui-done, .stmui-theme-card, .stmui-search-field, .stmui-trigger-chip, .stmui-prompt-full-btn, .openai-tab-button):focus-visible {
+    outline: 2px solid var(--stmui-accent);
+    outline-offset: -2px;
 }
 
 /* ==========================================================================
@@ -5486,6 +5818,10 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons
     flex: 1 1 40%;
     height: 48px;
     gap: 6px;
+    /* Cancel is never filled (SillyTavern paints it red): a plain button beside the accent Save. */
+    border-color: var(--stmui-line) !important;
+    background: var(--stmui-raised) !important;
+    color: var(--stmui-text) !important;
 }
 
 html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons .mes_edit_done {
@@ -6088,6 +6424,8 @@ html.stmui-charpage #avatar_controls > label {
 
 html.stmui-charpage .stmui-card-tabs {
     display: flex;
+    /* Never grows: on Notes & tags no big text box takes the spare height, and the tabs did. */
+    flex: 0 0 auto;
     box-sizing: border-box;
     width: 100%;
     margin: 12px 0 8px;
@@ -9267,6 +9605,166 @@ html.stmui-lorecards.stmui-ios-kb #world_popup_entries_list .world_entry.stmui-e
 }
 
 /* ==========================================================================
+   Token Counter (wand → Token Counter): a dialog sized to what it holds, with
+   the count big, the text in a real box, the tokens as chips on a card and the
+   IDs in a quiet monospace box. SillyTavern opened it as a screen-sized popup
+   with plain labels.
+   ========================================================================== */
+
+/* Pinned to every edge like all popups, so auto would stretch it: fit-content sizes it to its content. */
+html.stmui-touch dialog.popup:has(#token_counter_textarea) {
+    height: fit-content !important;
+}
+
+html.stmui-wide.stmui-touch dialog.popup:has(#token_counter_textarea) {
+    min-width: 0 !important;
+    width: min(720px, calc(100vw - 48px)) !important;
+    max-width: min(720px, calc(100vw - 48px)) !important;
+}
+
+html.stmui-touch .popup:has(#token_counter_textarea) h3 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    text-align: left;
+}
+
+html.stmui-touch .popup:has(#token_counter_textarea) h4 {
+    margin: 0;
+    color: var(--stmui-muted);
+    font-size: 14px;
+    font-weight: 400;
+}
+
+html.stmui-touch .popup:has(#token_counter_textarea) .flexFlowColumn {
+    gap: 8px;
+    text-align: left;
+}
+
+html.stmui-touch .popup:has(#token_counter_textarea) .flexFlowColumn > p {
+    margin: 0;
+    color: var(--stmui-muted);
+    font-size: 14px;
+}
+
+/* Field labels: Input, Tokenized text, Token IDs. */
+html.stmui-touch .popup:has(#token_counter_textarea) .flexFlowColumn > div:not([id]):not(:has(#token_counter_result)) {
+    margin-top: 8px;
+    color: var(--stmui-muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+html.stmui-touch .popup:has(#token_counter_textarea) hr {
+    display: none;
+}
+
+html.stmui-touch #token_counter_textarea {
+    box-sizing: border-box;
+    min-height: 120px;
+    max-height: 40dvh;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+/* The count: the one number this dialog is for. */
+html.stmui-touch .popup:has(#token_counter_textarea) .flexFlowColumn > div:has(#token_counter_result) {
+    color: var(--stmui-muted);
+    font-size: 14px;
+}
+
+html.stmui-touch #token_counter_result {
+    margin-left: 4px;
+    color: var(--stmui-text);
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+html.stmui-touch #tokenized_chunks_display {
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 12px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 12px;
+    background: var(--stmui-raised);
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+}
+
+html.stmui-touch #tokenized_chunks_display > code {
+    margin: 1px;
+    padding: 1px 3px;
+    font-size: 14px;
+}
+
+html.stmui-touch #token_counter_ids {
+    box-sizing: border-box;
+    padding: 12px;
+    border-radius: 12px;
+    color: var(--stmui-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+}
+
+/* ==========================================================================
+   Backgrounds page: one header row (fitting, then Auto-select, New folder and
+   Add background as 44px icons with their names as tooltips; with text they
+   overflowed their buttons). On small thumbnails (zoomed out with −) the name
+   steps aside for the hover tools instead of sitting under them.
+   ========================================================================== */
+
+/* The top bar already says "Backgrounds". */
+html.stmui-shell #Backgrounds .bg-header-row-1 > h3,
+html.stmui-shell #Backgrounds .bg-header-row-1 > .expander {
+    display: none;
+}
+
+html.stmui-touch #Backgrounds .bg-header-row-1 {
+    align-items: center;
+    gap: 8px;
+}
+
+html.stmui-touch #Backgrounds #background_fitting {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+}
+
+html.stmui-touch #Backgrounds .bg-header-row-1 > .menu_button_icon {
+    display: inline-flex;
+    flex: 0 0 44px;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border-radius: 12px;
+}
+
+html.stmui-touch #Backgrounds .bg-header-row-1 > .menu_button_icon > span {
+    display: none;
+}
+
+html.stmui-touch #Backgrounds #bg_menu_content .bg_example {
+    container: stmui-bg / inline-size;
+}
+
+@container stmui-bg (max-width: 130px) {
+    html.stmui-touch #Backgrounds .bg_example .BGSampleTitle {
+        display: none;
+    }
+
+    html.stmui-touch #Backgrounds .bg_example .jg-menu {
+        inset: auto 2px 2px 2px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
    Desktop layout (html.stmui-wide): a computer or a tablet held sideways.
    Tabs become a rail on the left, a page opens as a panel beside the chat and
    stays open while you chat, the chat is a centred column, and sheets and
@@ -9279,8 +9777,10 @@ html.stmui-wide {
     --stmui-panel-w: clamp(380px, 30vw, 460px);
     --stmui-bottom: 0px;
     --stmui-left: var(--stmui-rail-w);
+    --stmui-right: 0px;
+    --stmui-tool-w: clamp(320px, 24vw, 420px);
     --stmui-page-h: calc(100dvh - var(--topBarBlockSize));
-    --stmui-avail: calc(100vw - var(--stmui-left));
+    --stmui-avail: calc(100vw - var(--stmui-left) - var(--stmui-right));
     --stmui-col: min(max(var(--sheldWidth, 50vw), 560px), calc(var(--stmui-avail) - 48px));
 }
 
@@ -9561,13 +10061,155 @@ html.stmui-wide.stmui-prompt-full #completion_prompt_manager_popup .completion_p
     padding-inline: 24px;
 }
 
-/* SillyTavern's bigger panels (advanced definitions, the lorebook editor) take the space right of the rail. */
-html.stmui-wide #character_popup,
-html.stmui-wide #world_popup {
+/* SillyTavern's bigger panel (advanced definitions) takes the space right of the rail. */
+html.stmui-wide #character_popup {
     left: var(--stmui-rail-w) !important;
     right: 0 !important;
     width: auto !important;
     max-width: none !important;
+}
+
+/* -- Tool panels (Author's Note, CFG, token probabilities, extension pop-outs):
+   a column on the right, and the chat moves over to make room. Two or more share
+   the column. Maximized, one covers the chat column. Not with SillyTavern's MovingUI,
+   where you place them yourself. -- */
+
+html.stmui-wide.stmui-tools-open {
+    --stmui-right: calc(var(--stmui-tool-w) + 24px);
+}
+
+html.stmui-wide body:not(.movingUI) #movingDivs > div:not(.maximized) {
+    position: fixed !important;
+    inset: calc(var(--topBarBlockSize) + 12px + (var(--stmui-page-h) - 12px) / var(--stmui-tool-n, 1) * var(--stmui-tool-i, 0)) 12px auto auto !important;
+    z-index: 3050 !important;
+    box-sizing: border-box;
+    width: var(--stmui-tool-w) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: calc((var(--stmui-page-h) - 12px) / var(--stmui-tool-n, 1) - 12px) !important;
+    margin: 0 !important;
+    padding: 56px 16px 16px !important;
+    border: 1px solid var(--stmui-line) !important;
+    border-radius: 16px !important;
+    background: var(--stmui-solid) !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    overflow-y: auto;
+}
+
+html.stmui-wide body:not(.movingUI) #movingDivs > #logprobsViewer:not(.maximized) {
+    padding-top: 8px !important;
+}
+
+html.stmui-wide body:not(.movingUI) #movingDivs > div.maximized {
+    inset: var(--topBarBlockSize) auto 0 calc(var(--stmui-left) + (var(--stmui-avail) - var(--stmui-col)) / 2) !important;
+    z-index: 3050 !important;
+    width: var(--stmui-col) !important;
+    max-width: none !important;
+    height: var(--stmui-page-h) !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    background: var(--stmui-solid) !important;
+}
+
+html.stmui-wide body:not(.movingUI) #movingDivs .drag-grabber {
+    display: none !important;
+}
+
+html.stmui-wide #movingDivs > div .panelControlBar {
+    top: 8px;
+    right: 8px;
+    gap: 4px;
+}
+
+/* Close, maximize and fold: 44px, quiet until the mouse is over them. */
+html.stmui-wide #movingDivs > div :is(.floating_panel_close, .inline-drawer-maximize, .logprobs_panel_control_button, .dragClose) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border-radius: 12px;
+    color: var(--stmui-muted);
+    font-size: 18px;
+    opacity: 1;
+    cursor: pointer;
+}
+
+html.stmui-wide #movingDivs > div .logprobs_panel_control_button.drag-grabber {
+    display: none !important;
+}
+
+@media (hover: hover) {
+    html.stmui-wide #movingDivs > div :is(.floating_panel_close, .inline-drawer-maximize, .logprobs_panel_control_button, .dragClose):hover {
+        background: var(--stmui-raised-2);
+        color: var(--stmui-text);
+    }
+}
+
+/* -- Advanced definitions: a page right of the rail, its content in a readable
+   centred column instead of text boxes as wide as the screen. -- */
+
+html.stmui-wide #character_popup {
+    box-sizing: border-box;
+    padding: 16px max(24px, calc((100vw - var(--stmui-rail-w) - 880px) / 2)) 32px !important;
+    overflow-y: auto;
+}
+
+html.stmui-wide #character_popup #character_popup_text {
+    padding-right: 56px;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+html.stmui-wide #character_popup #character_popup_text > h3 {
+    display: inline;
+    font-size: 20px;
+}
+
+html.stmui-wide #character_popup #character_cross {
+    position: absolute;
+    top: 8px;
+    right: max(16px, calc((100vw - var(--stmui-rail-w) - 880px) / 2 - 8px));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    color: var(--stmui-muted);
+    font-size: 22px;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    html.stmui-wide #character_popup #character_cross:hover {
+        background: var(--stmui-raised-2);
+        color: var(--stmui-text);
+    }
+}
+
+html.stmui-wide #character_popup textarea {
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+/* -- Chat history: as tall as its chats (up to most of the screen), with readable text -- */
+
+html.stmui-wide #select_chat_popup .select_chat_block_filename,
+html.stmui-wide #select_chat_popup .select_chat_block_filename_item {
+    font-size: 14px;
+}
+
+html.stmui-wide #select_chat_popup .select_chat_block_mes {
+    font-size: 16px;
+    line-height: 1.45;
 }
 
 /* -- The message editor fills the chat column ----------------------------- */
@@ -9651,11 +10293,12 @@ html.stmui-wide.stmui-touch dialog.popup[closing] {
     }
 }
 
-/* Chat history is a dialog too. */
+/* Chat history is a dialog too, as tall as its chats and centred (all four edges at 0 with auto margins). */
 html.stmui-wide.stmui-touch #shadow_select_chat_popup #select_chat_popup {
+    inset: 0 !important;
     width: min(720px, calc(100vw - 48px)) !important;
     max-width: min(720px, calc(100vw - 48px)) !important;
-    height: min(86vh, 900px) !important;
+    height: fit-content !important;
     max-height: min(86vh, 900px) !important;
     margin: auto !important;
     border-bottom: 1px solid var(--stmui-line);

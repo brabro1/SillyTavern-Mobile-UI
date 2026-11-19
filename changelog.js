@@ -1,6 +1,16 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.21.0',
+        items: [
+            "On a computer, Author's Note, CFG, Token probabilities and extensions' pop-outs open in a column right of the chat, which moves over to make room. They were hidden in the top-left corner. Escape closes them.",
+            "Personas look like Characters: picture cards (or quiet rows), and the persona you use is a card with a big picture and labeled tools. On a wide page the list and the card sit side by side.",
+            "Fixed: a long lorebook only showed its first three or four entries, on phones too. On a computer, picking a character closed the page after a flash, and Notes & tags made the card's tabs grow.",
+            "Tidier Token Counter, Advanced definitions, chat history and Backgrounds. The delete skull no longer spins, and Cancel in the message editor is no longer red.",
+            "On a computer, Ctrl+K opens Search everything. And from the next update on, the page reloads by itself after Pocket Tavern updates, once nothing is in progress (switch: Reload after updates).",
+        ],
+    },
+    {
         version: '2.20.0',
         items: [
             "On a computer, every page is on the rail: API, Personas, Formatting, Settings, Backgrounds and Extensions are one click away instead of inside More.",

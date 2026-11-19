@@ -53,41 +53,54 @@ body {
 .bars::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(245, 235, 220, 0.09); }
 .bars::after { content: ''; position: absolute; left: 0; right: 0; top: 236px; height: 1px; background: rgba(245, 235, 220, 0.09); }
 
-/* Phones, rising out of the bottom edge. */
+/* A laptop showing the desktop layout, and a phone in front of it. */
+.laptop { position: absolute; left: 600px; top: 118px; width: 600px; z-index: 2; }
+.lid {
+    position: relative; padding: 14px 14px 18px; border-radius: 18px 18px 6px 6px;
+    background: linear-gradient(160deg, #3a3d4a, #15161c 40%, #0b0b0e 75%, #2b2d36);
+    box-shadow: 0 40px 70px -24px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.07) inset, 0 0 60px -10px rgba(244, 169, 78, 0.35);
+}
+.lid::before { content: ''; position: absolute; top: 6px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #050507; }
+.lid img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top left; border-radius: 4px; }
+.base {
+    position: relative; left: -44px; width: 688px; height: 16px; border-radius: 2px 2px 14px 14px;
+    background: linear-gradient(180deg, #4a4d5a, #1b1c22 60%, #0d0d10);
+    box-shadow: 0 24px 40px -14px rgba(0, 0, 0, 0.8);
+}
+.base::before { content: ''; position: absolute; top: 0; left: 50%; width: 110px; height: 6px; margin-left: -55px; border-radius: 0 0 8px 8px; background: rgba(0, 0, 0, 0.45); }
+
 .phone {
-    position: absolute; width: 268px; aspect-ratio: 375 / 812; border-radius: 42px; padding: 9px;
+    position: absolute; width: 196px; aspect-ratio: 375 / 812; border-radius: 32px; padding: 7px;
     background: linear-gradient(145deg, #3a3d4a, #121318 38%, #0a0a0d 70%, #2b2d36);
     box-shadow:
-        0 40px 70px -18px rgba(0, 0, 0, 0.75),
+        0 40px 70px -18px rgba(0, 0, 0, 0.8),
         0 0 0 1px rgba(255, 255, 255, 0.07) inset,
         -14px 0 40px -20px rgba(244, 169, 78, 0.55);
 }
 .phone::before {
-    content: ''; position: absolute; top: 20px; left: 50%; width: 11px; height: 11px; margin-left: -5.5px;
+    content: ''; position: absolute; top: 15px; left: 50%; width: 9px; height: 9px; margin-left: -4.5px;
     border-radius: 50%; background: #050507; box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.06); z-index: 2;
 }
-.screen { display: flex; flex-direction: column; width: 100%; height: 100%; border-radius: 34px; overflow: hidden; background: #161616; }
-.status { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; height: 30px; padding: 4px 24px 0; background: #161616; color: rgba(255, 255, 255, 0.82); font-size: 11.5px; font-weight: 600; }
+.screen { display: flex; flex-direction: column; width: 100%; height: 100%; border-radius: 26px; overflow: hidden; background: #161616; }
+.status { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; height: 24px; padding: 3px 18px 0; background: #161616; color: rgba(255, 255, 255, 0.82); font-size: 10px; font-weight: 600; }
 .status i { display: inline-flex; gap: 4px; align-items: center; font-style: normal; }
-.status i::before { content: ''; width: 14px; height: 9px; border-radius: 2px; background: linear-gradient(90deg, rgba(255,255,255,.85) 0 22%, transparent 22% 30%, rgba(255,255,255,.85) 30% 52%, transparent 52% 60%, rgba(255,255,255,.85) 60% 78%, transparent 78% 86%, rgba(255,255,255,.5) 86%); }
-.status i::after { content: ''; width: 19px; height: 9px; border-radius: 3px; border: 1.3px solid rgba(255,255,255,.75); background: linear-gradient(90deg, rgba(255,255,255,.85) 70%, transparent 70%); background-clip: content-box; padding: 1px; }
+.status i::before { content: ''; width: 12px; height: 8px; border-radius: 2px; background: linear-gradient(90deg, rgba(255,255,255,.85) 0 22%, transparent 22% 30%, rgba(255,255,255,.85) 30% 52%, transparent 52% 60%, rgba(255,255,255,.85) 60% 78%, transparent 78% 86%, rgba(255,255,255,.5) 86%); }
+.status i::after { content: ''; width: 16px; height: 8px; border-radius: 3px; border: 1.2px solid rgba(255,255,255,.75); background: linear-gradient(90deg, rgba(255,255,255,.85) 70%, transparent 70%); background-clip: content-box; padding: 1px; }
 .screen img { display: block; flex: 1 1 auto; width: 100%; min-height: 0; object-fit: cover; object-position: top; }
-.p-left { left: 640px; top: 196px; transform: rotate(-13deg); z-index: 1; filter: brightness(0.82); }
-.p-mid { left: 832px; top: 92px; width: 292px; transform: rotate(-4deg); z-index: 3; }
-.p-right { left: 1040px; top: 214px; transform: rotate(7deg); z-index: 2; filter: brightness(0.82); }
+.p-front { left: 1052px; top: 236px; transform: rotate(5deg); z-index: 4; }
 
 /* Words. */
-.copy { position: absolute; left: 84px; top: 0; bottom: 0; width: 560px; display: flex; flex-direction: column; justify-content: center; z-index: 5; }
+.copy { position: absolute; left: 72px; top: 0; bottom: 0; width: 500px; display: flex; flex-direction: column; justify-content: center; z-index: 5; }
 .mark { display: flex; align-items: center; gap: 14px; margin-bottom: 34px; }
 .mark img { width: 52px; height: 52px; }
 .mark span { font-size: 17px; font-weight: 500; color: var(--muted); }
 h1 {
     font-family: 'Fraunces', Georgia, serif;
     font-variation-settings: 'opsz' 144, 'SOFT' 100;
-    font-weight: 620; font-size: 116px; line-height: 0.9; letter-spacing: -0.035em;
+    font-weight: 620; font-size: 108px; line-height: 0.9; letter-spacing: -0.035em;
     color: var(--paper);
 }
-.tag { margin-top: 28px; font-size: 27px; line-height: 1.3; color: var(--paper); opacity: 0.92; }
+.tag { margin-top: 28px; font-size: 25px; line-height: 1.3; color: var(--paper); opacity: 0.92; }
 .facts { margin-top: 36px; display: flex; gap: 22px; align-items: center; font-size: 16px; color: var(--muted); }
 .facts .rule { width: 1px; height: 16px; background: rgba(245, 235, 220, 0.18); }
 .alpha { color: var(--amber); font-weight: 600; }
@@ -95,17 +108,16 @@ h1 {
 </head>
 <body>
 <div class="window"><div class="bars"></div></div>
-<div class="phone p-left"><div class="screen"><div class="status"><span>9:41</span><i></i></div><img src="../screenshots/settings.jpg" alt=""></div></div>
-<div class="phone p-right"><div class="screen"><div class="status"><span>9:41</span><i></i></div><img src="../screenshots/characters.jpg" alt=""></div></div>
-<div class="phone p-mid"><div class="screen"><div class="status"><span>9:41</span><i></i></div><img src="../screenshots/chat.jpg" alt=""></div></div>
+<div class="laptop"><div class="lid"><img src="../screenshots/desktop.jpg" alt=""></div><div class="base"></div></div>
+<div class="phone p-front"><div class="screen"><div class="status"><span>9:41</span><i></i></div><img src="../screenshots/chat.jpg" alt=""></div></div>
 
 <div class="copy">
     <div class="mark"><img src="logo.svg" alt=""><span>An extension for SillyTavern</span></div>
     <h1>Pocket<br>Tavern</h1>
-    <p class="tag">SillyTavern, made for your phone.</p>
+    <p class="tag">SillyTavern, made for your phone<br>and your computer.</p>
     <div class="facts">
         <span class="alpha">Alpha</span><span class="rule"></span>
-        <span>Android and Termux</span><span class="rule"></span>
+        <span>Phones and computers</span><span class="rule"></span>
         <span>Free and open source</span>
     </div>
 </div>

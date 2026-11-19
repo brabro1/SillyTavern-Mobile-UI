@@ -40,7 +40,7 @@ The internal `stmui` names and the `mobileUI` settings key come from the project
    `PROFILE="type"` (any part of a scenario name, here "type a message") shows the busiest functions and what made the page restyle.
 5. For a user-facing change, add a line to `CHANGELOG.md` and `changelog.js`, and update the README.
 6. If you changed how Pocket Tavern treats another extension (Guided Generations, Input History), install those in your test SillyTavern and run `node compat.mjs` (same `ST_URL` and `CHROME_CHANNEL`). It blocks requests to the AI, so nothing is generated.
-7. If you changed anything that is fixed to the screen, the keyboard handling or wide layouts, run `node ios.mjs` too (iPhone and iPad sizes, Safari's keyboard faked). `ENGINE=webkit node ios.mjs` runs it in WebKit, Safari's engine, after `npx playwright install webkit`.
+7. If you changed the phone layout, anything fixed to the screen, the keyboard handling or wide layouts, run `node ios.mjs` too (iPhone and iPad sizes, Safari's keyboard faked). `ENGINE=webkit node ios.mjs` runs it in WebKit, Safari's engine, after `npx playwright install webkit`. iPhone and iPad are core devices, so please check them like Android.
 8. For a polish pass, `node audit.mjs results/audit` (same `ST_URL` and `CHROME_CHANNEL`) walks every screen at three sizes and with the keyboard up, and saves a picture of each.
 9. If the look changed, retake the screenshots with test data only (never your own chats), then redraw the banner from `docs/brand/banner.html`:
    ```bash
