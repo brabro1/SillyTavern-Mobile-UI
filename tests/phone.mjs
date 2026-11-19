@@ -449,7 +449,8 @@ await step('the keyboard: chat and message box slide as one piece, and the tabs 
             const last = [...document.querySelectorAll('#chat .mes')].pop().getBoundingClientRect().bottom;
             const box = document.getElementById('form_sheld').getBoundingClientRect();
             const root = document.documentElement;
-            window.__kb.push({ gap: Math.round(box.top - last), bottom: Math.round(box.bottom), vh: innerHeight, kb: root.classList.contains('stmui-keyboard'), tabs: getComputedStyle(document.querySelector('.stmui-tabbar')).display !== 'none' });
+            const chat = document.getElementById('chat');
+            window.__kb.push({ full: chat.scrollHeight > chat.clientHeight + 40, gap: Math.round(box.top - last), bottom: Math.round(box.bottom), vh: innerHeight, kb: root.classList.contains('stmui-keyboard'), tabs: getComputedStyle(document.querySelector('.stmui-tabbar')).display !== 'none' });
             if (performance.now() - t0 < 700) requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
@@ -460,7 +461,10 @@ await step('the keyboard: chat and message box slide as one piece, and the tabs 
     };
     const steady = (rows, label) => {
         const gaps = rows.map(r => r.gap);
-        if (Math.max(...gaps) - Math.min(...gaps) > 3) throw new Error(`${label}: the gap between the newest message and the box went ${Math.min(...gaps)}–${Math.max(...gaps)}px`);
+        // A short chat (a fresh SillyTavern: just the greeting) does not reach the box; the box may move away from it, never over it.
+        if (!rows.every(r => r.full)) {
+            if (Math.min(...gaps) < -1) throw new Error(`${label}: the box covered the newest message by ${-Math.min(...gaps)}px`);
+        } else if (Math.max(...gaps) - Math.min(...gaps) > 3) throw new Error(`${label}: the gap between the newest message and the box went ${Math.min(...gaps)}–${Math.max(...gaps)}px`);
         const end = rows.at(-1);
         if (end.bottom > end.vh + 1) throw new Error(`${label}: the box ends at ${end.bottom}, below the screen (${end.vh})`);
     };
