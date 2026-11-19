@@ -1,6 +1,16 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.19.0',
+        items: [
+            "With Guided Generations installed, its row of icons becomes one guide button next to Send, with a menu that explains every action. Its guides, tools and popups fit the screen, and holding the button repeats your last guided action.",
+            "iPhone and iPad: with the keyboard up, the bars, the chat and the message editor stay in the part of the screen you can see. On an iPad held sideways the chat is wider, and More → Themes has a Chat width slider.",
+            "Fixed: in the Bubbles look the message editor shrank to its text and sat at the edge of the screen. It fills the page again.",
+            "Fixed: the docked message box cut off the top of the text field. Your typing now follows the Chat text size.",
+            "Input History's buttons sit at the end of the text field, and quick replies share one line on a phone held sideways.",
+        ],
+    },
+    {
         version: '2.18.4',
         items: [
             "Fixed: editing a message could push the whole screen up, so the top bar and the message you were editing slid off the screen.",

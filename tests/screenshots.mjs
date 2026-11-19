@@ -21,7 +21,7 @@ const context = await browser.newContext({ ...devices['Pixel 7'], viewport: { wi
 const hideTestExtensions = () => {
     const hide = () => {
         const style = document.createElement('style');
-        style.textContent = '#gg-action-button-container, #qr--bar { display: none !important; }';
+        style.textContent = '#gg-action-button-container, #qr--bar, .stih--history { display: none !important; }';
         document.head.append(style);
     };
     if (document.head) hide();
@@ -103,6 +103,16 @@ await until(() => document.documentElement.classList.contains('stmui-on'), null,
 await page.waitForTimeout(3000);
 await page.evaluate(() => document.querySelectorAll('dialog.popup[open] .popup-button-cancel').forEach(button => button.click()));
 if (await page.locator('#stmui-sheet').count()) await closeSheet();
+
+// Guided Generations' button stays out of the pictures too (put back at the end).
+const guideButtonWasOn = await page.evaluate(() => {
+    // Input History's buttons are switched off the way its own settings do it, so the text keeps its room.
+    document.querySelectorAll('.stih--buttons').forEach(buttons => buttons.classList.add('stih--hidden'));
+    const toggle = document.getElementById('stmui_ggbutton');
+    if (!toggle?.checked) return false;
+    toggle.click();
+    return true;
+});
 
 // A known starting point: SillyTavern's own colors and the Cards look.
 await setTheme('st');
@@ -311,7 +321,10 @@ if (want('desktop')) {
     await tabPage.goto(ST_URL, { waitUntil: 'domcontentloaded' });
     await tabPage.waitForFunction(() => document.documentElement.classList.contains('stmui-wide'), null, { timeout: 120000 });
     await tabPage.waitForTimeout(2500);
-    await tabPage.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+    await tabPage.evaluate(() => {
+        document.querySelector('#stmui-sheet .stmui-done')?.click();
+        document.querySelectorAll('.stih--buttons').forEach(buttons => buttons.classList.add('stih--hidden'));
+    });
     await tabPage.evaluate(async () => {
         const context = SillyTavern.getContext();
         await context.selectCharacterById(String(context.characters.findIndex(item => item.name === 'Seraphina')));
@@ -327,5 +340,9 @@ if (want('desktop')) {
     await desk.close();
 }
 
+if (guideButtonWasOn) {
+    await page.evaluate(() => document.getElementById('stmui_ggbutton')?.click());
+    await page.waitForTimeout(2500);
+}
 await browser.close();
 console.log('\nDone. Check the pictures, then run node brand.mjs to redraw the banner if chat, settings or characters changed.');

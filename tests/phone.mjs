@@ -428,6 +428,33 @@ await step('editing the last message keeps the editor and the top bar on the scr
     if (state.scrolled || state.bar < 0 || state.box < state.bar) throw new Error(`the editor moved off the screen: ${JSON.stringify(state)}`);
 });
 
+await step("the editor fills the page in every chat look, for your messages and the AI's", async () => {
+    // In the Bubbles look the editor used to shrink to its text and sit at one edge.
+    const results = await page.evaluate(async () => {
+        const root = document.documentElement;
+        const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const out = [];
+        for (const look of ['cards', 'bubbles', 'flat']) {
+            if (look === 'cards') delete root.dataset.stmuiLook;
+            else root.dataset.stmuiLook = look;
+            const messages = [...document.querySelectorAll('#chat .mes')];
+            for (const mes of [messages.find(m => m.getAttribute('is_user') === 'true'), messages.at(-1)].filter(Boolean)) {
+                mes.querySelector('.mes_edit').click();
+                await wait(600);
+                const box = document.getElementById('curEditTextarea')?.getBoundingClientRect();
+                const bar = document.getElementById('stmui-appbar').getBoundingClientRect();
+                out.push({ look, user: mes.getAttribute('is_user'), top: Math.round(box?.top ?? -1), height: Math.round(box?.height ?? 0), below: Math.round(bar.bottom), screen: innerHeight });
+                document.querySelector('#chat .mes:has(#curEditTextarea) .mes_edit_cancel')?.click();
+                await wait(500);
+            }
+        }
+        delete root.dataset.stmuiLook;
+        return out;
+    });
+    const bad = results.filter(r => r.height < r.screen * 0.4 || r.top < r.below || r.top > r.below + 80);
+    if (bad.length) throw new Error(`editor too small or misplaced: ${JSON.stringify(bad)}`);
+});
+
 await step('compact size and docked message box fit more chat and keep 44px buttons', async () => {
     await setPref('stmui_size', 'comfortable');
     await setPref('stmui_composer', 'floating');
@@ -457,10 +484,13 @@ await step('compact size and docked message box fit more chat and keep 44px butt
                 send: Math.abs(send.bottom - field.bottom) <= 1 && send.left >= field.right,
                 persona: Math.abs(persona.bottom - field.bottom) <= 1 && persona.right <= field.left,
                 edge: window.innerHeight - send.bottom,
+                // SillyTavern's clip used to cut off the field's top edge.
+                topEdge: document.elementFromPoint(field.left + field.width / 2, field.top + 2)?.id === 'send_textarea',
             };
         });
         if (!row.send || !row.persona) throw new Error(`the bottom row is not persona, field, Send: ${JSON.stringify(row)}`);
         if (row.edge < 4) throw new Error(`Send is ${row.edge}px from the bottom edge`);
+        if (!row.topEdge) throw new Error('the top edge of the docked text field is cut off');
         const covered = await lastMessageCovered();
         if (covered > 1) throw new Error(`the newest message is ${covered}px under the message box`);
     } finally {
@@ -469,9 +499,120 @@ await step('compact size and docked message box fit more chat and keep 44px butt
     }
 });
 
+await step('Guided Generations becomes one button with a sheet; Input History sits in the text field', async () => {
+    // The real extensions when they are installed (the test copy), otherwise stand-ins with the same markup.
+    const made = await page.evaluate(async () => {
+        const context = SillyTavern.getContext();
+        if (context.characterId === undefined && !context.groupId) await context.selectCharacterById('0');
+        const made = { gg: false, ih: false };
+        if (!document.getElementById('gg-action-button-container')) {
+            made.gg = true;
+            const row = document.createElement('div');
+            row.id = 'gg-action-button-container';
+            row.className = 'gg-action-buttons-container';
+            row.innerHTML = '<div id="gg-menu-buttons-container" class="gg-menu-buttons-container"><div id="gg_menu_button" class="gg-menu-button fa-solid fa-bookmark"></div><div id="pg_menu_button" class="gg-menu-button fa-solid fa-book-open-reader"><span id="pg_guide_counter_span" class="pg-guide-counter"> 0</span></div></div>'
+                + '<div id="gg-qr-container" class="gg-qr-container"></div>'
+                + '<div id="gg-regular-buttons-container" class="gg-regular-buttons-container"><div id="gg_impersonate_button" class="gg-action-button fa-solid fa-user" title="Guided Impersonate (1st Person)"></div><div id="gg_swipe_button" class="gg-action-button fa-solid fa-forward" title="Guided Swipe"></div><div id="gg_response_button" class="gg-action-button fa-solid fa-dog" title="Guided Response"></div></div>';
+            const items = document.getElementById('nonQRFormItems');
+            items.parentNode.insertBefore(row, items.nextSibling);
+            for (const [id, labels] of [['gg_tools_menu', ['Simple Send', 'Recover Input', null, 'Spellchecker', 'Help']], ['pg_tools_menu', ['Situational', 'Thinking', null, 'Show Guides']]]) {
+                const menu = document.createElement('div');
+                menu.id = id;
+                menu.className = 'gg-tools-menu';
+                for (const label of labels) {
+                    const node = document.createElement(label ? 'a' : 'hr');
+                    if (label) {
+                        node.href = '#';
+                        node.className = 'interactable';
+                        node.title = `What ${label} does`;
+                        node.innerHTML = `<i class="fa-solid fa-star fa-fw"></i><span>${label}</span>`;
+                    }
+                    menu.append(node);
+                }
+                document.body.append(menu);
+            }
+        }
+        if (!document.querySelector('.stih--buttons')) {
+            made.ih = true;
+            const wrap = document.createElement('div');
+            wrap.className = 'stih--buttons';
+            wrap.innerHTML = '<div class="stih--arrows"><div class="stih--button menu_button fa-solid fa-chevron-up" title="Previous input"></div><div class="stih--button menu_button fa-solid fa-chevron-down" title="Next input"></div></div><div class="stih--button menu_button stih--menuTrigger fa-solid fa-clock-rotate-left" title="Input History"></div>';
+            document.getElementById('send_textarea').insertAdjacentElement('afterend', wrap);
+        }
+        // Record presses on its buttons and menu items instead of running them.
+        window.__ggPressed = [];
+        document.querySelectorAll('#gg-action-button-container .gg-action-button, #gg_tools_menu > a, #pg_tools_menu > a').forEach(node => {
+            node.addEventListener('click', event => {
+                window.__ggPressed.push(node.id || node.textContent.trim());
+                event.stopImmediatePropagation();
+                event.preventDefault();
+            }, true);
+        });
+        return made;
+    });
+    try {
+        await page.locator('.stmui-gg-btn').waitFor({ state: 'visible' });
+        const layout = await page.evaluate(() => {
+            const button = document.querySelector('.stmui-gg-btn').getBoundingClientRect();
+            const field = document.getElementById('send_textarea').getBoundingClientRect();
+            const history = document.querySelector('.stih--menuTrigger').getBoundingClientRect();
+            return {
+                size: Math.min(button.width, button.height),
+                beforeSend: document.querySelector('.stmui-gg-btn').nextElementSibling?.id === 'send_but',
+                rowHidden: getComputedStyle(document.getElementById('gg-regular-buttons-container')).display === 'none',
+                historyInField: history.width >= 44 && Math.abs((history.top + history.bottom) / 2 - (field.top + field.bottom) / 2) <= field.height / 2 && history.right <= field.right + 1,
+            };
+        });
+        if (layout.size < 44 || !layout.beforeSend || !layout.rowHidden || !layout.historyInField) throw new Error(`layout: ${JSON.stringify(layout)}`);
+
+        await page.locator('#send_textarea').fill('Have her mention the letter');
+        if (await page.evaluate(() => getComputedStyle(document.querySelector('.stih--arrows')).display) !== 'none') throw new Error('Input History arrows cover the text you are typing');
+
+        await page.locator('.stmui-gg-btn').click();
+        await page.locator('#stmui-sheet .stmui-gg-instruction', { hasText: 'Have her mention the letter' }).waitFor();
+        await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Guided swipe' }).click();
+        await until(() => !document.getElementById('stmui-sheet'));
+        if (await page.evaluate(() => window.__ggPressed.at(-1)) !== 'gg_swipe_button') throw new Error('Guided swipe did not press its button');
+
+        await page.locator('.stmui-gg-btn').click();
+        await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Tools' }).click();
+        await page.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Spellchecker' }).click();
+        await until(() => !document.getElementById('stmui-sheet'));
+        const pressed = await page.evaluate(() => ({ last: window.__ggPressed.at(-1), hash: location.hash }));
+        if (pressed.last !== 'Spellchecker' || pressed.hash) throw new Error(`tools: ${JSON.stringify(pressed)}`);
+
+        // Holding the button runs the last action again.
+        const box = await page.locator('.stmui-gg-btn').boundingBox();
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.waitForTimeout(700);
+        await page.mouse.up();
+        await page.waitForTimeout(200);
+        const held = await page.evaluate(() => ({ last: window.__ggPressed.at(-1), sheet: !!document.getElementById('stmui-sheet') }));
+        if (held.last !== 'gg_swipe_button' || held.sheet) throw new Error(`hold: ${JSON.stringify(held)}`);
+    } finally {
+        await page.evaluate(made => {
+            document.getElementById('send_textarea').value = '';
+            if (made.gg) {
+                document.getElementById('gg-action-button-container')?.remove();
+                document.getElementById('gg_tools_menu')?.remove();
+                document.getElementById('pg_tools_menu')?.remove();
+            }
+            if (made.ih) document.querySelector('.stih--buttons')?.remove();
+        }, made);
+    }
+    if (made.gg) {
+        await until(() => !document.documentElement.classList.contains('stmui-gg') && !document.querySelector('.stmui-gg-btn'));
+    }
+});
+
 await step("another extension's buttons and a theme's CSS keep the text on its own row", async () => {
     // Guided Generations puts a row of buttons in the box; some themes stop the box from wrapping.
+    // (Its row as it looks with the Guided Generations button switched off.)
     const result = await page.evaluate(async () => {
+        const toggle = document.getElementById('stmui_ggbutton');
+        const wasOn = toggle?.checked;
+        if (wasOn) toggle.click();
         const style = document.createElement('style');
         style.id = 'test-hostile';
         style.textContent = '#send_form { flex-wrap: nowrap !important; } #nonQRFormItems { display: flex !important; } #send_textarea { order: 9 !important; grid-area: auto !important; }';
@@ -490,6 +631,7 @@ await step("another extension's buttons and a theme's CSS keep the text on its o
         const button = row.querySelector('.gg-action-button').getBoundingClientRect();
         row.remove();
         style.remove();
+        if (wasOn) toggle.click();
         return { share: text.width / form.width, ownRow: text.bottom <= send.top + 1, button: Math.min(button.width, button.height) };
     });
     if (result.share < 0.8 || !result.ownRow) throw new Error(`the text was squeezed: ${JSON.stringify(result)}`);

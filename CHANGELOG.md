@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.19.0
+
+Guided Generations and Input History, made for a phone. Everything here only happens when those extensions are installed; without them nothing changes.
+
+- **Guided Generations as one guide button.** Its row of icons (a bookmark, a book with a counter, a person, fast-forward, a dog) took a whole line above the message box and said nothing about what each one does. With it installed, that row is folded into one guide button right next to Send, because a guided action is another way to send. The button shows how many persistent guides are active.
+- **A menu that explains itself.** The guide button opens a sheet. On top is the instruction you typed (tap it to keep editing), or, with nothing typed, a line on how guided actions work. Then every action Guided Generations shows, by name with a line on what it does: **Steer the reply** (Guided response, Guided swipe, Guided continue) and **Your message** (write my message as "I", "you" or "they"). Below are **Persistent guides** (with how many are active), **Tools**, and a shortcut to its settings. Which actions appear is still decided by Guided Generations' own settings.
+- **Hold to repeat.** Holding the guide button runs your last guided action again, for example another guided swipe, without opening the menu.
+- **Its menus as sheets.** Persistent guides and Tools opened as small pop-up lists above their buttons, which ran off the top of the screen on a phone and had no descriptions. They now open as sheets with every item, its group and Guided Generations' own description.
+- **Its popups fit the phone.** Stat Tracker, Fun prompts, Edit Intros, Edit Guides and Corrections open as a bottom sheet above Pocket Tavern's bars (a dialog on a computer), with a 44px close button and 44px controls. Edit Intros' choices that only showed on mouse hover are shown as chips. The back gesture and Escape close them.
+- **Prefer its own row?** Turn off **Guided Generations button** under More → Phone features (it only shows when Guided Generations is installed). Its row comes back, and its two menus then open in the middle of the screen with 44px rows.
+- **Input History's buttons in the text field.** Its ↑ ↓ and history buttons were pushed onto a line of their own under the message box (and got huge). They now sit at the end of the text field. While you type your own words only the history button shows; on an empty box, or after the arrows brought back an earlier message, the arrows show too. Its history list has readable text and 44px rows.
+- **Quick replies on a phone held sideways** share one line that scrolls sideways, instead of stacking a row per set while the keyboard leaves little room.
+- **Fixed: the docked text field's top edge was cut off.** SillyTavern clips the top 5px of the message box to draw a progress line for slash-command scripts on its top border. Pocket Tavern never shows that border, so the clip only cut off the docked field's rounded top edge (and, in the floating box, the top of your text when a long message scrolled inside it). The clip is gone.
+- **The docked field shows clearly where your typing goes:** a full accent edge while it has focus.
+- **Your typing follows the Chat text size.** With Large or Extra large text, what you type in the message box is bigger too (never smaller than 16px).
+- **The tabs arrow steps aside while the keyboard is up,** since the tabs cannot show then; the tools get the room.
+- **Fixed: the message editor in the Bubbles look.** Bubbles puts your messages on the right and the AI's on the left. Newer versions of Chrome and Safari apply that alignment to the full-screen editor too, so it shrank to the size of its text and sat at the bottom or top edge of the screen, which could look like the message you wanted to edit had vanished. The editor fills the page in every look again.
+- **iPhone and iPad.** Android shrinks the page when the keyboard opens (SillyTavern asks it to); Safari does not: the keyboard covers the bottom and Safari pans the part you can see. With the keyboard up, Pocket Tavern now sizes the top bar, the chat, the message box, pages, lorebook entries and the message editor to the visible part of the screen, so they no longer slide out of view. SillyTavern's transform on the page (a fix for flicker in Chrome) is turned off on iPhone and iPad, so the bars are fixed to the screen, not the page.
+- **Wider chat on an iPad held sideways.** In the desktop layout a touch screen gets a chat column of at least 720px instead of half the screen. **More → Themes → Chat width** (shown on wide screens) makes it wider or narrower right away; it is SillyTavern's own Chat width setting.
+- **Folding, unfolding or turning the device** picks sizes that depend on the screen (like Automatic size) again.
+- The message box's height is now measured outside the browser's size notifications, which Safari reported as a "ResizeObserver loop" warning.
+- `tests/ios.mjs` checks iPhone and iPad sizes and fakes Safari's keyboard to check that the bars, chat and editor follow the visible part, in Chrome or (with `ENGINE=webkit`) in WebKit, Safari's engine. The main screens were also checked in WebKit as an iPhone. The phone test checks the editor in all three chat looks.
+- `tests/compat.mjs` walks through every Guided Generations action, menu and popup, and Input History, in a SillyTavern that has them installed. The phone test checks the guide button, its sheet, hold to repeat and Input History's place with stand-ins, so it also runs on GitHub.
+
 ## 2.18.4
 
 A fix for the message editor, and Compact for the start screen.

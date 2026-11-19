@@ -72,6 +72,10 @@ const DEFAULTS = Object.freeze({
     /** In a chat the bottom tabs tuck away; a button in the message box brings them back. */
     hideTabsInChat: true,
     desktopNoticeSeen: false,
+    /** Guided Generations (another extension) as one button next to Send. Only matters when it is installed. */
+    ggButton: true,
+    /** The last Guided Generations action run from the sheet; holding the button runs it again. */
+    ggLast: '',
 });
 
 const SIZES = { auto: 'Automatic', comfortable: 'Comfortable', compact: 'Compact' };
@@ -90,6 +94,7 @@ const TEXT_SIZES = { small: 'Small', normal: 'Normal', large: 'Large', xl: 'Extr
 
 /** Phone features shown as switches in More → Phone features and in the settings panel. */
 const EXTRAS = [
+    { key: 'ggButton', id: 'stmui_ggbutton', label: 'Guided Generations button', hint: 'Its row of buttons becomes one button next to Send, with every action named and explained. Off shows its own row again.', when: () => ggPresent() },
     { key: 'hideTabsInChat', id: 'stmui_tucktabs', label: 'Hide tabs in a chat', hint: 'More room for the chat, and no tabs right under the message box. Tap the arrow in the message box to show them.' },
     { key: 'messageMenu', id: 'stmui_msgmenu', label: 'Message menu', hint: 'Tap ⋯ on a message for a full list of actions with names.' },
     { key: 'dragSwipe', id: 'stmui_dragswipe', label: 'Drag to swipe', hint: 'Drag the last reply left for another version, right for the previous one.' },
@@ -992,6 +997,19 @@ function isShown(element) {
     return !!element && getComputedStyle(element).display !== 'none';
 }
 
+/** Guided Generations' own popups (Edit Guides, Stat Tracker, Fun, Edit Intros, Corrections), when it is installed. */
+function openGuidedPopups() {
+    if (!active) return [];
+    return [...document.querySelectorAll('body > .gg-popup')].filter(popup => popup.style.display !== 'none' && isShown(popup));
+}
+
+/** Closes one the way its own × does. */
+function closeGuidedPopup(popup) {
+    const close = popup.querySelector('.gg-popup-close, .gg-close-button');
+    if (close) close.click();
+    else popup.style.display = 'none';
+}
+
 // ------------------------------------------------------- message editor
 
 /** SillyTavern edits a message in place; on a phone that edit gets its own full page. */
@@ -1120,6 +1138,7 @@ function openLayerCount() {
     let count = 0;
     if (currentPageId()) count += 1;
     count += openOverlays().length;
+    count += openGuidedPopups().length;
     count += document.querySelectorAll('dialog.popup[open]').length;
     if (sheet) count += 1;
     if (viewer) count += 1;
@@ -1134,11 +1153,20 @@ function watchOverlays(on) {
     nav.observer?.disconnect();
     nav.observer = null;
     if (!on) return;
-    nav.observer = new MutationObserver(() => scheduleHistorySync());
+    // Guided Generations adds its popups to <body> and shows or hides them with their style.
+    const watchGuidedPopup = popup => nav.observer.observe(popup, { attributes: true, attributeFilter: ['style'] });
+    nav.observer = new MutationObserver(records => {
+        for (const record of records) {
+            for (const node of record.addedNodes ?? []) if (node.classList?.contains('gg-popup')) watchGuidedPopup(node);
+        }
+        scheduleHistorySync();
+    });
     for (const overlay of OVERLAYS) {
         const element = document.querySelector(overlay.selector);
         if (element) nav.observer.observe(element, { attributes: true, attributeFilter: ['style', 'class'] });
     }
+    nav.observer.observe(document.body, { childList: true });
+    document.querySelectorAll('body > .gg-popup').forEach(watchGuidedPopup);
 }
 
 function scheduleHistorySync(delay = 220) {
@@ -1186,6 +1214,11 @@ function closeTopLayer() {
     const popups = document.querySelectorAll('dialog.popup[open]');
     if (popups.length) {
         popups[popups.length - 1].dispatchEvent(new Event('cancel', { cancelable: true }));
+        return true;
+    }
+    const guidedPopup = openGuidedPopups().pop();
+    if (guidedPopup) {
+        closeGuidedPopup(guidedPopup);
         return true;
     }
     if (editorOpen()) {
@@ -1557,7 +1590,9 @@ class Shell {
         if (Math.abs(width - this.keyboardBase.width) > 40) this.keyboardBase = { width, height };
         if (height > this.keyboardBase.height) this.keyboardBase.height = height;
         const typing = isTypingField(document.activeElement);
-        const keyboard = typing && height < this.keyboardBase.height * 0.78;
+        // iPhones and iPads keep the page height and shrink only the visible part.
+        const visible = IS_IOS && window.visualViewport ? window.visualViewport.height : height;
+        const keyboard = typing && visible < (IS_IOS ? height : this.keyboardBase.height) * (IS_IOS ? 0.85 : 0.78);
         const root = document.documentElement;
         const was = root.classList.contains('stmui-keyboard');
         const tabbar = this.tabbar?.offsetHeight || this.tabH || 0;
@@ -2113,6 +2148,21 @@ function motionControl() {
         }, [names[level]])));
 }
 
+/** SillyTavern's own Chat width slider, as a control in the Themes sheet; it applies and saves right away. */
+function chatWidthControl() {
+    const source = document.getElementById('chat_width_slider');
+    if (!source) return null;
+    const value = h('span', { class: 'stmui-width-value', 'aria-hidden': 'true' });
+    const input = h('input', { type: 'range', class: 'stmui-width-range', min: source.min || '25', max: source.max || '100', step: '1', 'aria-label': 'Chat width' });
+    input.value = source.value;
+    value.textContent = `${input.value}%`;
+    input.addEventListener('input', () => {
+        value.textContent = `${input.value}%`;
+        $j()(source).val(input.value).trigger('input', { forced: true });
+    });
+    return h('div', { class: 'stmui-width-row' }, [input, value]);
+}
+
 /** A row of choices for one setting, like Size or Message box. */
 function choiceControl(key, names, label) {
     return h('div', { class: 'stmui-segmented stmui-look-seg', role: 'group', 'aria-label': label },
@@ -2144,6 +2194,13 @@ function openThemeSheet() {
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Message box' }));
             body.append(choiceControl('composerStyle', COMPOSER_STYLES, 'Message box'));
             body.append(h('p', { class: 'stmui-menu-foot', text: COMPOSER_NOTES[settings.composerStyle] ?? '' }));
+            // The desktop layout (a computer, a tablet held sideways): how wide the chat column is.
+            const width = document.documentElement.classList.contains('stmui-wide') ? chatWidthControl() : null;
+            if (width) {
+                body.append(h('p', { class: 'stmui-menu-heading', text: 'Chat width' }));
+                body.append(width);
+                body.append(h('p', { class: 'stmui-menu-foot', text: "How much of a wide screen the chat uses. The same as Chat width in SillyTavern's settings." }));
+            }
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Animations' }));
             body.append(motionControl());
             body.append(h('p', { class: 'stmui-menu-foot', text: MOTION_LABELS[settings.motion] }));
@@ -4968,8 +5025,11 @@ function watchFormHeight(on) {
         // Stay at the newest message when the box grows or shrinks.
         const atBottom = chat && chat.scrollHeight - chat.scrollTop - chat.clientHeight < 40;
         last = height;
-        sheld.style.setProperty('--stmui-form-h', `${height}px`);
-        if (atBottom) requestAnimationFrame(() => chat.scrollTo(0, chat.scrollHeight));
+        // Written on the next frame, outside the size notification (Safari warned about a loop otherwise).
+        requestAnimationFrame(() => {
+            sheld.style.setProperty('--stmui-form-h', `${height}px`);
+            if (atBottom) chat.scrollTo(0, chat.scrollHeight);
+        });
     });
     composer.formObserver.observe(form);
 }
@@ -4990,6 +5050,8 @@ function syncComposer() {
     if (!want) {
         composer.persona?.remove();
         composer.persona = null;
+        document.getElementById('nonQRFormItems')?.classList.remove('stmui-ih-browse');
+        syncGuided();
         return;
     }
     if (!composer.persona || !composer.persona.isConnected) {
@@ -5028,6 +5090,279 @@ function syncComposer() {
     }
     updatePersonaButton();
     renderMeter();
+    syncGuided();
+}
+
+// -- Guided Generations: its row of buttons becomes one button next to Send
+
+/*
+ * Guided Generations (another extension) adds a row of icon buttons to the
+ * message box and two small pop-up menus that open above them. When it is
+ * installed, Pocket Tavern folds all of that into one Guide button beside Send.
+ * The button opens a sheet: the instruction you typed, then every action with
+ * a name and a line on what it does, and its menus as sheets of their own.
+ * Its buttons stay in the page (hidden) and the sheet presses them, so its own
+ * settings and logic decide what happens. Without Guided Generations, none of
+ * this exists.
+ */
+const guided = { button: null, count: null, watch: null, frame: 0, held: false };
+
+const GG_ACTIONS = [
+    { id: 'gg_response_button', group: 'reply', icon: 'chat', label: 'Guided response', note: 'Writes the next reply the way your instruction says' },
+    { id: 'gg_swipe_button', group: 'reply', icon: 'refresh', label: 'Guided swipe', note: 'A new version of the last reply that follows your instruction' },
+    { id: 'gg_continue_button', group: 'reply', icon: 'arrow-right', label: 'Guided continue', note: 'Carries on the last reply, following your instruction' },
+    { id: 'gg_impersonate_button', group: 'mine', icon: 'user', label: 'Write my message as "I"', note: 'Turns your instruction into your next message. Run it again to get your instruction back.' },
+    { id: 'gg_impersonate_button_2nd', group: 'mine', icon: 'contact', label: 'Write my message as "you"', note: 'The same, written in the second person' },
+    { id: 'gg_impersonate_button_3rd', group: 'mine', icon: 'users', label: 'Write my message as "they"', note: 'The same, written in the third person' },
+];
+
+/** Its tool buttons repeat items of its Tools menu, so the sheet lists them there once. */
+const GG_MENU_COPIES = new Set(['gg_simple_send_button', 'gg_recover_input_button', 'gg_edit_intros_button', 'gg_corrections_button', 'gg_separated_thinking_button', 'gg_spellchecker_button', 'gg_clear_input_button', 'gg_undo_button', 'gg_revert_button']);
+
+function ggRow() {
+    return document.getElementById('gg-action-button-container');
+}
+
+function ggPresent() {
+    return !!ggRow();
+}
+
+function syncGuided() {
+    const root = document.documentElement;
+    const right = document.getElementById('rightSendForm');
+    const watching = active && settings.chatStyle;
+    const on = watching && settings.ggButton && ggPresent() && !!right;
+    root.classList.toggle('stmui-gg', on);
+    // Its switch in Pocket Tavern's settings only shows when Guided Generations is installed.
+    const switchRowLabel = document.getElementById('stmui_ggbutton')?.closest('label');
+    if (switchRowLabel) switchRowLabel.hidden = !ggPresent();
+    watchGuided(watching);
+    if (!on) {
+        guided.button?.remove();
+        guided.button = null;
+        return;
+    }
+    if (!guided.button || !guided.button.isConnected) {
+        guided.button?.remove();
+        guided.count = h('span', { class: 'stmui-gg-count', 'aria-hidden': 'true', hidden: true });
+        guided.button = h('button', { type: 'button', class: 'stmui-gg-btn' }, [ui('compass'), guided.count]);
+        wireGuideButton(guided.button);
+    }
+    // Right next to Send: it is the other way to send.
+    const send = document.getElementById('send_but');
+    if (send?.parentElement === right) {
+        if (guided.button.nextElementSibling !== send) right.insertBefore(guided.button, send);
+    } else if (guided.button.parentElement !== right) {
+        right.append(guided.button);
+    }
+    updateGuideCount();
+}
+
+/** Guided Generations builds its row after Pocket Tavern starts and rebuilds it when its settings change. */
+function watchGuided(on) {
+    const form = document.getElementById('send_form');
+    if (!on || !form) {
+        guided.watch?.disconnect();
+        guided.watch = null;
+        return;
+    }
+    if (guided.watch) return;
+    guided.watch = new MutationObserver(() => {
+        if (guided.frame) return;
+        guided.frame = requestAnimationFrame(() => {
+            guided.frame = 0;
+            syncGuided();
+        });
+    });
+    guided.watch.observe(form, { childList: true, subtree: true, characterData: true });
+}
+
+/** How many of its persistent guides are active, from the counter on its own button. */
+function guideCount() {
+    const number = parseInt((document.getElementById('pg_guide_counter_span')?.textContent ?? '').replace(/\D+/g, ''), 10);
+    return Number.isFinite(number) ? number : 0;
+}
+
+function updateGuideCount() {
+    if (!guided.button) return;
+    const count = guideCount();
+    const text = count ? String(count) : '';
+    if (guided.count.textContent !== text) guided.count.textContent = text;
+    guided.count.hidden = !count;
+    const label = count ? t('Guided Generations, {count} guides active', { count }) : t('Guided Generations');
+    if (guided.button.getAttribute('aria-label') !== label) {
+        guided.button.setAttribute('aria-label', label);
+        guided.button.title = label;
+    }
+}
+
+/** A tap opens the sheet; holding runs the last action again. */
+function wireGuideButton(button) {
+    let timer = 0;
+    const stop = () => {
+        window.clearTimeout(timer);
+        timer = 0;
+    };
+    button.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        guided.held = false;
+        stop();
+        timer = window.setTimeout(() => {
+            timer = 0;
+            const last = lastGuidedAction();
+            if (!last) return;
+            guided.held = true;
+            buzz([8, 40, 8]);
+            runGuided(last.element, last.id);
+        }, 500);
+    });
+    for (const type of ['pointerup', 'pointercancel', 'pointerleave']) button.addEventListener(type, stop);
+    // No text-selection or link menu on a long press.
+    button.addEventListener('contextmenu', event => event.preventDefault());
+    button.addEventListener('click', () => {
+        if (guided.held) {
+            guided.held = false;
+            return;
+        }
+        buzz(6);
+        openGuidedSheet();
+    });
+}
+
+function lastGuidedAction() {
+    const id = settings.ggLast;
+    const action = GG_ACTIONS.find(item => item.id === id);
+    const element = id ? document.getElementById(id) : null;
+    return action && element && ggRow()?.contains(element) ? { id, element, label: action.label } : null;
+}
+
+/** Presses one of its buttons or menu items, after the sheet is gone. */
+function runGuided(element, id) {
+    if (id && settings.ggLast !== id) {
+        settings.ggLast = id;
+        saveSettings();
+    }
+    closeSheet(true);
+    // Its menu items are links to "#"; keep the page where it is.
+    element.addEventListener('click', event => event.preventDefault(), { once: true });
+    element.click();
+}
+
+function openGuidedSheet() {
+    const row = ggRow();
+    if (!row) return;
+    showSheet(new MenuSheet({
+        title: 'Guided Generations',
+        subtitle: '',
+        fill: body => {
+            const typed = document.getElementById('send_textarea')?.value.trim() ?? '';
+            const preview = h('span', { class: 'stmui-gg-instruction-text' });
+            // Your own words, never translated.
+            preview.textContent = typed || t('Type in the message box how the AI should steer, then pick an action. With nothing typed, each action works like the normal one.');
+            body.append(h('button', {
+                type: 'button',
+                class: `stmui-gg-instruction${typed ? '' : ' stmui-gg-instruction-empty'}`,
+                'aria-label': typed ? t('Your instruction. Tap to edit it.') : t('No instruction yet. Tap to type one.'),
+                onclick: () => {
+                    closeSheet(true);
+                    document.getElementById('send_textarea')?.focus();
+                },
+            }, [h('span', { class: 'stmui-gg-instruction-label', text: typed ? 'Your instruction' : 'No instruction yet' }), preview]));
+
+            const rowsFor = group => GG_ACTIONS
+                .filter(action => action.group === group)
+                .map(action => ({ action, element: document.getElementById(action.id) }))
+                .filter(({ element }) => element && row.contains(element))
+                .map(({ action, element }) => actionRow(ui(action.icon, 'stmui-menu-row-icon'), t(action.label), t(action.note), () => runGuided(element, action.id)));
+            const reply = rowsFor('reply');
+            const mine = rowsFor('mine');
+            if (reply.length) body.append(h('p', { class: 'stmui-menu-heading', text: 'Steer the reply' }), h('div', { class: 'stmui-menu-list' }, reply));
+            if (mine.length) body.append(h('p', { class: 'stmui-menu-heading', text: 'Your message' }), h('div', { class: 'stmui-menu-list' }, mine));
+
+            // Buttons it adds that Pocket Tavern has no name for yet.
+            const known = new Set(GG_ACTIONS.map(action => action.id));
+            const other = [...row.querySelectorAll('.gg-action-button')]
+                .filter(button => !known.has(button.id) && !GG_MENU_COPIES.has(button.id))
+                .map(button => actionRow(faIcon(wrapIcon(button)), button.title || button.id, '', () => runGuided(button, '')));
+            if (other.length) body.append(h('p', { class: 'stmui-menu-heading', text: 'More actions' }), h('div', { class: 'stmui-menu-list' }, other));
+
+            const count = guideCount();
+            const more = [];
+            if (document.getElementById('pg_tools_menu')) {
+                more.push(actionRow(ui('book', 'stmui-menu-row-icon'), t('Persistent guides'), count ? t('{count} active', { count }) : t('None active'), () => openGuidedMenu('pg_tools_menu', 'Persistent guides', 'Notes the AI keeps in mind for this chat')));
+            }
+            if (document.getElementById('gg_tools_menu')) {
+                more.push(actionRow(ui('list', 'stmui-menu-row-icon'), t('Tools'), t('Simple send, spellchecker, corrections and more'), () => openGuidedMenu('gg_tools_menu', 'Guided Generations tools', '')));
+            }
+            more.push(actionRow(ui('settings', 'stmui-menu-row-icon'), t('Guided Generations settings'), t('Choose which actions show and how they work'), () => openGuidedSettings()));
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'More' }), h('div', { class: 'stmui-menu-list' }, more));
+
+            const last = lastGuidedAction();
+            body.append(h('p', {
+                class: 'stmui-menu-foot',
+                text: last ? t('Hold the guide button to run {action} again.', { action: t(last.label) }) : t('After you use an action, hold the guide button to run it again.'),
+            }));
+        },
+    }));
+}
+
+/** Font Awesome classes sit on the button itself; faIcon looks for them inside an element. */
+function wrapIcon(button) {
+    const holder = document.createElement('span');
+    const copy = button.cloneNode(false);
+    copy.removeAttribute('id');
+    holder.append(copy);
+    return holder;
+}
+
+/** One of its menus (Persistent guides, Tools) as a sheet: the same items, groups and descriptions. */
+function openGuidedMenu(menuId, title, subtitle) {
+    const menu = document.getElementById(menuId);
+    if (!menu) return;
+    showSheet(new MenuSheet({
+        title,
+        subtitle,
+        fill: body => {
+            let rows = [];
+            const flush = () => {
+                if (rows.length) body.append(h('div', { class: 'stmui-menu-list' }, rows));
+                rows = [];
+            };
+            for (const node of menu.children) {
+                if (node.tagName === 'HR') {
+                    flush();
+                    continue;
+                }
+                if (node.tagName !== 'A' || !(node.textContent ?? '').trim()) continue;
+                rows.push(actionRow(faIcon(node), itemLabel(node), node.title || '', () => runGuided(node, '')));
+            }
+            flush();
+        },
+    }));
+}
+
+function openGuidedSettings() {
+    closeSheet(true);
+    openPage('extensions-settings-button');
+    setTimeout(() => {
+        const drawer = document.getElementById('gg_versionBadge')?.closest('.inline-drawer');
+        if (!drawer) return;
+        const content = drawer.querySelector('.inline-drawer-content');
+        if (content && getComputedStyle(content).display === 'none') drawer.querySelector('.inline-drawer-toggle')?.click();
+        drawer.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }, 250);
+}
+
+// -- Input History (another extension): its arrows show when they can help
+
+/** After its arrows bring back an earlier message they stay until you type your own words. */
+function onInputHistoryClick(event) {
+    if (!active || !settings.chatStyle) return;
+    if (event.target.closest?.('#nonQRFormItems .stih--arrows')) document.getElementById('nonQRFormItems')?.classList.add('stmui-ih-browse');
+}
+
+function onComposerInput(event) {
+    if (event.isTrusted && event.target?.id === 'send_textarea') document.getElementById('nonQRFormItems')?.classList.remove('stmui-ih-browse');
 }
 
 // -- chat: drag the last reply sideways to swipe
@@ -7139,7 +7474,7 @@ function openExtrasSheet() {
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Chat text size' }));
             body.append(textSizeControl());
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Helpers' }));
-            body.append(h('div', { class: 'stmui-menu-list' }, EXTRAS.map(extra => switchRow(extra.key, extra.label, extra.hint))));
+            body.append(h('div', { class: 'stmui-menu-list' }, EXTRAS.filter(extra => !extra.when || extra.when()).map(extra => switchRow(extra.key, extra.label, extra.hint))));
         },
     }));
 }
@@ -7156,6 +7491,55 @@ function setFeatureClasses() {
 }
 
 const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+/*
+ * iPhones and iPads. SillyTavern asks the browser to shrink the page for the
+ * keyboard; Android does, Safari does not: the keyboard covers the bottom of
+ * the page and Safari pans the part you can see. So while the keyboard is up,
+ * Pocket Tavern sizes its bars, the chat, pages and the message editor to the
+ * visible part of the screen (the browser's visualViewport), instead of the
+ * whole page. SillyTavern's transform on <html> (a fix for flicker in Chrome)
+ * is turned off there too, so the bars are fixed to the screen, not the page.
+ */
+const ios = { frame: 0 };
+
+function syncIosViewport() {
+    const root = document.documentElement;
+    const on = active && IS_IOS;
+    root.classList.toggle('stmui-ios', on);
+    const vv = window.visualViewport;
+    const keyboard = on && !!vv && isTypingField(document.activeElement) && vv.height < window.innerHeight * 0.85;
+    root.classList.toggle('stmui-ios-kb', keyboard);
+    if (keyboard) {
+        const top = `${Math.round(vv.offsetTop)}px`;
+        const visible = `${Math.round(vv.height)}px`;
+        if (root.style.getPropertyValue('--stmui-ios-top') !== top) root.style.setProperty('--stmui-ios-top', top);
+        if (root.style.getPropertyValue('--stmui-ios-h') !== visible) root.style.setProperty('--stmui-ios-h', visible);
+    } else {
+        root.style.removeProperty('--stmui-ios-top');
+        root.style.removeProperty('--stmui-ios-h');
+    }
+}
+
+function scheduleIosViewport() {
+    if (!IS_IOS || ios.frame) return;
+    ios.frame = requestAnimationFrame(() => {
+        ios.frame = 0;
+        syncIosViewport();
+        shell?.checkKeyboard();
+    });
+}
+
+/** Folding, unfolding or turning the device: sizes that were picked from the screen are picked again. */
+let resizeTimer = 0;
+function onScreenChange() {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+        if (!active) return;
+        applyLayoutPrefs();
+        syncIosViewport();
+    }, 250);
+}
 
 /**
  * The page itself never scrolls in Pocket Tavern: the chat and pages scroll inside
@@ -7183,6 +7567,12 @@ function onWideKeyDown(event) {
     if (!document.documentElement.classList.contains('stmui-wide')) return;
     // Open sheets and SillyTavern's popups close themselves on Escape.
     if (sheet || viewer || document.querySelector('dialog[open]') || editorOpen() || openOverlays().length) return;
+    const guidedPopup = openGuidedPopups().pop();
+    if (guidedPopup) {
+        closeGuidedPopup(guidedPopup);
+        event.preventDefault();
+        return;
+    }
     if (closeSettingsSection() || (currentPageId() && (closePages(), true))) event.preventDefault();
 }
 
@@ -7204,6 +7594,7 @@ function applyState() {
         stopViewportFollow = null;
     }
     syncShell();
+    syncIosViewport();
     const backGesture = active && settings.backGesture;
     watchOverlays(backGesture);
     if (!backGesture) resetHistoryTracking();
@@ -7382,6 +7773,15 @@ function init() {
     window.addEventListener('orientationchange', reevaluate);
     window.addEventListener('popstate', onPopState);
     window.addEventListener('scroll', onStrayScroll, { passive: true });
+    window.addEventListener('resize', onScreenChange);
+    if (IS_IOS && window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleIosViewport);
+        window.visualViewport.addEventListener('scroll', scheduleIosViewport);
+        document.addEventListener('focusin', scheduleIosViewport);
+        document.addEventListener('focusout', () => setTimeout(scheduleIosViewport, 50));
+    }
+    document.addEventListener('click', onInputHistoryClick, true);
+    document.addEventListener('input', onComposerInput, true);
     document.addEventListener('focusin', () => shell?.checkKeyboard());
     document.addEventListener('focusout', () => setTimeout(() => shell?.checkKeyboard(), 50));
 

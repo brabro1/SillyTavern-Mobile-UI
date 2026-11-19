@@ -88,13 +88,14 @@ It's made for phones first. The desktop layout is newer and may still have rough
 - **Search everything:** characters, chats, lorebooks and settings in one search box.
 - **Know when Termux stopped:** a banner shows when SillyTavern stops answering.
 - **Your language:** Pocket Tavern's menus come in English, Spanish, Portuguese, Russian, Chinese, Japanese and Arabic.
+- **Guided Generations, made for a phone:** if you use it, its row of icons becomes one guide button next to Send. It opens a menu that shows your instruction and explains every action, and its guides, tools and popups fit the screen. Hold the button to repeat your last guided action.
 
 Every helper can be switched off under **More → Phone features**. The full list of changes is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Requirements
 
 - **SillyTavern 1.19** or newer.
-- **A phone browser.** It's built and checked with Chrome on Android. Other up-to-date browsers should work but get less testing.
+- **A phone browser.** It's built and checked with Chrome on Android. Safari on iPhone and iPad has its own handling for the keyboard and gets checked too, but less. Other up-to-date browsers should work.
 - **Git** if you install from Termux (`pkg install git`).
 
 ## Installation
@@ -131,7 +132,7 @@ Then reload SillyTavern in your browser.
 
 ## Settings
 
-- **More → Themes:** theme, chat look (Cards, Bubbles, Flat), size (Automatic, Comfortable, Compact), message box (Floating, Docked), theme background, modern font, new icons and animations.
+- **More → Themes:** theme, chat look (Cards, Bubbles, Flat), size (Automatic, Comfortable, Compact), message box (Floating, Docked), chat width (on wide screens), theme background, modern font, new icons and animations.
 - **More → Phone features:** chat text size and every helper, one switch each, including **Hide tabs in a chat**.
 - **More → Pocket Tavern settings** (on a computer: Extensions → Pocket Tavern): turn it all on or off, choose where it switches on (Automatic: phones and computers, Phones only, Off on this device) and the bigger building blocks like the bottom tabs and touch-friendly panels.
 
@@ -161,7 +162,16 @@ Pick **Compact** under **More → Themes → Size**, and try a smaller chat text
 In a chat they tuck away so you don't hit them by accident. Tap the arrow at the start of the message box's bottom row to bring them back, or turn off **Hide tabs in a chat** under **More → Phone features**.
 
 **Does it work with other extensions?**
-Most of them. Extensions with their own panels show up under **More**, and buttons added to the message box (like Guided Generations and quick replies) fit in with its own. Theme extensions like Moonlit Echoes are covered by Pocket Tavern's own look while it's on. If one doesn't work, [tell me](#feedback-and-bug-reports).
+Most of them. Extensions with their own panels show up under **More**, and buttons added to the message box fit in with its own. Theme extensions like Moonlit Echoes are covered by Pocket Tavern's own look while it's on. If one doesn't work, [tell me](#feedback-and-bug-reports).
+
+**I use Guided Generations. Where did its buttons go?**
+They're in the guide button (the compass) next to Send. Type an instruction, tap the guide button, and pick an action; hold it to run the last one again. Prefer its own row of buttons? Turn off **Guided Generations button** under **More → Phone features**.
+
+**I use Input History. Where are its arrows?**
+At the end of the text field. They show on an empty box and after you bring back an earlier message, and hide while you type, so your text keeps its room. The history button is always there.
+
+**Does it work on iPhone and iPad?**
+Yes. With the keyboard up, the bars, chat and message editor stay in the part of the screen you can see. On an iPad held sideways you get the desktop layout; set how wide the chat is under **More → Themes → Chat width**. If something looks off on your device, [send a screenshot](#feedback-and-bug-reports).
 
 **I don't want it on my computer.**
 In its settings, set "Use it on this device" to **Phones only**.
@@ -173,9 +183,11 @@ In its settings, set "Use it on this device" to **Phones only**.
 | SillyTavern 1.19 | ✅ Built and tested |
 | Older SillyTavern | Not supported |
 | Chrome on Android (also with Termux) | ✅ Main target |
+| Safari on iPhone and iPad | ✅ Supported, with its own keyboard handling; tested less than Android |
 | Other phone browsers | Should work, less tested |
 | Computers and tablets | ✅ On by itself: wide screens get the desktop layout. **Phones only** keeps the original SillyTavern there |
-| Other extensions | Work alongside it. Extensions with their own panels show up under **More**, and buttons they add to the message box (like Guided Generations and quick replies) fit in with its own. |
+| Other extensions | Work alongside it. Extensions with their own panels show up under **More**, and buttons they add to the message box fit in with its own. |
+| Guided Generations, Input History, Quick Replies | ✅ Made to fit: a guide button with a menu for Guided Generations, Input History in the text field, quick replies as slim chips |
 
 ## Privacy and your data
 

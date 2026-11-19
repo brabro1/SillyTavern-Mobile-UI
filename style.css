@@ -1938,6 +1938,13 @@ html.stmui-chat #send_textarea::placeholder {
     text-align: start;
 }
 
+/* SillyTavern clips the top 5px off the box to draw its script progress line on
+   the top border. Pocket Tavern does not draw that border, so the clip only cut
+   off the docked field's top edge and the top of scrolled text. */
+html.stmui-chat #send_textarea {
+    clip-path: none;
+}
+
 /* The text gets the whole width on top; the tools sit in a row along the bottom. */
 html.stmui-chat #nonQRFormItems {
     display: grid !important;
@@ -1968,8 +1975,9 @@ html.stmui-chat #nonQRFormItems > #rightSendForm {
     gap: 6px;
 }
 
-/* Anything an extension puts straight into the box gets a row of its own. */
-html.stmui-chat #nonQRFormItems > :not(#send_textarea, #leftSendForm, #rightSendForm) {
+/* Anything an extension puts straight into the box gets a row of its own
+   (Input History's buttons have a place of their own, further down). */
+html.stmui-chat #nonQRFormItems > :not(#send_textarea, #leftSendForm, #rightSendForm, .stih--buttons, .stih--history) {
     grid-column: 1 / -1;
 }
 
@@ -2020,8 +2028,9 @@ html.stmui-chat #send_textarea {
     padding: 9px 10px 5px;
     border: 0;
     background: transparent;
-    font-size: 16px;
-    line-height: 22px;
+    /* Follows the Chat text size: Large and Extra large make your own typing bigger too (never under 16px). */
+    font-size: max(16px, calc(15px * var(--stmui-text-scale, 1.07)));
+    line-height: 1.4;
     box-shadow: none;
     outline: none;
     /* The drag grip sat right next to the send button and caught taps. */
@@ -5257,6 +5266,11 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) {
     position: fixed !important;
     inset: var(--topBarBlockSize) 0 var(--stmui-bottom) 0;
     z-index: 3300;
+    /* The Bubbles look aligns your messages right and the AI's left; newer browsers
+       apply that to a fixed box too, which shrank the editor to its text and pushed
+       it to one edge of the screen. The editor always fills the page. */
+    align-self: stretch !important;
+    justify-self: stretch !important;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -7303,6 +7317,26 @@ html.stmui-chat.stmui-compact #qr--bar .qr--button {
     padding: 0 8px;
 }
 
+/* A phone held sideways is short but wide: all quick replies share one line that scrolls sideways. */
+@media (orientation: landscape) and (max-height: 520px) and (min-aspect-ratio: 3/2) {
+    html.stmui-chat #qr--bar {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start !important;
+        gap: 4px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    html.stmui-chat #qr--bar .qr--buttons {
+        flex: 0 0 auto;
+        flex-wrap: nowrap !important;
+        width: auto !important;
+        min-width: 0;
+        max-width: none;
+    }
+}
+
 /* ==========================================================================
    Lorebook entries: cards, keyword chips, full-screen editor
    ========================================================================== */
@@ -8087,6 +8121,11 @@ html.stmui-chat.stmui-tabs-tuckable .stmui-tabs-btn {
     -webkit-tap-highlight-color: transparent;
 }
 
+/* With the keyboard up the tabs cannot show, so the arrow steps aside and the tools get the room. */
+html.stmui-chat.stmui-keyboard .stmui-tabs-btn {
+    display: none;
+}
+
 .stmui-tabs-btn .stmui-svg {
     width: 22px;
     height: 22px;
@@ -8384,8 +8423,9 @@ html.stmui-chat.stmui-docked #send_textarea {
     transition: border-color 0.2s ease;
 }
 
+/* A clear focus edge, so it is obvious where your typing goes. */
 html.stmui-chat.stmui-docked #send_textarea:focus {
-    border-color: color-mix(in srgb, var(--stmui-accent) 38%, var(--stmui-line));
+    border-color: var(--stmui-accent);
 }
 
 /* Portrait: tools on top, then persona, field and Send in one row at the bottom.
@@ -8523,6 +8563,503 @@ html.stmui-chat #gg-action-button-container :is(.gg-action-button, .gg-menu-butt
 html.stmui-chat #gg-action-button-container .pg-guide-counter {
     margin: 0;
     font-size: 14px;
+}
+
+/* ==========================================================================
+   Guided Generations as one button (html.stmui-gg, only when it is installed):
+   its row of icons is hidden and a Guide button beside Send opens a sheet.
+   ========================================================================== */
+
+html.stmui-gg #gg-action-button-container > :is(.gg-menu-buttons-container, .gg-regular-buttons-container) {
+    display: none !important;
+}
+
+/* The row itself goes too, unless it holds the quick replies. */
+html.stmui-gg #send_form > #gg-action-button-container:not(:has(#gg-qr-container > *)) {
+    display: none !important;
+}
+
+.stmui-gg-btn {
+    display: none;
+}
+
+html.stmui-chat.stmui-gg .stmui-gg-btn {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--stmui-muted);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+.stmui-gg-btn .stmui-svg {
+    width: 22px;
+    height: 22px;
+}
+
+.stmui-gg-btn:active {
+    background: var(--stmui-raised-2);
+}
+
+.stmui-gg-btn:focus-visible {
+    outline: 2px solid var(--stmui-accent);
+    outline-offset: -2px;
+}
+
+/* How many persistent guides are active (only shown when there are some). */
+.stmui-gg-count {
+    position: absolute;
+    top: 4px;
+    inset-inline-end: 2px;
+    box-sizing: border-box;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--stmui-text);
+    color: var(--stmui-surface);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    text-align: center;
+    pointer-events: none;
+}
+
+.stmui-gg-count[hidden] {
+    display: none;
+}
+
+/* With one more button in the row, a narrow phone shows your persona as its picture. */
+@media (max-width: 480px) {
+    html.stmui-chat.stmui-gg .stmui-persona-name {
+        display: none;
+    }
+
+    html.stmui-chat.stmui-gg .stmui-persona-chip {
+        padding-right: 3px;
+    }
+}
+
+/* The sheet starts with what you typed: the actions use it as their instruction. */
+.stmui-gg-instruction {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    margin: 0 0 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 12px;
+    background: var(--stmui-raised);
+    color: var(--stmui-text);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+
+.stmui-gg-instruction:active {
+    background: var(--stmui-raised-2);
+}
+
+.stmui-gg-instruction-label {
+    color: var(--stmui-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.stmui-gg-instruction-text {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.stmui-gg-instruction-empty .stmui-gg-instruction-text {
+    color: var(--stmui-muted);
+    font-size: 14px;
+}
+
+/* With its own row back on (the switch is off), its two pop-up menus open in
+   the middle of the screen with 44px rows, instead of above a button where a
+   long menu ran off the top of the screen. */
+html.stmui-touch:not(.stmui-wide) .gg-tools-menu.shown {
+    position: fixed !important;
+    top: 50% !important;
+    left: 16px !important;
+    right: 16px;
+    z-index: 5000;
+    box-sizing: border-box;
+    max-height: 70dvh;
+    padding: 4px;
+    overflow-y: auto;
+    border: 1px solid var(--stmui-line);
+    border-radius: 16px;
+    background: var(--stmui-solid);
+    transform: translateY(-50%);
+}
+
+html.stmui-touch .gg-tools-menu > a.interactable {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 12px !important;
+    border-radius: 12px;
+    font-size: 16px;
+}
+
+/* Its own popups (Edit Guides, Stat Tracker, Fun, Edit Intros, Corrections)
+   open as a bottom sheet on a phone and a dialog on a computer, above
+   Pocket Tavern's bars, with a 44px close button and 44px controls. Back and
+   Escape close them. */
+html.stmui-touch body > .gg-popup {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 5000;
+    width: auto;
+    height: auto;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+html.stmui-touch body > .gg-popup > .gg-popup-content {
+    position: absolute;
+    inset: auto 0 0 0;
+    box-sizing: border-box;
+    width: auto;
+    max-width: none;
+    max-height: 88dvh;
+    padding: 0 calc(16px + var(--stmui-safe-right)) calc(16px + var(--stmui-safe-bottom)) calc(16px + var(--stmui-safe-left));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 0;
+    border-top: 1px solid var(--stmui-line);
+    border-radius: 16px 16px 0 0;
+    background: var(--stmui-solid);
+    color: var(--stmui-text);
+    box-shadow: none;
+    transform: none;
+}
+
+html.stmui-touch.stmui-motion-full body > .gg-popup > .gg-popup-content {
+    animation: stmui-gg-sheet-in 0.22s var(--stmui-ease-sheet);
+}
+
+@keyframes stmui-gg-sheet-in {
+    from {
+        transform: translateY(24px);
+        opacity: 0;
+    }
+}
+
+html.stmui-touch body > .gg-popup .gg-popup-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: 0 0 12px;
+    padding: 12px 0 8px;
+    border-bottom: 1px solid var(--stmui-line);
+    background: var(--stmui-solid);
+}
+
+html.stmui-touch body > .gg-popup .gg-popup-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+html.stmui-touch body > .gg-popup .gg-popup-close {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-inline-end: -12px;
+    border-radius: 12px;
+    font-size: 24px;
+    line-height: 1;
+}
+
+html.stmui-touch body > .gg-popup .gg-popup-footer {
+    position: sticky;
+    bottom: calc(-16px - var(--stmui-safe-bottom));
+    margin: 0 -16px;
+    padding: 12px 16px calc(12px + var(--stmui-safe-bottom));
+    border-top: 1px solid var(--stmui-line);
+    background: var(--stmui-solid);
+}
+
+html.stmui-touch body > .gg-popup :is(.gg-popup-footer button, .gg-popup-footer .menu_button, .gg-button, .gg-button-secondary) {
+    min-height: 44px;
+}
+
+html.stmui-touch body > .gg-popup :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    box-sizing: border-box;
+    min-height: 44px;
+    font-size: 16px;
+}
+
+html.stmui-touch body > .gg-popup .gg-option {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: 44px;
+    border-radius: 12px;
+}
+
+/* Choices that only showed on hover (a phone cannot hover) are always shown, as chips. */
+html.stmui-touch body > .gg-popup .gg-option:has(.gg-suboptions) {
+    flex: 1 1 100%;
+}
+
+html.stmui-touch body > .gg-popup .gg-suboptions {
+    position: static;
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+    padding: 8px 0 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+html.stmui-touch body > .gg-popup .gg-suboption {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 999px;
+}
+
+html.stmui-touch.stmui-wide body > .gg-popup > .gg-popup-content {
+    inset: 50% auto auto 50%;
+    width: min(640px, calc(100vw - 48px));
+    max-height: min(86vh, 900px);
+    padding: 0 16px 16px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 16px;
+    transform: translate(-50%, -50%);
+}
+
+html.stmui-touch.stmui-wide.stmui-motion-full body > .gg-popup > .gg-popup-content {
+    animation: none;
+}
+
+html.stmui-touch.stmui-wide body > .gg-popup .gg-popup-footer {
+    bottom: -16px;
+    padding-bottom: 12px;
+}
+
+/* ==========================================================================
+   Input History (another extension): its buttons sit at the end of the text
+   field. While you type your own words only its history list button shows; on
+   an empty box, or after the arrows brought back an earlier message, the
+   arrows show too. Its history list is readable and 44px per row.
+   ========================================================================== */
+
+html.stmui-chat #nonQRFormItems > .stih--buttons:not(.stih--hidden) {
+    z-index: 1;
+    display: flex;
+    grid-area: text !important;
+    align-self: end;
+    justify-self: end;
+    margin: 0;
+}
+
+html.stmui-chat #nonQRFormItems > .stih--buttons .stih--arrows:not(.stih--hidden) {
+    display: flex;
+    flex-direction: row;
+}
+
+html.stmui-chat #nonQRFormItems > .stih--buttons .stih--button:not(.stih--hidden) {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--stmui-muted);
+    font-size: 16px;
+    opacity: 1;
+}
+
+html.stmui-chat #nonQRFormItems > .stih--buttons .stih--button:active {
+    background: var(--stmui-raised-2);
+}
+
+html.stmui-chat #nonQRFormItems:not(.stmui-ih-browse) > #send_textarea:not(:placeholder-shown) ~ .stih--buttons .stih--arrows {
+    display: none;
+}
+
+/* Room at the end of the text for the buttons that show. */
+html.stmui-chat #nonQRFormItems:has(> .stih--buttons:not(.stih--hidden) .stih--button.stih--menuTrigger:not(.stih--hidden)) > #send_textarea {
+    padding-inline-end: 48px;
+}
+
+html.stmui-chat #nonQRFormItems:has(> .stih--buttons:not(.stih--hidden) .stih--arrows:not(.stih--hidden)) > #send_textarea:placeholder-shown,
+html.stmui-chat #nonQRFormItems.stmui-ih-browse:has(> .stih--buttons:not(.stih--hidden) .stih--arrows:not(.stih--hidden)) > #send_textarea {
+    padding-inline-end: 136px;
+}
+
+/* SillyTavern keeps the hint on one line; it ends with "…" before the buttons. */
+html.stmui-chat #nonQRFormItems:has(> .stih--buttons:not(.stih--hidden)) > #send_textarea::placeholder {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Docked: the field sits between your persona and Send. */
+html.stmui-chat.stmui-docked #nonQRFormItems > .stih--buttons:not(.stih--hidden) {
+    margin-inline-end: 53px;
+    margin-bottom: 1px;
+}
+
+html.stmui-chat #nonQRFormItems > .stih--history {
+    left: 0;
+    right: 0;
+    z-index: 30000;
+    box-sizing: border-box;
+    width: auto;
+    max-height: 50dvh;
+    padding: 4px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 16px;
+    background: var(--stmui-solid);
+    filter: none;
+    font-size: 16px;
+}
+
+html.stmui-chat #nonQRFormItems > .stih--history .stih--item {
+    align-items: center;
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    opacity: 1;
+}
+
+html.stmui-chat #nonQRFormItems > .stih--history .stih--item:active {
+    background: var(--stmui-raised-2);
+}
+
+html.stmui-chat #nonQRFormItems > .stih--history .stih--item .stih--title {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--stmui-muted);
+    font-size: 14px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+html.stmui-chat #nonQRFormItems > .stih--history .stih--item .stih--title::first-line {
+    color: var(--stmui-text);
+    font-size: 16px;
+}
+
+/* ==========================================================================
+   iPhone and iPad (html.stmui-ios). Safari does not shrink the page for the
+   keyboard; it covers the bottom and pans the visible part. While the keyboard
+   is up (html.stmui-ios-kb) everything is sized to the visible part, from the
+   browser's own measurement (--stmui-ios-top, --stmui-ios-h, set by script).
+   ========================================================================== */
+
+/* SillyTavern's transform on <html> fixes a flicker in Chrome; on Safari it made
+   the bars and the message editor fixed to the page instead of the screen. */
+html.stmui-ios {
+    -webkit-transform: none !important;
+    transform: none !important;
+    -webkit-perspective: none !important;
+    perspective: none !important;
+}
+
+html.stmui-shell.stmui-ios-kb {
+    --stmui-bottom: 0px;
+    --stmui-page-h: calc(var(--stmui-ios-h, 100dvh) - var(--topBarBlockSize));
+}
+
+html.stmui-shell.stmui-ios-kb .stmui-appbar {
+    top: var(--stmui-ios-top, 0px);
+}
+
+html.stmui-shell.stmui-ios-kb #sheld {
+    top: calc(var(--stmui-ios-top, 0px) + var(--topBarBlockSize)) !important;
+    height: var(--stmui-page-h) !important;
+    max-height: var(--stmui-page-h) !important;
+}
+
+html.stmui-shell.stmui-ios-kb #top-settings-holder .drawer-content.openDrawer,
+html.stmui-shell.stmui-ios-kb #completion_prompt_manager_popup {
+    top: calc(var(--stmui-ios-top, 0px) + var(--topBarBlockSize)) !important;
+}
+
+html.stmui-chat.stmui-ios-kb.stmui-editing #chat .mes:has(#curEditTextarea),
+html.stmui-lorecards.stmui-ios-kb #world_popup_entries_list .world_entry.stmui-entry-open {
+    inset: calc(var(--stmui-ios-top, 0px) + var(--topBarBlockSize)) 0 auto 0 !important;
+    height: var(--stmui-page-h);
+}
+
+/* Chat width on wide screens (Themes sheet): a slider and its value. */
+.stmui-width-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    margin: 0 4px;
+}
+
+.stmui-width-row .stmui-width-range {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 44px !important;
+    margin: 0;
+    accent-color: var(--stmui-accent);
+}
+
+.stmui-width-value {
+    flex: 0 0 auto;
+    min-width: 48px;
+    color: var(--stmui-muted);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+}
+
+/* Tablets in the desktop layout (a finger, not a mouse): the chat column is at
+   least a comfortable reading width instead of half the screen. */
+@media (pointer: coarse) {
+    html.stmui-on.stmui-wide {
+        --stmui-col: min(max(var(--sheldWidth, 50vw), 720px), calc(var(--stmui-avail) - 48px));
+    }
 }
 
 /* ==========================================================================

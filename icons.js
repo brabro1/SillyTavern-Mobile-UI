@@ -21,6 +21,7 @@ export const ICONS = {
     'rotate-cw': '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
     'external': '<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
     'plus': '<path d="M5 12h14M12 5v14"/>',
+    'compass': '<circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-1.8 5.41a2 2 0 0 1-1.27 1.27L7.76 16.24l1.8-5.41a2 2 0 0 1 1.27-1.27z"/>',
     'chevron-down': '<path d="m6 9 6 6 6-6"/>',
     'chevron-up': '<path d="m18 15-6-6-6 6"/>',
     'chevron-left': '<path d="m15 18-6-6 6-6"/>',
