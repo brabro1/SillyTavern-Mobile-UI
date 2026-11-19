@@ -393,7 +393,7 @@ await step('in a chat the tabs tuck away; the arrow brings them back and typing 
     await until(() => document.querySelectorAll('#chat .mes').length > 0);
     await until(() => document.documentElement.classList.contains('stmui-tabs-tucked'));
     // Hidden from touch and screen readers once it has slid away (0.2s).
-    await until(() => getComputedStyle(document.querySelector('.stmui-tabbar')).visibility === 'hidden', null, 2000)
+    await until(() => getComputedStyle(document.querySelector('.stmui-tabbar')).display === 'none', null, 2000)
         .catch(() => { throw new Error('the tucked tab bar can still be reached'); });
     const arrow = page.locator('.stmui-tabs-btn');
     if (await arrow.getAttribute('aria-expanded') !== 'false') throw new Error('the arrow does not say the tabs are hidden');
@@ -407,6 +407,25 @@ await step('in a chat the tabs tuck away; the arrow brings them back and typing 
     await page.evaluate(() => document.activeElement?.blur());
     const covered = await lastMessageCovered();
     if (covered > 1) throw new Error(`the newest message is ${covered}px under the message box`);
+});
+
+await step('editing the last message keeps the editor and the top bar on the screen', async () => {
+    // With the tabs tucked away, opening the editor used to scroll the whole page up.
+    await until(() => document.documentElement.classList.contains('stmui-tabs-tucked'));
+    await page.waitForTimeout(400);
+    const tall = await page.evaluate(() => document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight);
+    if (tall > 0) throw new Error(`the page is ${tall}px taller than the screen`);
+    await page.evaluate(() => [...document.querySelectorAll('#chat .mes')].pop().querySelector('.mes_edit').click());
+    await until(() => document.documentElement.classList.contains('stmui-editing'));
+    await page.waitForTimeout(600);
+    const state = await page.evaluate(() => ({
+        scrolled: window.scrollY,
+        bar: document.getElementById('stmui-appbar').getBoundingClientRect().top,
+        box: document.getElementById('curEditTextarea').getBoundingClientRect().top,
+    }));
+    await page.evaluate(() => document.querySelector('#chat .mes:has(#curEditTextarea) .mes_edit_cancel')?.click());
+    await until(() => !document.documentElement.classList.contains('stmui-editing'));
+    if (state.scrolled || state.bar < 0 || state.box < state.bar) throw new Error(`the editor moved off the screen: ${JSON.stringify(state)}`);
 });
 
 await step('compact size and docked message box fit more chat and keep 44px buttons', async () => {

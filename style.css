@@ -8043,15 +8043,16 @@ html.stmui-chat.stmui-shell #chat {
 }
 
 html.stmui-shell .stmui-tabbar {
-    transition: transform 0.2s var(--stmui-ease), visibility 0s linear 0s;
+    transition: transform 0.2s var(--stmui-ease), display 0.2s allow-discrete;
 }
 
+/* It slides down, then is taken out of the page (display: none). Left in place
+   below the screen, it made the page taller than the screen, and the browser
+   scrolled the whole layout up when the message editor opened. */
 html.stmui-shell.stmui-tabs-tucked .stmui-tabbar {
+    display: none;
     height: calc(var(--stmui-tabbar-h) + var(--stmui-safe-bottom));
     transform: translateY(100%);
-    /* Hidden from touch, keyboard and screen readers once it has slid away. */
-    visibility: hidden;
-    transition: transform 0.2s var(--stmui-ease), visibility 0s linear 0.2s;
 }
 
 html.stmui-shell:is(.stmui-motion-light, .stmui-motion-off) .stmui-tabbar {
@@ -8245,6 +8246,93 @@ html.stmui-chat.stmui-compact #send_form {
 html.stmui-chat.stmui-compact #send_textarea {
     min-height: 36px;
     padding: 8px 8px 4px;
+}
+
+/* The start screen: the version on one line, slim shortcut chips, and recent
+   chats as tighter cards with a one-line preview. Tap areas stay 44px. */
+html.stmui-chat.stmui-compact .welcomePanel {
+    gap: 8px;
+}
+
+html.stmui-chat.stmui-compact .welcomePanel .welcomeHeader {
+    gap: 4px;
+    margin: 0;
+}
+
+html.stmui-chat.stmui-compact .welcomePanel .welcomeHeaderLogo {
+    width: 28px;
+    height: 28px;
+}
+
+html.stmui-chat.stmui-compact .welcomePanel .welcomeHeaderVersionDisplay {
+    overflow: hidden;
+    font-size: 12px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+}
+
+html.stmui-chat.stmui-compact .welcomePanel .recentChatsTitle {
+    font-size: 16px;
+}
+
+html.stmui-chat.stmui-compact .welcomePanel .welcomeShortcuts {
+    gap: 4px;
+}
+
+html.stmui-chat.stmui-compact .welcomePanel .welcomeShortcuts .menu_button {
+    position: relative;
+    gap: 4px;
+    height: 32px;
+    min-height: 32px;
+    margin: 6px 0;
+    padding: 0 12px;
+    border: 0;
+    background: var(--stmui-raised-2);
+}
+
+html.stmui-chat.stmui-compact .welcomePanel .welcomeShortcuts .menu_button::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+}
+
+html.stmui-chat.stmui-compact .welcomeRecent .recentChatList {
+    gap: 4px;
+}
+
+html.stmui-chat.stmui-compact .welcomeRecent .recentChatList .recentChat {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 0 8px;
+    padding: 8px 4px 0 12px;
+    border-radius: 12px;
+}
+
+html.stmui-chat.stmui-compact .welcomeRecent .recentChatList .recentChat > .avatar {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+}
+
+html.stmui-chat.stmui-compact .welcomeRecent .recentChatList .recentChat .recentChatPinned {
+    top: 4px;
+    left: 40px;
+}
+
+html.stmui-chat.stmui-compact .welcomeRecent .recentChatList .recentChat .chatMessageContainer .chatMessage {
+    display: -webkit-box;
+    margin-top: 2px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+}
+
+html.stmui-chat.stmui-compact .welcomeRecent .recentChatList .recentChat :is(.chatStats, .chatActions) {
+    margin-top: 0;
+}
+
+html.stmui-chat.stmui-compact .welcomeRecent .recentChatList .stmui-group-chats .recentChat {
+    padding: 8px 4px 0 12px;
 }
 
 /* Tablets and unfolded foldables: the chat is a centred column with lines short

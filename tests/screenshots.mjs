@@ -16,6 +16,18 @@ const want = name => !only.size || only.has(name);
 
 const browser = await chromium.launch({ channel: process.env.CHROME_CHANNEL || undefined });
 const context = await browser.newContext({ ...devices['Pixel 7'], viewport: { width: 375, height: 812 }, deviceScaleFactor: 2 });
+// Extensions installed on the test copy for compatibility testing (Guided Generations,
+// a quick reply set) stay out of the README pictures.
+const hideTestExtensions = () => {
+    const hide = () => {
+        const style = document.createElement('style');
+        style.textContent = '#gg-action-button-container, #qr--bar { display: none !important; }';
+        document.head.append(style);
+    };
+    if (document.head) hide();
+    else document.addEventListener('DOMContentLoaded', hide);
+};
+await context.addInitScript(hideTestExtensions);
 const page = await context.newPage();
 
 const until = (fn, arg, timeout = 15000) => page.waitForFunction(fn, arg, { timeout });
@@ -294,6 +306,7 @@ if (want('before')) {
 if (want('desktop')) {
     // The desktop layout: a computer, where Automatic turns Pocket Tavern on by itself.
     const desk = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await desk.addInitScript(hideTestExtensions);
     const tabPage = await desk.newPage();
     await tabPage.goto(ST_URL, { waitUntil: 'domcontentloaded' });
     await tabPage.waitForFunction(() => document.documentElement.classList.contains('stmui-wide'), null, { timeout: 120000 });

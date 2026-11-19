@@ -1502,6 +1502,8 @@ class Shell {
         root.classList.toggle('stmui-tabs-tucked', on);
         if (atBottom) chat.scrollTop = chat.scrollHeight;
         if (!glide) return;
+        // Coming back it slides up from the bottom edge (going away, CSS slides it down).
+        if (!on) this.tabbar.animate([{ transform: 'translateY(100%)' }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
         // The message box (and the newest message above it) glide to their new place with the tabs.
         const shift = form.getBoundingClientRect().top - before;
         if (Math.abs(shift) < 4) return;
@@ -7153,6 +7155,19 @@ function setFeatureClasses() {
     root.classList.toggle('stmui-wide', active && settings.appShell && matchMedia(WIDE_QUERY).matches);
 }
 
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+/**
+ * The page itself never scrolls in Pocket Tavern: the chat and pages scroll inside
+ * it. If something scrolls it anyway (the browser bringing a text box into view),
+ * the fixed bars and the message editor would slide off the screen, so put it back.
+ * Not on iPhones: Safari scrolls the page on purpose to show the keyboard.
+ */
+function onStrayScroll() {
+    if (!active || !settings.appShell || IS_IOS) return;
+    if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
+}
+
 /** On the desktop layout a page stays open beside the chat while you use the chat. */
 function onChatMouseDown(event) {
     const root = document.documentElement;
@@ -7366,6 +7381,7 @@ function init() {
     window.addEventListener('resize', reevaluate);
     window.addEventListener('orientationchange', reevaluate);
     window.addEventListener('popstate', onPopState);
+    window.addEventListener('scroll', onStrayScroll, { passive: true });
     document.addEventListener('focusin', () => shell?.checkKeyboard());
     document.addEventListener('focusout', () => setTimeout(() => shell?.checkKeyboard(), 50));
 

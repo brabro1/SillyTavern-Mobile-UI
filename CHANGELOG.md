@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.18.4
+
+A fix for the message editor, and Compact for the start screen.
+
+- **Fixed: the message you were editing slid off the screen.** Since 2.18.0 the tabs slide away in a chat. They were left just below the screen, which made the page taller than the screen. When the editor opened, the browser scrolled that extra space into view and dragged the whole layout up: the top bar disappeared and the message being edited moved partly or fully off the screen. The tabs are now taken out of the page once they have slid away, and if anything scrolls the page anyway, Pocket Tavern puts it back (not on iPhones, where Safari scrolls the page on purpose for the keyboard).
+- **Compact start screen.** With the Compact size, SillyTavern's version sits on one line next to a smaller logo, the shortcut buttons (Docs, GitHub, Discord, Temporary Chat) are slim chips, the title is smaller, and recent chat cards are tighter with a one-line preview. Every button still has a 44px tap area.
+- The README is rewritten for everything Pocket Tavern does now, with a FAQ for the questions people asked.
+- The phone test opens the editor on the last message with the tabs tucked away and checks that the page never scrolls.
+
 ## 2.18.3
 
 Quick replies and Guided Generations, checked with the real extension installed this time.

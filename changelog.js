@@ -1,6 +1,13 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.18.4',
+        items: [
+            "Fixed: editing a message could push the whole screen up, so the top bar and the message you were editing slid off the screen.",
+            "Compact now also tightens the start screen: the version on one line, slim shortcut chips and smaller recent chat cards.",
+        ],
+    },
+    {
         version: '2.18.3',
         items: [
             "Quick reply buttons are slimmer chips, and they wrap onto another line instead of sliding off the screen.",
