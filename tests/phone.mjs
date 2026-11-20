@@ -1158,6 +1158,12 @@ await step('backgrounds are big enough to pick, the next-version button is an ar
     });
     if (icon?.regen) throw new Error('the next-version button still shows the refresh icon');
     // A computer (mouse, desktop layout) picks Compact on Automatic; the chat width slider fills to its knob.
+    // On a fresh SillyTavern the one-time desktop notice would cover the page; the desktop step later shows it on purpose.
+    await page.evaluate(async () => {
+        SillyTavern.getContext().extensionSettings.mobileUI.desktopNoticeSeen = true;
+        SillyTavern.getContext().saveSettingsDebounced();
+        await new Promise(resolve => setTimeout(resolve, 2500));
+    });
     const desk = await browser.newContext({ viewport: { width: 1366, height: 768 } });
     const tab = await desk.newPage();
     try {
@@ -1167,6 +1173,9 @@ await step('backgrounds are big enough to pick, the next-version button is an ar
         const auto = await tab.evaluate(() => SillyTavern.getContext().extensionSettings.mobileUI.uiSize);
         const compact = await tab.evaluate(() => document.documentElement.classList.contains('stmui-compact'));
         if ((auto ?? 'auto') === 'auto' && !compact) throw new Error('a computer on Automatic size is not compact');
+        // Anything that opened by itself (What's new) closes first.
+        await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+        await tab.waitForFunction(() => !document.getElementById('stmui-sheet'), null, { timeout: 8000 }).catch(() => {});
         await tab.evaluate(() => document.querySelector('.stmui-tab[data-tab="more"]')?.click());
         await tab.locator('#stmui-sheet .stmui-menu-row-theme').click();
         await tab.waitForFunction(() => !!document.querySelector('#stmui-sheet .stmui-width-range'));
