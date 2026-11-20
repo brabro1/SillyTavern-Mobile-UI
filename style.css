@@ -16,6 +16,8 @@
     --stmui-faint: color-mix(in srgb, var(--stmui-text) 40%, transparent);
     --stmui-surface: var(--SmartThemeBlurTintColor, #171717);
     --stmui-solid: color-mix(in srgb, var(--stmui-surface) 92%, #0b0b0b);
+    /* Always opaque, even in glass: bars that stick while content scrolls under them. */
+    --stmui-opaque: color-mix(in srgb, var(--stmui-surface) 92%, #0b0b0b);
     --stmui-raised: color-mix(in srgb, var(--stmui-text) 7%, var(--stmui-surface));
     --stmui-raised-2: color-mix(in srgb, var(--stmui-text) 11%, var(--stmui-surface));
     --stmui-line: color-mix(in srgb, var(--stmui-text) 14%, transparent);
@@ -62,7 +64,89 @@ html.stmui-on *::-webkit-scrollbar {
 @supports (color: rgb(from red r g b)) {
     :root {
         --stmui-solid: rgb(from var(--stmui-surface) r g b);
+        --stmui-opaque: rgb(from var(--stmui-surface) r g b);
     }
+}
+
+/* ==========================================================================
+   Glass (html.stmui-glass): a chat background is showing, with Your theme, a
+   SillyTavern theme, or a Pocket Tavern theme whose Theme background is off.
+   Like SillyTavern's own look: the bars, pages, sheets, popups and the message
+   box are frosted, the chat is clear, and each message is a frosted card.
+   A Pocket Tavern or SillyTavern theme sets the amounts in themes.js; Your
+   theme uses SillyTavern's own colors, kept between readable limits.
+   SillyTavern's "No Blur Effect" (body.no-blur) keeps the tints but drops
+   the blur.
+   ========================================================================== */
+
+/* A light blur, so the picture stays a picture: at most 10px, and 6px on phones
+   (their screens are small, so a strong blur turned it into a smear). */
+html.stmui-glass {
+    --stmui-glass-blur: blur(min(var(--stmui-blur, 8px), 10px)) saturate(1.15);
+}
+
+html.stmui-glass:not(.stmui-wide) {
+    --stmui-glass-blur: blur(min(var(--stmui-blur, 6px), 6px)) saturate(1.15);
+}
+
+html.stmui-glass:has(body.no-blur) {
+    --stmui-glass-blur: none;
+}
+
+html.stmui-on.stmui-glass:not(.stmui-themed) {
+    --stmui-blur: var(--SmartThemeBlurStrength, 10px);
+    --SmartThemeChatTintColor: transparent !important;
+    --stmui-raised: color-mix(in srgb, var(--stmui-text) 8%, transparent);
+    --stmui-raised-2: color-mix(in srgb, var(--stmui-text) 13%, transparent);
+    --stmui-solid: color-mix(in srgb, var(--SmartThemeBlurTintColor) 100%, transparent);
+    --stmui-bot-tint: var(--SmartThemeBotMesBlurTintColor);
+    --stmui-user-tint: var(--SmartThemeUserMesBlurTintColor);
+}
+
+@supports (color: rgb(from red r g b)) {
+    html.stmui-on.stmui-glass:not(.stmui-themed) {
+        --stmui-surface: rgb(from var(--SmartThemeBlurTintColor) r g b / clamp(0.55, alpha, 0.86));
+        --stmui-solid: rgb(from var(--SmartThemeBlurTintColor) r g b / clamp(0.62, alpha, 0.92));
+        --stmui-bot-tint: rgb(from var(--SmartThemeBotMesBlurTintColor) r g b / clamp(0.5, alpha, 0.85));
+        --stmui-user-tint: rgb(from var(--SmartThemeUserMesBlurTintColor) r g b / clamp(0.5, alpha, 0.85));
+    }
+}
+
+html.stmui-glass.stmui-shell .stmui-appbar,
+html.stmui-glass.stmui-shell .stmui-tabbar,
+html.stmui-glass.stmui-shell #top-settings-holder .drawer-content.openDrawer,
+html.stmui-glass .stmui-sheet .stmui-panel,
+html.stmui-glass.stmui-touch dialog.popup:not(.transparent_dialogue_popup),
+html.stmui-glass.stmui-touch :is(#extensionsMenu, #select_chat_popup),
+html.stmui-glass.stmui-shell #completion_prompt_manager_popup,
+html.stmui-glass .stmui-chat-finder,
+html.stmui-glass.stmui-wide body:not(.movingUI) #movingDivs > div,
+html.stmui-glass.stmui-touch body > .gg-popup > .gg-popup-content,
+html.stmui-glass.stmui-chat #send_form,
+html.stmui-glass.stmui-chat #chat .mes,
+html.stmui-glass.stmui-chat .welcomeRecent .recentChatList .recentChat {
+    -webkit-backdrop-filter: var(--stmui-glass-blur) !important;
+    backdrop-filter: var(--stmui-glass-blur) !important;
+}
+
+/* Sheets are drawn over a dark base so they are always opaque; frosted here. */
+html.stmui-glass .stmui-sheet .stmui-panel {
+    background: var(--stmui-solid);
+}
+
+/* The bars use the frosted surface as it is (they were nearly solid to spare phones a live blur). */
+html.stmui-glass.stmui-shell :is(.stmui-appbar, .stmui-tabbar) {
+    background: var(--stmui-surface);
+}
+
+/* The message box is a frosted panel like the bars, a step stronger than a card. */
+html.stmui-glass.stmui-chat:not(.stmui-docked) #send_form {
+    background: var(--stmui-solid) !important;
+}
+
+/* The first message of a chat that is not drawn as a card (system notes) gets a frosted backing too. */
+html.stmui-glass.stmui-chat body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes[is_system='true'] {
+    background: var(--stmui-bot-tint);
 }
 
 /* ---- Settings panel (visible on every device) --------------------------- */
@@ -1794,7 +1878,7 @@ html.stmui-chat:not(.stmui-editing) #chat .mes .swipes-counter {
     opacity: 1;
 }
 
-/* One version only: no "1/1", just the round "new version" button. */
+/* One version only: no "1/1", just the round › button that makes a new version. */
 html.stmui-chat:not(.stmui-editing) #chat .mes.stmui-one-swipe .swipes-counter {
     display: none;
 }
@@ -1804,13 +1888,33 @@ html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .e
     border-radius: 999px;
 }
 
-/* The last version: "next" makes a new one. */
-html.stmui-chat.stmui-icons:not(.stmui-editing) #chat .mes.last_swipe > .swipeRightBlock .swipe_right {
-    --stmui-icon: var(--stmui-regen-icon);
-}
-
+/* The last version: "next" makes a new one. It keeps the same › arrow as every
+   other swipe (a refresh icon read as "write the reply again"), at full strength,
+   and nudges toward where the next version comes from when pressed. */
 html.stmui-chat:not(.stmui-editing) #chat .mes.last_swipe > .swipeRightBlock .swipe_right {
     opacity: 1;
+}
+
+html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right,
+html.stmui-chat:not(.stmui-editing) #chat .mes > .swipe_left {
+    transition: background-color 0.15s ease, transform 0.18s var(--stmui-ease);
+}
+
+html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right:active {
+    transform: translateX(2px);
+}
+
+html.stmui-chat:not(.stmui-editing) #chat .mes > .swipe_left:active {
+    transform: translateX(-2px);
+}
+
+html.stmui-wide.stmui-chat:not(.stmui-editing) #chat .mes > :is(.swipe_left, .swipeRightBlock .swipe_right):hover {
+    background: color-mix(in srgb, var(--stmui-text) 10%, transparent);
+}
+
+html:is(.stmui-motion-off) #chat .mes > :is(.swipe_left, .swipeRightBlock .swipe_right) {
+    transition: none !important;
+    transform: none !important;
 }
 
 /* SillyTavern only makes swipes invisible on messages that can't be swiped,
@@ -4222,7 +4326,7 @@ html.stmui-touch #completion_prompt_manager_popup .completion_prompt_manager_pop
     margin: 16px -14px 0;
     padding: 10px 14px 12px;
     border-top: 1px solid var(--stmui-line);
-    background: var(--stmui-solid);
+    background: var(--stmui-opaque);
 }
 
 html.stmui-touch:not(.stmui-shell) #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer {
@@ -6277,7 +6381,7 @@ html.stmui-chat.stmui-editing #chat .mes:has(#curEditTextarea) .mes_edit_buttons
     min-width: 16px;
     padding: 0 3px;
     border-radius: 6px;
-    background: var(--stmui-solid);
+    background: var(--stmui-opaque);
     border: 1px solid var(--stmui-line);
     color: inherit;
     font-size: 12px;
@@ -8212,7 +8316,7 @@ html.stmui-lorecards #world_popup_entries_list .world_entry.stmui-entry-open > .
     margin: 0 -14px 10px;
     padding: 10px 14px !important;
     border-bottom: 1px solid var(--stmui-line);
-    background: var(--stmui-solid) !important;
+    background: var(--stmui-opaque) !important;
 }
 
 /* In the editor the chevron becomes a back arrow. */
@@ -9718,7 +9822,7 @@ html.stmui-touch #ai-config-button .openai-tab-buttons {
     padding: 4px;
     border: 1px solid var(--stmui-line);
     border-radius: 12px;
-    background: var(--stmui-solid);
+    background: var(--stmui-opaque);
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -9804,12 +9908,69 @@ html.stmui-lorecards.stmui-ios-kb #world_popup_entries_list .world_entry.stmui-e
     margin: 0 4px;
 }
 
-.stmui-width-row .stmui-width-range {
+/* A slim 6px track in a 46px tall hit area; the fill ends under the 22px knob. */
+html.stmui-on .stmui-width-row input.stmui-width-range[type='range'] {
+    --stmui-knob: 22px;
     flex: 1 1 auto;
     min-width: 0;
-    height: 44px !important;
-    margin: 0;
-    accent-color: var(--stmui-accent);
+    height: 6px !important;
+    margin: 0 !important;
+    padding: 20px 0 !important;
+    box-sizing: content-box;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background-color: var(--stmui-raised-2) !important;
+    background-image: linear-gradient(var(--stmui-accent), var(--stmui-accent)) !important;
+    background-repeat: no-repeat !important;
+    background-clip: content-box !important;
+    background-origin: content-box !important;
+    background-size: calc(var(--stmui-knob) / 2 + (100% - var(--stmui-knob)) * var(--stmui-share, 0)) 100% !important;
+    box-shadow: none !important;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    touch-action: pan-y;
+}
+
+html.stmui-on .stmui-width-row input.stmui-width-range[type='range']::-webkit-slider-runnable-track {
+    height: 6px;
+    background: transparent;
+}
+
+html.stmui-on .stmui-width-row input.stmui-width-range[type='range']::-moz-range-track {
+    height: 6px;
+    background: transparent;
+}
+
+html.stmui-on .stmui-width-row input.stmui-width-range[type='range']::-webkit-slider-thumb {
+    width: var(--stmui-knob) !important;
+    height: var(--stmui-knob) !important;
+    margin-top: calc((6px - var(--stmui-knob)) / 2);
+    border: 3px solid var(--stmui-accent) !important;
+    border-radius: 50%;
+    background: var(--stmui-on-accent) !important;
+    box-shadow: none !important;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: transform 0.15s var(--stmui-ease);
+}
+
+html.stmui-on .stmui-width-row input.stmui-width-range[type='range']::-moz-range-thumb {
+    box-sizing: border-box;
+    width: var(--stmui-knob);
+    height: var(--stmui-knob);
+    border: 3px solid var(--stmui-accent);
+    border-radius: 50%;
+    background: var(--stmui-on-accent);
+}
+
+html.stmui-on .stmui-width-row input.stmui-width-range[type='range']:active::-webkit-slider-thumb {
+    transform: scale(1.12);
+}
+
+html.stmui-on .stmui-width-row input.stmui-width-range[type='range']:focus-visible {
+    outline: 2px solid var(--stmui-accent);
+    outline-offset: 2px;
 }
 
 .stmui-width-value {
@@ -10562,4 +10723,130 @@ html.stmui-wide .stmui-banner {
     html.stmui-wide .welcomeRecent .recentChat:hover {
         border-color: color-mix(in srgb, var(--stmui-text) 22%, transparent);
     }
+}
+
+/* ==========================================================================
+   Desktop density (desktop layout + Compact + a mouse or trackpad): as much
+   fits as in SillyTavern's own layout. A mouse is precise, so controls go down
+   to 32-36px here; a tablet held sideways (a finger) keeps 44px.
+   ========================================================================== */
+@media (pointer: fine) {
+    html.stmui-wide.stmui-chat.stmui-compact body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes {
+        margin: 3px 4px;
+        padding: 8px 14px 8px;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .avatar,
+    html.stmui-wide.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mesAvatarWrapper > .avatar img {
+        width: 34px;
+        height: 34px;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .ch_name {
+        min-height: 32px;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact:not(.stmui-editing) #chat .mes .mes_buttons .mes_button {
+        min-width: 32px;
+        min-height: 32px;
+        margin: 0;
+        border-radius: 8px;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes .mes_block > .mes_text {
+        margin-top: 2px;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > :is(.swipe_left, .swipeRightBlock) {
+        height: 30px;
+        margin-top: 4px;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right {
+        width: 30px;
+        min-width: 30px;
+        height: 30px;
+    }
+
+    /* The message box: slim quick replies, 36px tools. */
+    html.stmui-wide.stmui-chat.stmui-compact #form_sheld {
+        padding: 10px 8px 6px;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact #qr--bar .qr--button {
+        height: 28px;
+        min-height: 28px;
+        margin: 3px 0;
+        padding: 0 10px;
+        font-size: 13px;
+        line-height: 28px;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact #qr--bar .qr--button::after {
+        content: none;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact #leftSendForm > div,
+    html.stmui-wide.stmui-chat.stmui-compact #rightSendForm > div:not(.mes_stop):not(.stscript_btn),
+    html.stmui-wide.stmui-chat.stmui-compact #nonQRFormItems #options_button {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 16px;
+    }
+
+    html.stmui-wide.stmui-chat.stmui-compact #send_textarea {
+        min-height: 34px;
+        padding: 7px 8px 3px;
+    }
+
+    /* The top bar is a little lower. */
+    html.stmui-wide.stmui-shell.stmui-compact {
+        --stmui-appbar-h: 48px;
+    }
+}
+
+/* ==========================================================================
+   Avatar shape (SillyTavern's Settings → Look → Avatars, also set by a
+   SillyTavern theme picked in More → Themes): Circle stays round; Square,
+   Rounded and Rectangle (a portrait card) apply to the pictures in messages,
+   recent chats and the top bar, at Pocket Tavern's sizes.
+   ========================================================================== */
+html.stmui-on body.square-avatars :is(#chat .mes .mesAvatarWrapper .avatar, #chat .mes .mesAvatarWrapper .avatar img, .welcomeRecent .recentChat > .avatar, .welcomeRecent .recentChat > .avatar img, .stmui-ab-avatar, .stmui-ab-avatar img) {
+    border-radius: 4px !important;
+}
+
+html.stmui-on body.rounded-avatars :is(#chat .mes .mesAvatarWrapper .avatar, #chat .mes .mesAvatarWrapper .avatar img, .welcomeRecent .recentChat > .avatar, .welcomeRecent .recentChat > .avatar img, .stmui-ab-avatar, .stmui-ab-avatar img) {
+    border-radius: 12px !important;
+}
+
+html.stmui-on body.big-avatars :is(#chat .mes .mesAvatarWrapper .avatar, #chat .mes .mesAvatarWrapper .avatar img, .welcomeRecent .recentChat > .avatar, .welcomeRecent .recentChat > .avatar img, .stmui-ab-avatar, .stmui-ab-avatar img) {
+    border-radius: 8px !important;
+}
+
+/* Rectangle: as wide as the round picture would be, a third taller, top-aligned in the header. */
+html.stmui-chat:not(.stmui-editing) body.big-avatars #chat .mes .mesAvatarWrapper > .avatar,
+html.stmui-chat:not(.stmui-editing) body.big-avatars #chat .mes .mesAvatarWrapper > .avatar img {
+    height: auto !important;
+    aspect-ratio: 3 / 4;
+    align-self: start;
+}
+
+html.stmui-chat:not(.stmui-editing) body.big-avatars #chat .mes .mesAvatarWrapper > .avatar img {
+    width: 100% !important;
+    object-fit: cover;
+}
+
+/* ==========================================================================
+   Backgrounds: big enough to choose from. SillyTavern's own − / + column count
+   still applies, but a thumbnail never gets narrower than 150px; past that the
+   grid uses fewer columns (two on a phone, more as a desktop page widens).
+   ========================================================================== */
+html.stmui-touch #Backgrounds :is(#bg_menu_content, #bg_custom_content, .bg_folder_grid) {
+    gap: 8px !important;
+    grid-template-columns: repeat(auto-fill, minmax(max(150px, calc((100% - (var(--bg-thumb-columns, 3) - 1) * 8px) / var(--bg-thumb-columns, 3))), 1fr)) !important;
+}
+
+html.stmui-touch #Backgrounds #bg_menu_content .bg_example {
+    border-radius: 12px;
+    overflow: hidden;
 }

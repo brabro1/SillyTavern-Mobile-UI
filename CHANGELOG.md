@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.24.0
+
+Glass over your chat background, SillyTavern themes that look like themselves, and a compact desktop.
+
+### Desktop
+
+- **Compact like SillyTavern.** On a computer (a mouse or trackpad and the desktop layout), the **Automatic** size now picks **Compact**, and Compact gets denser there: tighter message cards with a 34px picture and 32px buttons, slim 28px quick replies, 36px tools in the message box, 30px swipe buttons and a 48px top bar. More of the chat fits, close to SillyTavern's own layout. A tablet held sideways (a finger, not a mouse) keeps the 44px controls. Pick **Comfortable** under More → Themes → Size for the roomier look.
+
+### Both
+
+- **A clearer "new version" button.** On the last reply, the button that makes a new version showed a refresh icon, which read as "write the reply again" (Regenerate). It is now the same › arrow as every other swipe, and it nudges toward the next version when pressed; on a computer the swipe buttons light up on hover.
+- **Avatar shapes.** SillyTavern's Avatars setting (Circle, Square, Rounded, Rectangle) now shows in Pocket Tavern's chat, recent chats and top bar: Square and Rounded corners, and Rectangle as a portrait picture a third taller than wide. Before, chat pictures were always round and Rectangle did nothing. Picking a SillyTavern theme in More → Themes also sets its avatar shape, as it does in SillyTavern (Azure: Rectangle).
+- **Lighter blur.** The blur behind glass was strong enough to turn the picture into a smear, especially on phones. It is now at most 10px on a computer and 6px on a phone (Pocket Tavern's themes use 8px). To keep text easy to read, message cards are a little more solid (70%) and dark Pocket Tavern themes put a faint shadow under the text over a picture.
+- **Bigger backgrounds to pick.** On the Backgrounds page a thumbnail never gets narrower than 150px. SillyTavern's own − and + column buttons still work, but past that size the grid uses fewer columns: two on a phone, more as a desktop page gets wider. Thumbnails have rounded corners.
+- **Chat width slider** (More → Themes on a computer): a slim track with its fill ending right under the knob, instead of a thick bar whose fill did not match the knob.
+
+- **Glass.** With a chat background set, every theme now turns see-through, like SillyTavern's own look: the top bar, the tab bar or sidebar, every page, sheets, popups, menus, the message box and each message are frosted over your picture (a blur behind a tint of the theme's color), and the chat itself is clear. This is for **Your theme**, every SillyTavern theme, and Pocket Tavern's themes with **Theme background** off. Before, pages, sheets and bars stayed solid and only the messages let the picture through. Without a background picture (or with a Pocket Tavern theme showing its own background) everything stays solid as before. Bars that stick while a page scrolls under them stay solid so nothing shows through behind their text. SillyTavern's **No Blur Effect** keeps the tints and drops the blur.
+- **SillyTavern themes keep their own look.** In 2.23.0 a SillyTavern theme picked in **More → Themes** kept only its colors and became solid, so Azure no longer looked like Azure. Now, over a chat background, each one keeps what makes it itself: how see-through its panels are, its message tints (Azure's navy for the character and blue for you), its blur strength and its text shadow. Pocket Tavern keeps its own layout, keeps the tints within readable limits (panels 55–86% solid, message cards 55–85%), and lifts a text, narration or dialogue color that would fade on a see-through card over a mid-tone picture. Each of SillyTavern's six built-in themes was checked side by side with and without Pocket Tavern.
+- **SillyTavern themes always show your background,** as they do in SillyTavern: they have no background of their own. **Theme background** in More → Themes now only applies to Pocket Tavern's twelve themes, and the Backgrounds page note only shows for those.
+- **Fixed:** picking an already chosen SillyTavern theme again now applies its current values (after you changed it in SillyTavern).
+- New README screenshot: glass with SillyTavern's Azure theme. `tests/phone.mjs` checks that the top bar turns see-through once a background is picked, that a SillyTavern theme shows your background as glass, that background thumbnails stay at least 150px wide, that the new-version button is not the refresh icon, that a computer on Automatic is compact, and that the Chat width slider fills to its knob.
+
 ## 2.23.0
 
 Chat backgrounds that show, SillyTavern's UI themes moved into Pocket Tavern's Themes and made to fit, and a softer message box. Everything here is for both layouts.

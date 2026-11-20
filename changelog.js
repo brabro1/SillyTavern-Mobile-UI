@@ -1,6 +1,15 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.24.0',
+        items: [
+            "Glass: with a chat background set, every theme turns see-through like SillyTavern's own look, only tidier. The bars, pages, menus, the message box and every message are frosted over your picture.",
+            "SillyTavern themes in More → Themes now keep their own look over your background: Azure's blue glass, Cappuccino's warm brown, their tints, blur and text shadow. Pocket Tavern only makes sure the text stays readable.",
+            "On a computer, Pocket Tavern is compact like SillyTavern itself: tighter messages, a slimmer message box and top bar, so more of the chat fits. Picking a SillyTavern theme also sets its avatar shape, and Square, Rounded and Rectangle avatars now show in chats.",
+            "The button for a new version of the last reply is a › arrow now, like the other swipes, instead of a refresh icon that looked like Regenerate. Background pictures are bigger to pick from, the blur behind glass is lighter, and the Chat width slider is cleaner.",
+        ],
+    },
+    {
         version: '2.23.0',
         items: [
             "Fixed: chat backgrounds seemed not to work with a Pocket Tavern theme. The theme's own background was covering them. Picking a background now turns it off, and the Backgrounds page says what is going on.",

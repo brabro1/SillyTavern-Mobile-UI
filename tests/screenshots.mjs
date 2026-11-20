@@ -321,6 +321,30 @@ if (want('compact-light')) {
     await compactShot('compact-light');
 }
 
+if (want('glass')) {
+    // Glass: SillyTavern's Azure theme from More → Themes, over a chat background.
+    // The background and theme are put back afterwards.
+    const before = await page.evaluate(() => decodeURIComponent((document.getElementById('bg1').style.backgroundImage.match(/backgrounds\/([^"')]+)/) ?? [])[1] ?? ''));
+    const avatar = await page.evaluate(() => document.getElementById('avatar_style').value);
+    // From Your theme: picking a background over a Pocket Tavern theme would turn its own background off.
+    await setTheme('st');
+    const backdrop = await page.evaluate(() => SillyTavern.getContext().extensionSettings.mobileUI.themeBackdrop);
+    await page.evaluate(() => [...document.querySelectorAll('#bg_menu_content .bg_example')].find(e => e.getAttribute('bgfile') === 'landscape beach day.png')?.click());
+    await openThemes();
+    await until(() => !!document.querySelector('#stmui-sheet .stmui-theme-card[data-theme="st:Azure"]'), null, 15000);
+    await page.locator('#stmui-sheet .stmui-theme-card[data-theme="st:Azure"]').click();
+    await settle(1000);
+    await closeSheet();
+    await openDemoChat();
+    await until(() => document.documentElement.classList.contains('stmui-glass'));
+    await shot('glass');
+    if (before) await page.evaluate(file => [...document.querySelectorAll('#bg_menu_content .bg_example')].find(e => e.getAttribute('bgfile') === file)?.click(), before);
+    await page.evaluate(() => { delete SillyTavern.getContext().extensionSettings.mobileUI.stTheme; });
+    // Azure set its avatar shape (Rectangle): back to what it was.
+    await setPref('avatar_style', avatar);
+    await page.evaluate(value => { SillyTavern.getContext().extensionSettings.mobileUI.themeBackdrop = value; SillyTavern.getContext().saveSettingsDebounced(); }, backdrop);
+}
+
 await setTheme('st');
 
 if (want('recent')) {

@@ -1022,10 +1022,10 @@ await step('the character list view keeps rows apart, and the start screen can h
     }
 });
 
-await step('a theme gives way to the background you pick, SillyTavern themes are in Themes (made to fit) instead of Settings → Look, and the chat look switches Chat Style to Flat', async () => {
+await step('a theme gives way to the background you pick, every theme turns to glass over it, SillyTavern themes are in Themes instead of Settings → Look, and the chat look switches Chat Style to Flat', async () => {
     const before = await page.evaluate(() => {
         const s = SillyTavern.getContext().extensionSettings.mobileUI;
-        return { theme: s.theme, backdrop: s.themeBackdrop, stTheme: s.stTheme, style: document.getElementById('chat_display').value, bg: decodeURIComponent((getComputedStyle(document.getElementById('bg1')).backgroundImage.match(/\/backgrounds\/([^"')]+)/) ?? [])[1] ?? '') || null };
+        return { avatar: document.getElementById('avatar_style').value, theme: s.theme, backdrop: s.themeBackdrop, stTheme: s.stTheme, style: document.getElementById('chat_display').value, bg: decodeURIComponent((getComputedStyle(document.getElementById('bg1')).backgroundImage.match(/\/backgrounds\/([^"')]+)/) ?? [])[1] ?? '') || null };
     });
     const openThemes = async () => {
         await showTabs();
@@ -1057,6 +1057,13 @@ await step('a theme gives way to the background you pick, SillyTavern themes are
         await until(() => !document.documentElement.classList.contains('stmui-backdrop') && !document.getElementById('stmui_bg_note'));
         const tint = await page.evaluate(() => getComputedStyle(document.getElementById('chat')).backgroundColor);
         if (!/rgba\(0, 0, 0, 0\)|transparent/.test(tint)) throw new Error(`the chat still covers the background: ${tint}`);
+        // Glass: with the background showing, the top bar is see-through too.
+        const bar = await page.evaluate(() => ({
+            glass: document.documentElement.classList.contains('stmui-glass'),
+            color: getComputedStyle(document.querySelector('.stmui-appbar')).backgroundColor,
+        }));
+        const barAlpha = Number((bar.color.match(/[\d.]+(?=\)$)/) ?? ['1'])[0]);
+        if (!bar.glass || !/rgba|\//.test(bar.color) || barAlpha > 0.9) throw new Error(`no glass over the background: ${JSON.stringify(bar)}`);
         await page.evaluate(() => globalThis.toastr?.clear());
         // Settings → Look: SillyTavern's theme list is hidden; a note points to More → Themes.
         await page.locator('.stmui-tab[data-tab="more"]').click();
@@ -1072,8 +1079,13 @@ await step('a theme gives way to the background you pick, SillyTavern themes are
         const picked = await page.evaluate(() => document.querySelector('#stmui-sheet .stmui-themes-st .stmui-theme-card[data-theme^="st:"]').dataset.theme);
         await page.locator(`#stmui-sheet .stmui-theme-card[data-theme="${picked}"]`).click();
         await until(want => document.documentElement.dataset.stmuiTheme === want && SillyTavern.getContext().extensionSettings.mobileUI.stTheme?.name === want.slice(3), picked);
-        const surface = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--stmui-surface').trim());
-        if (!/^#[0-9a-f]{6}$/i.test(surface)) throw new Error(`the SillyTavern theme gave no solid surface: ${surface}`);
+        // A SillyTavern theme always shows your background (it has none of its own), as glass.
+        const stGlass = await page.evaluate(() => ({
+            glass: document.documentElement.classList.contains('stmui-glass'),
+            backdrop: document.documentElement.classList.contains('stmui-backdrop'),
+            text: getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim(),
+        }));
+        if (!stGlass.glass || stGlass.backdrop || !/^#[0-9a-f]{6}$/i.test(stGlass.text)) throw new Error(`the SillyTavern theme: ${JSON.stringify(stGlass)}`);
         await page.locator('#stmui-sheet .stmui-theme-card[data-theme="st"]').click();
         await until(() => !document.documentElement.dataset.stmuiTheme);
         await closeSheet();
@@ -1101,6 +1113,8 @@ await step('a theme gives way to the background you pick, SillyTavern themes are
             if (b.bg) [...document.querySelectorAll('#bg_menu_content .bg_example')].find(e => e.getAttribute('bgfile') === b.bg)?.click();
         }, before);
         await setPref('chat_display', before.style);
+        // Picking a SillyTavern theme set its avatar shape too.
+        await setPref('avatar_style', before.avatar);
         // Re-apply the restored theme the same way the Themes sheet does.
         await openThemes();
         await page.locator(`#stmui-sheet .stmui-theme-card[data-theme="${before.theme}"]`).click();
@@ -1118,6 +1132,53 @@ await step('a theme gives way to the background you pick, SillyTavern themes are
         return found;
     });
     if (empty) throw new Error(`${empty} older messages show an empty swipe button`);
+});
+
+await step('backgrounds are big enough to pick, the next-version button is an arrow, and the chat width slider fills to its knob; a computer is compact', async () => {
+    // Background thumbnails never drop below 150px, whatever SillyTavern's column count.
+    await showTabs();
+    await page.locator('.stmui-tab[data-tab="more"]').click();
+    await page.locator('#stmui-sheet .stmui-tile', { hasText: 'Backgrounds' }).click();
+    await until(() => document.documentElement.dataset.stmuiPage === 'backgrounds-button');
+    const thumbs = await page.evaluate(() => {
+        document.documentElement.style.setProperty('--bg-thumb-columns', '6');
+        const widths = [...document.querySelectorAll('#bg_menu_content .bg_example')].slice(0, 3).map(e => Math.round(e.getBoundingClientRect().width));
+        document.documentElement.style.removeProperty('--bg-thumb-columns');
+        return widths;
+    });
+    if (!thumbs.length || thumbs.some(w => w < 150)) throw new Error(`background thumbnails are ${thumbs.join(', ')}px wide`);
+    await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="chat"]')?.click());
+    // The last message's "next version" button uses the › arrow, not a refresh icon.
+    const icon = await page.evaluate(() => {
+        const button = document.querySelector('#chat .mes.last_swipe > .swipeRightBlock .swipe_right');
+        if (!button) return null;
+        const own = getComputedStyle(button).getPropertyValue('--stmui-icon').trim();
+        const regen = getComputedStyle(document.documentElement).getPropertyValue('--stmui-regen-icon').trim();
+        return { regen: !!own && own === regen };
+    });
+    if (icon?.regen) throw new Error('the next-version button still shows the refresh icon');
+    // A computer (mouse, desktop layout) picks Compact on Automatic; the chat width slider fills to its knob.
+    const desk = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+    const tab = await desk.newPage();
+    try {
+        await tab.goto(ST_URL);
+        await tab.waitForFunction(() => document.documentElement.classList.contains('stmui-wide'), null, { timeout: 60000 });
+        await tab.waitForTimeout(1500);
+        const auto = await tab.evaluate(() => SillyTavern.getContext().extensionSettings.mobileUI.uiSize);
+        const compact = await tab.evaluate(() => document.documentElement.classList.contains('stmui-compact'));
+        if ((auto ?? 'auto') === 'auto' && !compact) throw new Error('a computer on Automatic size is not compact');
+        await tab.evaluate(() => document.querySelector('.stmui-tab[data-tab="more"]')?.click());
+        await tab.locator('#stmui-sheet .stmui-menu-row-theme').click();
+        await tab.waitForFunction(() => !!document.querySelector('#stmui-sheet .stmui-width-range'));
+        const share = await tab.evaluate(() => {
+            const input = document.querySelector('#stmui-sheet .stmui-width-range');
+            const expected = (Number(input.value) - Number(input.min)) / (Number(input.max) - Number(input.min));
+            return { share: Number(input.style.getPropertyValue('--stmui-share')), expected, height: Math.round(input.getBoundingClientRect().height) };
+        });
+        if (Math.abs(share.share - share.expected) > 0.01 || share.height < 44) throw new Error(`chat width slider: ${JSON.stringify(share)}`);
+    } finally {
+        await desk.close();
+    }
 });
 
 await step('More can update Pocket Tavern in one tap and shows SillyTavern updates', async () => {

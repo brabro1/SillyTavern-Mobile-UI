@@ -82,7 +82,7 @@ const DEFAULTS = Object.freeze({
 
 const SIZES = { auto: 'Automatic', comfortable: 'Comfortable', compact: 'Compact' };
 const SIZE_NOTES = {
-    auto: 'Compact on small phones, comfortable on the rest.',
+    auto: 'Compact on computers and small phones, comfortable on the rest.',
     comfortable: 'Roomy cards and bars.',
     compact: 'Slimmer bars and tighter cards, so more of the chat fits.',
 };
@@ -2237,11 +2237,52 @@ function toastIconCss() {
         + ` html.stmui-on { --stmui-search-icon: ${iconUrl('search').replace('%23000', '%23909090')}; --stmui-think-icon: ${iconUrl('bulb')}; --stmui-regen-icon: ${iconUrl('refresh')}; }`;
 }
 
+/** A Pocket Tavern theme (not a SillyTavern one): only these have a background of their own. */
+function ownThemeOn() {
+    return !!findTheme(settings.theme);
+}
+
+/** True when a chat background picture is set (not SillyTavern's empty "transparent" one). */
+function chatBackgroundSet() {
+    for (const id of ['bg_custom', 'bg1']) {
+        const element = document.getElementById(id);
+        // The picture SillyTavern set on it: its computed value still shows the old one while it fades over.
+        const image = element ? element.style.backgroundImage || getComputedStyle(element).backgroundImage : 'none';
+        if (/url\(/.test(image) && !/__transparent/.test(image)) return true;
+    }
+    return false;
+}
+
+/**
+ * Glass: with your chat background showing, every theme turns see-through and
+ * frosted, like SillyTavern's own look. Off when a Pocket Tavern theme shows its
+ * own background, or when no background picture is set.
+ */
+function syncGlass() {
+    const root = document.documentElement;
+    const own = active && ownThemeOn() && settings.themeBackdrop;
+    root.classList.toggle('stmui-glass', active && !own && chatBackgroundSet());
+}
+
+const glassWatch = { observer: null };
+
+/** SillyTavern changes the background by restyling #bg1 (or #bg_custom for a chat's own). */
+function watchBackground() {
+    if (glassWatch.observer || !active) return;
+    const targets = ['bg1', 'bg_custom'].map(id => document.getElementById(id)).filter(Boolean);
+    if (!targets.length) return;
+    glassWatch.observer = new MutationObserver(() => syncGlass());
+    for (const target of targets) glassWatch.observer.observe(target, { attributes: true, attributeFilter: ['style', 'class'] });
+}
+
 function applyAppearance() {
     const root = document.documentElement;
     const theme = active ? currentTheme() : null;
     root.classList.toggle('stmui-themed', !!theme);
-    root.classList.toggle('stmui-backdrop', !!theme && settings.themeBackdrop);
+    // SillyTavern's themes have no background of their own: your chat background always shows, as in SillyTavern.
+    root.classList.toggle('stmui-backdrop', !!theme && ownThemeOn() && settings.themeBackdrop);
+    syncGlass();
+    watchBackground();
     root.classList.toggle('stmui-font', active && settings.modernFont);
     root.classList.toggle('stmui-icons', active && settings.customIcons);
     root.classList.toggle('stmui-toasts', active && settings.niceToasts);
@@ -2414,7 +2455,20 @@ function themeCard(theme, current, raw = null) {
         'aria-pressed': String(selected),
         'data-theme': id,
         onclick: event => {
-            if (raw) settings.stTheme = stThemeColors(raw);
+            if (raw) {
+                settings.stTheme = stThemeColors(raw);
+                // Its avatar shape too, as when it is picked in SillyTavern (SillyTavern saves it).
+                const shape = document.getElementById('avatar_style');
+                if (shape && raw.avatar_style !== undefined && String(raw.avatar_style) !== shape.value && shape.querySelector(`option[value="${raw.avatar_style}"]`)) {
+                    $j()(shape).val(String(raw.avatar_style)).trigger('change');
+                }
+                // Picked again (it may have changed in SillyTavern): apply its current values.
+                if (settings.theme === id) {
+                    saveSettings();
+                    applyAppearance();
+                    return;
+                }
+            }
             setAppearance('theme', id, event.currentTarget);
         },
     }, [
@@ -2455,9 +2509,16 @@ function chatWidthControl() {
     const value = h('span', { class: 'stmui-width-value', 'aria-hidden': 'true' });
     const input = h('input', { type: 'range', class: 'stmui-width-range', min: source.min || '25', max: source.max || '100', step: '1', 'aria-label': 'Chat width' });
     input.value = source.value;
-    value.textContent = `${input.value}%`;
-    input.addEventListener('input', () => {
+    // The filled part of the track ends under the knob (as a 0–1 share of the range).
+    const show = () => {
+        const min = Number(input.min);
+        const max = Number(input.max);
+        input.style.setProperty('--stmui-share', String(max > min ? (Number(input.value) - min) / (max - min) : 0));
         value.textContent = `${input.value}%`;
+    };
+    show();
+    input.addEventListener('input', () => {
+        show();
         $j()(source).val(input.value).trigger('input', { forced: true });
     });
     return h('div', { class: 'stmui-width-row' }, [input, value]);
@@ -6494,15 +6555,6 @@ function useFlatChatStyle() {
     return true;
 }
 
-/** How see-through a CSS colour is: 0 clear, 1 solid. */
-function colorAlpha(value) {
-    const slash = value.match(/\/\s*([\d.]+%?)\s*\)\s*$/);
-    const rgba = value.match(/^rgba\((?:[^,]+,){3}\s*([\d.]+%?)\s*\)$/);
-    const found = slash?.[1] ?? rgba?.[1];
-    if (found !== undefined) return found.endsWith('%') ? parseFloat(found) / 100 : Number(found);
-    return value === 'transparent' ? 0 : 1;
-}
-
 function themeNote(id, key, text, actions = []) {
     return h('div', { id, class: 'stmui-inline-note', 'data-stmui': '1', 'data-key': key }, [
         h('p', { text }),
@@ -6510,29 +6562,21 @@ function themeNote(id, key, text, actions = []) {
     ]);
 }
 
-/**
- * Says why chat backgrounds might not show, on the Backgrounds page: a Pocket Tavern
- * theme's own background covers them, or the SillyTavern theme paints the chat solid.
- */
+/** On the Backgrounds page: a Pocket Tavern theme's own background is covering chat backgrounds. */
 function syncBackgroundNote() {
     const header = document.getElementById('bg-header-fixed');
     let note = document.getElementById('stmui_bg_note');
     const theme = active ? currentTheme() : null;
-    const chat = document.getElementById('chat');
-    let key = '';
-    if (theme && settings.themeBackdrop) key = `theme:${theme.id}`;
-    else if (active && !theme && chat && colorAlpha(getComputedStyle(chat).backgroundColor) >= 0.95) key = 'solid';
+    const key = theme && ownThemeOn() && settings.themeBackdrop ? `theme:${theme.id}` : '';
     if (!header || !key) {
         note?.remove();
         return;
     }
     if (note?.dataset.key === key) return;
     note?.remove();
-    note = key === 'solid'
-        ? themeNote('stmui_bg_note', key, 'Your SillyTavern theme fills the chat with a solid color, so the background stays hidden behind messages. To see it, make Chat Background see-through in Settings → Look → Theme Colors.')
-        : themeNote('stmui_bg_note', key, t('The {theme} theme shows its own background, so chat backgrounds are hidden.', { theme: t(theme.name) }), [
-            ['Show chat backgrounds', () => setAppearance('themeBackdrop', false)],
-        ]);
+    note = themeNote('stmui_bg_note', key, t('The {theme} theme shows its own background, so chat backgrounds are hidden.', { theme: t(theme.name) }), [
+        ['Show chat backgrounds', () => setAppearance('themeBackdrop', false)],
+    ]);
     header.prepend(note);
 }
 
@@ -6564,7 +6608,7 @@ function syncThemeNotes() {
  * you want to see, so the theme's background turns off.
  */
 function onBackgroundPick(event) {
-    if (!active || !settings.themeBackdrop || !currentTheme()) return;
+    if (!active || !settings.themeBackdrop || !ownThemeOn()) return;
     const thumb = event.target.closest?.('#bg_menu_content .bg_example');
     if (!thumb || event.target.closest('.jg-menu, .mobile-only-menu-toggle') || thumb.closest('.bg-selection-mode')) return;
     setAppearance('themeBackdrop', false);
@@ -7914,6 +7958,8 @@ function applyTextSize() {
 function isCompact() {
     if (settings.uiSize === 'compact') return true;
     if (settings.uiSize !== 'auto') return false;
+    // A computer (mouse or trackpad, desktop layout): compact, like SillyTavern's own density.
+    if (isWide() && matchMedia('(pointer: fine)').matches) return true;
     const sides = [screen.width, screen.height].filter(n => n > 0);
     return sides.length > 0 && Math.min(...sides) < SMALL_PHONE_BELOW;
 }
@@ -8572,6 +8618,8 @@ function applyState() {
     watchRanges(active && settings.touchSizing);
     if (active) {
         startObserver();
+        // A SillyTavern theme saved from an older version (or changed in SillyTavern since) gets its current values.
+        if (changed && String(settings.theme).startsWith('st:')) loadSillyTavernThemes();
         // Kept running while on: adding and removing its page-wide variables for every sheet restyled the whole page twice.
         if (!stopViewportFollow) stopViewportFollow = viewportFollow() ?? null;
     } else {
