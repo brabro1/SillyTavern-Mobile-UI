@@ -108,11 +108,110 @@ export function findTheme(id) {
     return THEMES.find(theme => theme.id === id) ?? null;
 }
 
+// -- SillyTavern's UI themes, made to fit Pocket Tavern
+
+/** The colors of a SillyTavern theme that Pocket Tavern uses (what is saved with the choice). */
+export const ST_THEME_COLORS = ['main_text_color', 'italics_text_color', 'underline_text_color', 'quote_text_color', 'blur_tint_color'];
+
+const parseColor = value => {
+    const text = String(value ?? '').trim();
+    const rgb = text.match(/^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+%?))?\s*\)$/i);
+    if (rgb) {
+        const a = rgb[4] === undefined ? 1 : rgb[4].endsWith('%') ? parseFloat(rgb[4]) / 100 : Number(rgb[4]);
+        return { r: Number(rgb[1]), g: Number(rgb[2]), b: Number(rgb[3]), a };
+    }
+    const hex = text.match(/^#([0-9a-f]{6})([0-9a-f]{2})?$/i);
+    if (hex) {
+        const n = parseInt(hex[1], 16);
+        return { r: n >> 16, g: (n >> 8) & 255, b: n & 255, a: hex[2] ? parseInt(hex[2], 16) / 255 : 1 };
+    }
+    return null;
+};
+/** `top` laid over the solid color `base`. */
+const over = (top, base) => ({ r: top.r * top.a + base.r * (1 - top.a), g: top.g * top.a + base.g * (1 - top.a), b: top.b * top.a + base.b * (1 - top.a), a: 1 });
+/** `amount` (0–1) of `b` mixed into `a`. */
+const mixRgb = (a, b, amount) => ({ r: a.r + (b.r - a.r) * amount, g: a.g + (b.g - a.g) * amount, b: a.b + (b.b - a.b) * amount, a: 1 });
+const luminance = c => {
+    const ch = v => {
+        const s = v / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
+};
+const contrast = (a, b) => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+};
+const chroma = c => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+const hex = c => `#${[c.r, c.g, c.b].map(v => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')}`;
+const rgba = (c, alpha) => `rgba(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)}, ${alpha})`;
+const BLACK = { r: 0, g: 0, b: 0, a: 1 };
+const WHITE = { r: 255, g: 255, b: 255, a: 1 };
+/** Moves `fg` away from `bg` (toward white on dark, black on light) until it reaches `min` contrast. */
+const readable = (fg, bg, min) => {
+    const target = luminance(bg) < 0.4 ? WHITE : BLACK;
+    let color = fg;
+    for (let i = 0; i < 24 && contrast(color, bg) < min; i++) color = mixRgb(color, target, 0.08);
+    return color;
+};
+
+/**
+ * A Pocket Tavern theme from a SillyTavern UI theme: its text, narration, dialogue
+ * and surface colors, with Pocket Tavern's own recipe for the rest (an opaque
+ * surface, raised cards, quiet message tints, a soft glow, checked contrast).
+ * The most colorful of its text colors becomes the accent.
+ * @param {Record<string, any>} st A SillyTavern theme (its saved JSON).
+ * @returns {Theme|null}
+ */
+export function themeFromSillyTavern(st) {
+    if (!st?.name) return null;
+    const text0 = parseColor(st.main_text_color) ?? { r: 220, g: 220, b: 210, a: 1 };
+    const dark = luminance(text0) > 0.3;
+    const base = dark ? { r: 12, g: 12, b: 14, a: 1 } : { r: 250, g: 250, b: 248, a: 1 };
+    // SillyTavern's panels are see-through over your background; Pocket Tavern's are solid.
+    let bg = over(parseColor(st.blur_tint_color) ?? base, base);
+    for (let i = 0; i < 24 && contrast(over(text0, bg), bg) < 7; i++) bg = mixRgb(bg, base, 0.12);
+    const text = readable(over(text0, bg), bg, 7);
+    const pick = name => {
+        const color = parseColor(st[name]);
+        return color ? over(color, bg) : null;
+    };
+    const quote = readable(pick('quote_text_color') ?? text, bg, 4.5);
+    const muted = readable(pick('italics_text_color') ?? mixRgb(text, bg, 0.35), bg, 4.5);
+    const candidates = ['quote_text_color', 'underline_text_color', 'main_text_color', 'italics_text_color'].map(pick).filter(Boolean);
+    const vivid = candidates.reduce((best, color) => (chroma(color) > chroma(best) ? color : best), candidates[0] ?? text);
+    const accent = readable(vivid, bg, 3);
+    const darkInk = mixRgb(accent, BLACK, 0.82);
+    const onAccent = contrast(WHITE, accent) >= contrast(darkInk, accent) ? WHITE : darkInk;
+    const glow = mixRgb(bg, accent, 0.16);
+    const floor = mixRgb(bg, base, 0.35);
+    return {
+        id: `st:${st.name}`,
+        name: st.name,
+        note: 'From SillyTavern',
+        mode: dark ? 'dark' : 'light',
+        bg: hex(bg),
+        // Cards are a step lighter than the page: toward the text on dark, toward white on light (like Paper and Cloud).
+        raised: hex(dark ? mixRgb(bg, text, 0.07) : mixRgb(bg, WHITE, 0.7)),
+        text: hex(text),
+        muted: hex(muted),
+        accent: hex(accent),
+        onAccent: hex(onAccent),
+        quote: hex(quote),
+        user: rgba(accent, dark ? 0.14 : 0.08),
+        bot: rgba(text, dark ? 0.045 : 0.035),
+        border: rgba(text, dark ? 0.12 : 0.11),
+        backdrop: `radial-gradient(120% 55% at 50% 0%, ${hex(glow)} 0%, transparent 65%), ${hex(floor)}`,
+    };
+}
+
 /** The stylesheet for one theme. `scope` is the selector the overrides hang off. */
 export function themeCss(theme, scope) {
     if (!theme) return '';
     const t = theme;
     const translucent = color => `color-mix(in srgb, ${color} 86%, transparent)`;
+    const card = color => `color-mix(in srgb, ${color} 90%, transparent)`;
+    const userCard = card(`color-mix(in srgb, ${t.accent} 14%, ${t.bg})`);
     return `${scope} {
     color-scheme: ${t.mode};
     --SmartThemeBodyColor: ${t.text} !important;
@@ -137,6 +236,19 @@ export function themeCss(theme, scope) {
     --stmui-user-tint: ${t.user};
     --stmui-bot-tint: ${t.bot};
     --stmui-backdrop: ${t.backdrop};
+}
+/* Your own chat background instead of the theme's: the chat is see-through so the
+   picture shows, and each message turns into a card solid enough to read on. */
+${scope}:not(.stmui-backdrop) {
+    --SmartThemeChatTintColor: transparent !important;
+    --SmartThemeBotMesBlurTintColor: ${card(t.bg)} !important;
+    --SmartThemeUserMesBlurTintColor: ${userCard} !important;
+    --stmui-bot-tint: ${card(t.bg)};
+    --stmui-user-tint: ${userCard};
+}
+/* Looks without cards (Flat, SillyTavern's Document) keep a tinted chat to read on. */
+${scope}:not(.stmui-backdrop):is([data-stmui-look="flat"], :has(body:is(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle))) {
+    --SmartThemeChatTintColor: ${translucent(t.bg)} !important;
 }
 `;
 }

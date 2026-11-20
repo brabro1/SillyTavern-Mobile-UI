@@ -78,7 +78,7 @@ It switches itself on and picks the right layout for each screen. Your character
 - − and + beside every slider, a line on what each setting does, and a prompt editor with full screen.
 
 **🎨 Make it yours**
-- 12 themes (9 dark, 3 light) or your own SillyTavern colors.
+- 12 themes (9 dark, 3 light), plus your SillyTavern themes made to fit, over the theme's background or your own chat background.
 - Cards, bubbles or flat messages, four text sizes, and animations you can turn down or off.
 - Menus in English, Spanish, Portuguese, Russian, Chinese, Japanese and Arabic.
 
@@ -126,7 +126,7 @@ Then reload SillyTavern in your browser.
 
 | What | Where |
 | --- | --- |
-| Theme, chat look, size, message box, chat width, animations | **More → Themes** |
+| Theme (Pocket Tavern's and your SillyTavern themes), chat look, size, message box, chat width, animations | **More → Themes** |
 | Text size and every helper's switch | **More → Phone features** (**Features** on a computer) |
 | Turn it on or off, or choose where it runs | **More → Pocket Tavern settings** |
 | Search characters, chats, lorebooks and settings | **More → Search everything** (or **Ctrl+K** on a computer) |
@@ -173,6 +173,12 @@ They're in the guide button (the compass) next to Send. Hold it to repeat your l
 
 **Does it work on iPhone and iPad?**
 Yes, they're supported just like Android. Safari's keyboard gets its own handling, so the bars, chat and editors stay in view while you type. An iPad held upright gets the phone layout, and held sideways the desktop layout; set the chat width under **More → Themes → Chat width**. To use it like an app, tap **Share → Add to Home Screen** in Safari.
+
+**My chat background doesn't show.**
+Pocket Tavern's themes come with their own background. Pick a background on the **Backgrounds** page and Pocket Tavern switches to yours, or turn off **Theme background** under **More → Themes**. With **Your theme**, a SillyTavern theme with a solid chat color hides the background behind messages: make **Chat Background** see-through in **Settings → Look → Theme Colors**.
+
+**Where did SillyTavern's UI Theme list go?**
+It moved to **More → Themes → From SillyTavern**. Every SillyTavern theme you have (and any you import there) shows up as a card, made to fit Pocket Tavern: solid panels, readable cards and checked contrast. **Your theme** uses SillyTavern's colors exactly as they are, and **Settings → Look → Theme Colors** changes it. Pocket Tavern's chat look (cards, bubbles, flat) needs SillyTavern's Chat Style on **Flat**, and picking a look sets that for you.
 
 **I don't want it on my computer.**
 In Pocket Tavern settings, set "Use it on this device" to **Phones only**.

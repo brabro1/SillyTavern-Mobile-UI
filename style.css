@@ -1821,6 +1821,12 @@ html.stmui-chat:not(.stmui-editing) body.hideAllSwipeButtons #chat .mes > .swipe
     display: none !important;
 }
 
+/* "Swipes on all messages": an older message with one version gets no arrow from
+   SillyTavern (it is made invisible), so its pill would be an empty circle. */
+html.stmui-chat:not(.stmui-editing) #chat .mes:not(.swipes_visible):not(.last_swipe) > .swipeRightBlock {
+    display: none !important;
+}
+
 /* Selecting messages to delete: the checkbox sits in the top corner. */
 html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > :is(.del_checkbox, .for_checkbox) {
     position: absolute;
@@ -1921,9 +1927,27 @@ html.stmui-chat #form_sheld {
     padding: 18px 10px 8px;
     box-sizing: border-box;
     border: 0;
-    background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--stmui-surface) 72%, transparent) 55%, color-mix(in srgb, var(--stmui-surface) 92%, transparent) 100%) !important;
+    background: none !important;
     box-shadow: none;
     pointer-events: none;
+}
+
+/* The fade sits behind the box (SillyTavern gives #form_sheld a z-index, so -1
+   stays inside it). Its sides fade out too: over a chat background a full-width
+   fade read as a dark slab with straight edges around the box. */
+html.stmui-chat #form_sheld::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--stmui-surface) 72%, transparent) 55%, color-mix(in srgb, var(--stmui-surface) 92%, transparent) 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 48px, black calc(100% - 48px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 48px, black calc(100% - 48px), transparent 100%);
+    pointer-events: none;
+}
+
+html.stmui-chat:is(.stmui-docked, .stmui-editing) #form_sheld::before {
+    content: none;
 }
 
 html.stmui-chat #form_sheld > * {
@@ -1946,8 +1970,10 @@ html.stmui-chat #send_form {
     border: 1px solid var(--stmui-line) !important;
     border-radius: 16px;
     background: var(--stmui-raised) !important;
-    /* The one shadow in Pocket Tavern: a soft lift so the box sits clearly above the chat. */
-    box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.14);
+    /* The one shadow in Pocket Tavern: a soft, even lift so the box sits clearly
+       above the chat. Mostly around the box rather than under it, because the
+       box sits 8px from the bottom edge, which would cut a dropped shadow off. */
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28), 0 1px 3px rgba(0, 0, 0, 0.12);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -5391,6 +5417,69 @@ html.stmui-chat .welcomePanel .stmui-home-box[data-on='true'] {
 }
 
 /* SillyTavern updates: the status, then a command per device with a copy button. */
+/* A note on one of SillyTavern's pages (Backgrounds, Settings → Look) that explains
+   why something there does not show, with a way to change it. */
+.stmui-inline-note {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 12px;
+    border: 1px solid var(--stmui-line);
+    border-radius: 12px;
+    background: var(--stmui-raised);
+    color: var(--stmui-text);
+    text-align: start;
+}
+
+.stmui-inline-note p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.stmui-inline-note-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.stmui-inline-note-btn {
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--stmui-raised-2);
+    color: var(--stmui-text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.stmui-inline-note-btn:focus-visible {
+    outline: 2px solid var(--stmui-accent);
+    outline-offset: -2px;
+}
+
+#bg-header-fixed > .stmui-inline-note {
+    flex: 0 0 auto;
+    width: 100%;
+}
+
+/* Settings → Look: SillyTavern's UI Theme list (and its import, export, save and
+   delete buttons) is hidden while Pocket Tavern is on; its themes are in More →
+   Themes, made to fit. The buttons still work from there (Import). A note takes
+   its place. */
+html.stmui-on #UI-presets-block > h4.title_restorable,
+html.stmui-on #UI-presets-block > .flex-container:has(> #themes) {
+    display: none !important;
+}
+
+html.stmui-on #UI-presets-block > .stmui-inline-note {
+    margin: 0;
+}
+
 .stmui-update-status {
     margin: 4px 16px 8px;
     color: var(--stmui-text);

@@ -1022,6 +1022,104 @@ await step('the character list view keeps rows apart, and the start screen can h
     }
 });
 
+await step('a theme gives way to the background you pick, SillyTavern themes are in Themes (made to fit) instead of Settings → Look, and the chat look switches Chat Style to Flat', async () => {
+    const before = await page.evaluate(() => {
+        const s = SillyTavern.getContext().extensionSettings.mobileUI;
+        return { theme: s.theme, backdrop: s.themeBackdrop, stTheme: s.stTheme, style: document.getElementById('chat_display').value, bg: decodeURIComponent((getComputedStyle(document.getElementById('bg1')).backgroundImage.match(/\/backgrounds\/([^"')]+)/) ?? [])[1] ?? '') || null };
+    });
+    const openThemes = async () => {
+        await showTabs();
+        await page.locator('.stmui-tab[data-tab="more"]').click();
+        await page.locator('#stmui-sheet .stmui-menu-row-theme').click();
+    };
+    try {
+        // A Pocket Tavern theme with its own background on.
+        await openThemes();
+        await page.locator('#stmui-sheet .stmui-theme-card[data-theme="sakura"]').click();
+        await until(() => document.documentElement.dataset.stmuiTheme === 'sakura');
+        await page.evaluate(() => {
+            const input = [...document.querySelectorAll('#stmui-sheet .stmui-switch-row')].find(row => /Theme background/.test(row.textContent))?.querySelector('input');
+            if (input && !input.checked) input.click();
+        });
+        await until(() => document.documentElement.classList.contains('stmui-backdrop'));
+        await closeSheet();
+        // The Backgrounds page says why backgrounds don't show.
+        await page.locator('.stmui-tab[data-tab="more"]').click();
+        await page.locator('#stmui-sheet .stmui-tile', { hasText: 'Backgrounds' }).click();
+        await until(() => document.documentElement.dataset.stmuiPage === 'backgrounds-button');
+        await until(() => /Sakura theme shows its own background/.test(document.getElementById('stmui_bg_note')?.textContent ?? ''));
+        const button = await page.evaluate(() => Math.round(document.querySelector('#stmui_bg_note .stmui-inline-note-btn').getBoundingClientRect().height));
+        if (button < 44) throw new Error(`the note's button is ${button}px tall`);
+        // Picking a background turns the theme's own background off, and the chat lets the picture through.
+        const thumbs = await page.locator('#bg_menu_content .bg_example').count();
+        if (!thumbs) throw new Error('no backgrounds to pick');
+        await page.locator('#bg_menu_content .bg_example').nth(Math.min(4, thumbs - 1)).click();
+        await until(() => !document.documentElement.classList.contains('stmui-backdrop') && !document.getElementById('stmui_bg_note'));
+        const tint = await page.evaluate(() => getComputedStyle(document.getElementById('chat')).backgroundColor);
+        if (!/rgba\(0, 0, 0, 0\)|transparent/.test(tint)) throw new Error(`the chat still covers the background: ${tint}`);
+        await page.evaluate(() => globalThis.toastr?.clear());
+        // Settings → Look: SillyTavern's theme list is hidden; a note points to More → Themes.
+        await page.locator('.stmui-tab[data-tab="more"]').click();
+        await page.locator('#stmui-sheet .stmui-tile', { hasText: 'Settings' }).click();
+        await until(() => document.documentElement.dataset.stmuiPage === 'user-settings-button');
+        await page.evaluate(() => [...document.querySelectorAll('.stmui-set-home .stmui-menu-row')].find(row => /Look/.test(row.textContent))?.click());
+        await until(() => (document.getElementById('stmui_look_note')?.getBoundingClientRect().height ?? 0) > 0);
+        const listShown = await page.evaluate(() => document.getElementById('themes')?.getBoundingClientRect().height ?? 0);
+        if (listShown) throw new Error("SillyTavern's UI Theme list still shows in Settings → Look");
+        await page.locator('#stmui_look_note .stmui-inline-note-btn', { hasText: 'Open Themes' }).click();
+        // The Themes sheet lists SillyTavern's themes, made to fit; picking one applies it.
+        await until(() => document.querySelectorAll('#stmui-sheet .stmui-themes-st .stmui-theme-card[data-theme^="st:"]').length > 0, null, 10000);
+        const picked = await page.evaluate(() => document.querySelector('#stmui-sheet .stmui-themes-st .stmui-theme-card[data-theme^="st:"]').dataset.theme);
+        await page.locator(`#stmui-sheet .stmui-theme-card[data-theme="${picked}"]`).click();
+        await until(want => document.documentElement.dataset.stmuiTheme === want && SillyTavern.getContext().extensionSettings.mobileUI.stTheme?.name === want.slice(3), picked);
+        const surface = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--stmui-surface').trim());
+        if (!/^#[0-9a-f]{6}$/i.test(surface)) throw new Error(`the SillyTavern theme gave no solid surface: ${surface}`);
+        await page.locator('#stmui-sheet .stmui-theme-card[data-theme="st"]').click();
+        await until(() => !document.documentElement.dataset.stmuiTheme);
+        await closeSheet();
+        // SillyTavern's Bubbles style pauses the chat look; picking one puts Chat Style back on Flat.
+        await setPref('chat_display', '1');
+        await openThemes();
+        const paused = await page.evaluate(() => ({
+            on: document.querySelectorAll('#stmui-sheet .stmui-look-seg[aria-label="Chat look"] .stmui-seg-on').length,
+            note: [...document.querySelectorAll('#stmui-sheet .stmui-menu-foot')].some(foot => /Bubbles chat style is on/.test(foot.textContent)),
+        }));
+        if (paused.on || !paused.note) throw new Error(`with SillyTavern's Bubbles the chat look shows ${JSON.stringify(paused)}`);
+        await page.locator('#stmui-sheet .stmui-look-seg[aria-label="Chat look"] .stmui-seg', { hasText: 'Cards' }).click();
+        await until(() => document.getElementById('chat_display').value === '0');
+        await closeSheet();
+        await page.evaluate(() => globalThis.toastr?.clear());
+    } finally {
+        if (await page.locator('#stmui-sheet').count()) await closeSheet();
+        await page.evaluate(b => {
+            const s = SillyTavern.getContext().extensionSettings.mobileUI;
+            s.theme = b.theme;
+            s.themeBackdrop = b.backdrop;
+            if (b.stTheme === undefined) delete s.stTheme;
+            else s.stTheme = b.stTheme;
+            SillyTavern.getContext().saveSettingsDebounced();
+            if (b.bg) [...document.querySelectorAll('#bg_menu_content .bg_example')].find(e => e.getAttribute('bgfile') === b.bg)?.click();
+        }, before);
+        await setPref('chat_display', before.style);
+        // Re-apply the restored theme the same way the Themes sheet does.
+        await openThemes();
+        await page.locator(`#stmui-sheet .stmui-theme-card[data-theme="${before.theme}"]`).click();
+        await page.waitForTimeout(600);
+        await closeSheet();
+        await page.evaluate(() => globalThis.toastr?.clear());
+    }
+    // "Swipes on all messages": an older message with one version shows no empty swipe circle.
+    await page.evaluate(() => document.querySelector('.stmui-tab[data-tab="chat"]')?.click());
+    const empty = await page.evaluate(() => {
+        const had = document.body.classList.contains('swipeAllMessages');
+        document.body.classList.add('swipeAllMessages');
+        const found = [...document.querySelectorAll('#chat > .mes:not(.last_mes):not(.swipes_visible):not(.last_swipe) > .swipeRightBlock')].filter(block => getComputedStyle(block).display !== 'none').length;
+        if (!had) document.body.classList.remove('swipeAllMessages');
+        return found;
+    });
+    if (empty) throw new Error(`${empty} older messages show an empty swipe button`);
+});
+
 await step('More can update Pocket Tavern in one tap and shows SillyTavern updates', async () => {
     // SillyTavern's own extension endpoints, answered here so nothing is really pulled.
     const asked = [];

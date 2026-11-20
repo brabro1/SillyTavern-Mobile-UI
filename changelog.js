@@ -1,6 +1,16 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.23.0',
+        items: [
+            "Fixed: chat backgrounds seemed not to work with a Pocket Tavern theme. The theme's own background was covering them. Picking a background now turns it off, and the Backgrounds page says what is going on.",
+            "With a Pocket Tavern theme over your own background, the chat is see-through and each message sits on a card you can read, so the picture actually shows.",
+            "Your SillyTavern themes (Azure, Cappuccino, Dark Lite and any you imported) are now in More → Themes, made to fit Pocket Tavern: solid panels, readable cards, checked contrast. They replace the UI Theme list in Settings → Look.",
+            "The message box no longer sits in a dark box with hard edges over a chat background; its fade and shadow are soft.",
+            "SillyTavern's Bubbles or Document chat style used to switch off Pocket Tavern's chat look without a word. The Themes sheet now says so, and picking a look puts Chat Style back on Flat.",
+        ],
+    },
+    {
         version: '2.22.0',
         items: [
             "More → Update Pocket Tavern updates it in one tap and reloads the page, no trip to Manage extensions. More → SillyTavern updates tells you when a new SillyTavern is out and how to update it on your device.",

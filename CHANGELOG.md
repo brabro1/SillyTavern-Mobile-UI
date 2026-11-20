@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.23.0
+
+Chat backgrounds that show, SillyTavern's UI themes moved into Pocket Tavern's Themes and made to fit, and a softer message box. Everything here is for both layouts.
+
+### Both
+
+- **Fixed: chat backgrounds with a Pocket Tavern theme.** Every Pocket Tavern theme has its own background, and **Theme background** (on by default) puts it in place of yours. Picking a background on the Backgrounds page then did nothing you could see, on a phone and on a computer. Now picking a background turns the theme's background off (a message says where to turn it back on), and while it is on, the Backgrounds page says so with a **Show chat backgrounds** button.
+- **Your background, readable.** With a Pocket Tavern theme over your own background, the chat area used to be 86% solid, so on a phone the picture barely showed. The chat is now see-through and each message is a card (90% solid in the theme's color) you can read on. The Flat look and SillyTavern's Document style, which have no cards, keep the tinted chat.
+- **Your SillyTavern theme's solid chat.** With **Your theme**, some SillyTavern themes (Dark Lite, for one) paint the chat in a solid color, which hides the background behind messages. The Backgrounds page now says so and where to change it (Settings → Look → Theme Colors → Chat Background).
+- **SillyTavern's UI themes are in More → Themes, made to fit.** SillyTavern has its own theme list (Settings → Look → UI Theme), and it worked against Pocket Tavern's: picking one there changed the colors only with **Your theme** on, and also changed the chat style and avatar shape behind your back. Now the Themes sheet has a second group, **From SillyTavern**: every SillyTavern theme on your server (Azure, Cappuccino, Celestial Macaron, Dark Lite, Dark V 1.0 and any you imported) as a Pocket Tavern theme. Pocket Tavern takes its text, narration, dialogue and panel colors, makes the panels solid, gives it raised cards, quiet message tints and a soft glow, picks its most colorful text color as the accent, and checks the contrast (text at least 7:1, dialogue and narration 4.5:1, the accent 3:1). Its chat style, avatar shape and custom CSS are left out, so it never fights Pocket Tavern's own. **Your theme**, which uses SillyTavern's colors exactly as they are, moved into the same group. **Import a SillyTavern theme** (a .json file) sits under it. In Settings → Look, the UI Theme list and its buttons are hidden while Pocket Tavern is on, and a note with an **Open Themes** button takes their place; Theme Colors there still change "Your theme".
+- **A softer message box.** Behind the floating message box, a fade keeps the last lines of the chat from running into it. It was a full-width rectangle: over a plain color you could not see it, but over a chat background it was a dark slab with straight edges around the box. Its sides now fade out too, and the box's shadow is softer and even all round instead of dropping down (the box sits 8px from the bottom, which cut the dropped part off).
+- **Chat Style and chat look.** Pocket Tavern's chat look (Cards, Bubbles, Flat) draws over SillyTavern's Flat chat style. With SillyTavern's Bubbles or Document picked, it stopped working without a word. The Themes sheet now shows no look as picked and says SillyTavern's style is on; picking a look switches SillyTavern's Chat Style back to Flat.
+- **Fixed: an empty circle on older messages.** With SillyTavern's "Swipes on all messages" on, every older message with one version showed an empty round button. It is gone; messages you can swipe still show their arrows.
+- `tests/phone.mjs` checks the Backgrounds note and button, that picking a background turns the theme's background off and clears the chat, that Settings → Look hides SillyTavern's theme list and its note opens Themes, that a SillyTavern theme can be picked there and gives a solid surface, the chat look with SillyTavern's Bubbles, and the empty swipe button.
+
 ## 2.22.0
 
 Updates without leaving Pocket Tavern, a list-view fix and a little more room on the start screen.

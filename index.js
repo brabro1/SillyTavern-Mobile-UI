@@ -16,7 +16,7 @@
  */
 
 import { svgIcon, iconCss, iconUrl } from './icons.js';
-import { THEMES, findTheme, themeCss } from './themes.js';
+import { THEMES, findTheme, themeCss, themeFromSillyTavern, ST_THEME_COLORS } from './themes.js';
 import { t, setLocale, isRtl } from './i18n.js';
 import './locales.js';
 import { CHANGES, VERSION } from './changelog.js';
@@ -1947,6 +1947,7 @@ class Shell {
                 }
                 if (pageId === 'extensions-settings-button') describeExtensions();
             }
+            if (pageId === 'backgrounds-button' || pageId === 'user-settings-button') syncThemeNotes();
             const info = drawer ? pageInfo(drawer) : { title: '', icon: 'fa-gear' };
             this.titleEl.textContent = t(info.title);
             this.subEl.textContent = t(info.long ?? '');
@@ -2093,7 +2094,7 @@ function openMoreSheet() {
             const row = (iconName, label, onclick, disabled = false) => h('button', {
                 type: 'button', class: 'stmui-menu-row', disabled, onclick,
             }, [ui(iconName, 'stmui-menu-row-icon'), h('span', { text: t(label) }), ui('chevron-right', 'stmui-menu-row-go')]);
-            const themeName = findTheme(settings.theme)?.name ?? t('Your theme');
+            const themeName = currentTheme()?.name ?? t('Your theme');
             body.append(h('div', { class: 'stmui-menu-list' }, [
                 h('button', {
                     type: 'button',
@@ -2238,7 +2239,7 @@ function toastIconCss() {
 
 function applyAppearance() {
     const root = document.documentElement;
-    const theme = active ? findTheme(settings.theme) : null;
+    const theme = active ? currentTheme() : null;
     root.classList.toggle('stmui-themed', !!theme);
     root.classList.toggle('stmui-backdrop', !!theme && settings.themeBackdrop);
     root.classList.toggle('stmui-font', active && settings.modernFont);
@@ -2311,6 +2312,70 @@ function setAppearance(key, value, origin) {
     else change();
 }
 
+// -- SillyTavern's UI themes as Pocket Tavern themes
+
+/** The SillyTavern themes on the server (loaded when the Themes sheet opens) and the converted chosen one. */
+const stThemes = { list: null, loading: null, observer: null, made: { key: '', theme: null } };
+
+/** The colors Pocket Tavern keeps of a SillyTavern theme, saved with the choice so it applies at once on the next start. */
+function stThemeColors(raw) {
+    return { name: raw.name, ...Object.fromEntries(ST_THEME_COLORS.map(key => [key, raw[key] ?? null])) };
+}
+
+/** The theme in use: one of Pocket Tavern's, a SillyTavern theme made to fit, or null for "Your theme". */
+function currentTheme() {
+    const id = settings.theme;
+    const own = findTheme(id);
+    if (own || typeof id !== 'string' || !id.startsWith('st:')) return own;
+    const saved = settings.stTheme;
+    if (!saved || `st:${saved.name}` !== id) return null;
+    const key = JSON.stringify(saved);
+    if (stThemes.made.key !== key) stThemes.made = { key, theme: themeFromSillyTavern(saved) };
+    return stThemes.made.theme;
+}
+
+/** Asks SillyTavern for its saved UI themes (the same request it makes when it starts). */
+function loadSillyTavernThemes(force = false) {
+    if (stThemes.loading && !force) return stThemes.loading;
+    stThemes.loading = (async () => {
+        try {
+            const response = await fetch('/api/settings/get', { method: 'POST', headers: ctx().getRequestHeaders(), body: JSON.stringify({}) });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            stThemes.list = (Array.isArray(data?.themes) ? data.themes : []).filter(theme => theme && typeof theme.name === 'string' && theme.name);
+        } catch (error) {
+            console.warn('[Pocket Tavern] Could not load SillyTavern themes', error);
+            stThemes.list = stThemes.list ?? [];
+        }
+        // The chosen one may have been changed in SillyTavern since: keep its colors current.
+        const chosen = stThemes.list.find(theme => `st:${theme.name}` === settings.theme);
+        if (chosen && JSON.stringify(stThemeColors(chosen)) !== JSON.stringify(settings.stTheme)) {
+            settings.stTheme = stThemeColors(chosen);
+            saveSettings();
+            applyAppearance();
+        }
+        return stThemes.list;
+    })();
+    return stThemes.loading;
+}
+
+/** SillyTavern's own "Import a theme file" (its button is hidden in Settings → Look while Pocket Tavern is on). */
+function importSillyTavernTheme(refresh) {
+    const select = document.getElementById('themes');
+    const button = document.getElementById('ui_preset_import_button');
+    if (!button) return;
+    // SillyTavern adds the imported theme to its list; then the sheet shows it too.
+    if (select && !stThemes.observer) {
+        stThemes.observer = new MutationObserver(() => {
+            stThemes.observer?.disconnect();
+            stThemes.observer = null;
+            loadSillyTavernThemes(true).then(refresh);
+        });
+        stThemes.observer.observe(select, { childList: true });
+    }
+    button.click();
+}
+
 /** Colors for a theme card preview. "Your theme" reads SillyTavern's own values. */
 function previewColors(theme) {
     if (theme) {
@@ -2332,7 +2397,7 @@ function previewColors(theme) {
     };
 }
 
-function themeCard(theme, current) {
+function themeCard(theme, current, raw = null) {
     const id = theme?.id ?? 'st';
     const colors = previewColors(theme);
     const preview = h('span', { class: 'stmui-theme-preview', 'aria-hidden': 'true' }, [
@@ -2348,7 +2413,10 @@ function themeCard(theme, current) {
         class: `stmui-theme-card ${selected ? 'stmui-theme-on' : ''}`,
         'aria-pressed': String(selected),
         'data-theme': id,
-        onclick: event => setAppearance('theme', id, event.currentTarget),
+        onclick: event => {
+            if (raw) settings.stTheme = stThemeColors(raw);
+            setAppearance('theme', id, event.currentTarget);
+        },
     }, [
         preview,
         h('span', { class: 'stmui-theme-name' }, [
@@ -2407,11 +2475,25 @@ function choiceControl(key, names, label) {
 }
 
 function openThemeSheet() {
-    showSheet(new MenuSheet({
-        title: 'Themes',
-        subtitle: isWide() ? 'Changes how Pocket Tavern looks. Your SillyTavern theme stays saved.' : 'Changes the look on your phone. Your SillyTavern theme stays saved.',
-        fill: body => {
-            body.append(h('div', { class: 'stmui-themes' }, [themeCard(null, settings.theme), ...THEMES.map(theme => themeCard(theme, settings.theme))]));
+    const refresh = () => {
+        if (sheet && sheet.fill === fill && !sheet.closing) sheet.refresh();
+    };
+    const fill = body => {
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'Pocket Tavern' }));
+            body.append(h('div', { class: 'stmui-themes' }, THEMES.map(theme => themeCard(theme, settings.theme))));
+            // SillyTavern's UI themes live here instead of in Settings → Look, made to fit.
+            body.append(h('p', { class: 'stmui-menu-heading', text: 'From SillyTavern' }));
+            const fromSt = (stThemes.list ?? []).map(raw => [themeFromSillyTavern(raw), raw]).filter(([theme]) => theme);
+            body.append(h('div', { class: 'stmui-themes stmui-themes-st' }, [themeCard(null, settings.theme), ...fromSt.map(([theme, raw]) => themeCard(theme, settings.theme, raw))]));
+            body.append(h('p', { class: 'stmui-menu-foot', text: stThemes.list ? "Your SillyTavern themes with Pocket Tavern's look. \"Your theme\" keeps SillyTavern's colors exactly as they are." : 'Loading your SillyTavern themes…' }));
+            if (document.getElementById('ui_preset_import_button')) {
+                body.append(h('div', { class: 'stmui-menu-list' }, [h('button', {
+                    type: 'button',
+                    class: 'stmui-menu-row stmui-st-import',
+                    onclick: () => importSillyTavernTheme(refresh),
+                }, [ui('file-import', 'stmui-menu-row-icon'), h('span', { class: 'stmui-row-text' }, [h('span', { text: 'Import a SillyTavern theme' }), h('small', { text: 'A theme file (.json) from SillyTavern' })])])]));
+            }
+            if (!stThemes.list) loadSillyTavernThemes().then(refresh);
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Look and feel' }));
             body.append(h('div', { class: 'stmui-menu-list' }, [
                 switchRow('themeBackdrop', 'Theme background', 'Use the theme\'s backdrop instead of your chat background.'),
@@ -2420,6 +2502,8 @@ function openThemeSheet() {
             ]));
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Chat look' }));
             body.append(chatLookControl());
+            const stStyle = stChatStyleName();
+            if (stStyle) body.append(h('p', { class: 'stmui-menu-foot', text: t("SillyTavern's {style} chat style is on, so it draws the messages. Pick a look here to use Pocket Tavern's instead.", { style: t(stStyle) }) }));
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Size' }));
             body.append(choiceControl('uiSize', SIZES, 'Size'));
             body.append(h('p', { class: 'stmui-menu-foot', text: SIZE_NOTES[settings.uiSize] ?? '' }));
@@ -2436,7 +2520,11 @@ function openThemeSheet() {
             body.append(h('p', { class: 'stmui-menu-heading', text: 'Animations' }));
             body.append(motionControl());
             body.append(h('p', { class: 'stmui-menu-foot', text: MOTION_LABELS[settings.motion] }));
-        },
+    };
+    showSheet(new MenuSheet({
+        title: 'Themes',
+        subtitle: isWide() ? 'Changes how Pocket Tavern looks. Your SillyTavern theme stays saved.' : 'Changes the look on your phone. Your SillyTavern theme stays saved.',
+        fill,
     }));
 }
 
@@ -6368,13 +6456,119 @@ function applyChatLook() {
 
 function chatLookControl() {
     const names = { cards: 'Cards', bubbles: 'Bubbles', flat: 'Flat' };
+    // SillyTavern's own Bubbles or Document style draws the messages itself: then none of these is on.
+    const paused = !!stChatStyleName();
     return h('div', { class: 'stmui-segmented stmui-look-seg', role: 'group', 'aria-label': 'Chat look' },
-        Object.entries(names).map(([look, label]) => h('button', {
-            type: 'button',
-            class: `stmui-seg ${(settings.chatLook || 'cards') === look ? 'stmui-seg-on' : ''}`,
-            'aria-pressed': String((settings.chatLook || 'cards') === look),
-            onclick: () => setAppearance('chatLook', look),
-        }, [label])));
+        Object.entries(names).map(([look, label]) => {
+            const on = !paused && (settings.chatLook || 'cards') === look;
+            return h('button', {
+                type: 'button',
+                class: `stmui-seg ${on ? 'stmui-seg-on' : ''}`,
+                'aria-pressed': String(on),
+                onclick: () => pickChatLook(look),
+            }, [label]);
+        }));
+}
+
+function pickChatLook(look) {
+    const switched = useFlatChatStyle();
+    if (switched) globalThis.toastr?.info(t("SillyTavern's Chat Style is now Flat, so Pocket Tavern's chat look shows."), '', { timeOut: 4000 });
+    if ((settings.chatLook || 'cards') !== look) setAppearance('chatLook', look);
+    else if (switched && sheet && !sheet.picker) sheet.refresh();
+}
+
+// -- SillyTavern's own look (UI themes, Chat Style, backgrounds) next to Pocket Tavern's
+
+/** SillyTavern's Chat Style when it is not Flat (Pocket Tavern's message cards only draw over Flat), else ''. */
+function stChatStyleName() {
+    const select = document.getElementById('chat_display');
+    if (!select || select.value === '0') return '';
+    return select.selectedOptions[0]?.textContent?.trim() || select.value;
+}
+
+/** Puts SillyTavern's Chat Style on Flat (it saves it); true when it changed. */
+function useFlatChatStyle() {
+    const select = document.getElementById('chat_display');
+    if (!select || select.value === '0') return false;
+    $j()(select).val('0').trigger('change');
+    return true;
+}
+
+/** How see-through a CSS colour is: 0 clear, 1 solid. */
+function colorAlpha(value) {
+    const slash = value.match(/\/\s*([\d.]+%?)\s*\)\s*$/);
+    const rgba = value.match(/^rgba\((?:[^,]+,){3}\s*([\d.]+%?)\s*\)$/);
+    const found = slash?.[1] ?? rgba?.[1];
+    if (found !== undefined) return found.endsWith('%') ? parseFloat(found) / 100 : Number(found);
+    return value === 'transparent' ? 0 : 1;
+}
+
+function themeNote(id, key, text, actions = []) {
+    return h('div', { id, class: 'stmui-inline-note', 'data-stmui': '1', 'data-key': key }, [
+        h('p', { text }),
+        actions.length ? h('div', { class: 'stmui-inline-note-actions' }, actions.map(([label, onclick]) => h('button', { type: 'button', class: 'stmui-inline-note-btn', onclick }, [label]))) : null,
+    ]);
+}
+
+/**
+ * Says why chat backgrounds might not show, on the Backgrounds page: a Pocket Tavern
+ * theme's own background covers them, or the SillyTavern theme paints the chat solid.
+ */
+function syncBackgroundNote() {
+    const header = document.getElementById('bg-header-fixed');
+    let note = document.getElementById('stmui_bg_note');
+    const theme = active ? currentTheme() : null;
+    const chat = document.getElementById('chat');
+    let key = '';
+    if (theme && settings.themeBackdrop) key = `theme:${theme.id}`;
+    else if (active && !theme && chat && colorAlpha(getComputedStyle(chat).backgroundColor) >= 0.95) key = 'solid';
+    if (!header || !key) {
+        note?.remove();
+        return;
+    }
+    if (note?.dataset.key === key) return;
+    note?.remove();
+    note = key === 'solid'
+        ? themeNote('stmui_bg_note', key, 'Your SillyTavern theme fills the chat with a solid color, so the background stays hidden behind messages. To see it, make Chat Background see-through in Settings → Look → Theme Colors.')
+        : themeNote('stmui_bg_note', key, t('The {theme} theme shows its own background, so chat backgrounds are hidden.', { theme: t(theme.name) }), [
+            ['Show chat backgrounds', () => setAppearance('themeBackdrop', false)],
+        ]);
+    header.prepend(note);
+}
+
+/**
+ * At the top of Settings → Look: SillyTavern's UI Theme list is hidden there while
+ * Pocket Tavern is on, because its themes are in More → Themes, made to fit.
+ */
+function syncLookNote() {
+    const block = document.getElementById('UI-presets-block');
+    let note = document.getElementById('stmui_look_note');
+    if (!block || !active) {
+        note?.remove();
+        return;
+    }
+    if (note) return;
+    note = themeNote('stmui_look_note', 'moved', "Themes are in More → Themes: Pocket Tavern's own, and your SillyTavern themes made to fit. Theme Colors below change \"Your theme\".", [
+        ['Open Themes', () => openThemeSheet()],
+    ]);
+    block.prepend(note);
+}
+
+function syncThemeNotes() {
+    syncBackgroundNote();
+    syncLookNote();
+}
+
+/**
+ * Picking a background while a Pocket Tavern theme shows its own: the pick is what
+ * you want to see, so the theme's background turns off.
+ */
+function onBackgroundPick(event) {
+    if (!active || !settings.themeBackdrop || !currentTheme()) return;
+    const thumb = event.target.closest?.('#bg_menu_content .bg_example');
+    if (!thumb || event.target.closest('.jg-menu, .mobile-only-menu-toggle') || thumb.closest('.bg-selection-mode')) return;
+    setAppearance('themeBackdrop', false);
+    globalThis.toastr?.info(t("The theme's own background is off now. Turn it back on in More → Themes."), t('Showing your background'), { timeOut: 4000 });
 }
 
 // -- lorebooks: entry cards with keyword chips, full-screen entry editor
@@ -7772,11 +7966,13 @@ function syncExtras() {
     syncPanelEdge();
     syncToolPanels();
     syncHomeBox();
+    syncThemeNotes();
     if (!active || !settings.keepAwake) setAwake(false);
     if (!active || !settings.imageViewer) closeViewer(true);
     if (active) patchClipboard();
     if (extras.wired) return;
     extras.wired = true;
+    document.addEventListener('click', onBackgroundPick, true);
     // The prompt editor slides over the Presets page: keep its name box and the bar title current.
     const editor = promptEditor();
     if (editor) {
