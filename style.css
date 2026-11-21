@@ -9521,8 +9521,8 @@ html.stmui-chat.stmui-gg .stmui-gg-btn {
         display: none;
     }
 
-    /* Its 5px of side margin was the last pixel ☰ and the wand needed; the row's gap still separates it. */
-    html.stmui-chat.stmui-gg:not(.stmui-wide):not(.stmui-docked) #leftSendForm .stmui-persona-chip {
+    /* Its 5px of side margin was the last pixel ☰ and the wand needed (with or without the guide button); the row's gap still separates it. */
+    html.stmui-chat:not(.stmui-wide):not(.stmui-docked) #leftSendForm .stmui-persona-chip {
         margin-inline: 0;
     }
 }
