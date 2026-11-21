@@ -205,7 +205,7 @@ In Pocket Tavern settings, set "Use it on this device" to **Phones only**.
 
 - Pocket Tavern only changes how SillyTavern looks. Your characters, chats, lorebooks and SillyTavern theme are never changed.
 - Its settings are saved with your SillyTavern settings. Unsent messages and the page width you choose on a computer stay in your browser.
-- **Translate** sends chat text to Google Translate, or to the service you chose in SillyTavern's Chat Translation.
+- **Translate** sends chat text to Google Translate straight from your browser, or, if you picked another service in SillyTavern's Chat Translation, to that service through your SillyTavern server.
 - **More → SillyTavern updates** asks GitHub for the newest SillyTavern version when you open it. Nothing else is sent anywhere.
 
 ## Feedback

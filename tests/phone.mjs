@@ -34,11 +34,24 @@ const closeSheet = async () => {
     await until(() => !document.getElementById('stmui-sheet'));
 };
 // In a chat the tabs are tucked away; the arrow in the message box brings them back.
+// A page that was just closed may still be sliding away, and the tabs tuck only once it is
+// gone; checking too early skipped the arrow and the next tab tap hit a hidden bar.
 const showTabs = async () => {
-    if (await page.evaluate(() => document.documentElement.classList.contains('stmui-tabs-tucked'))) {
-        await page.locator('.stmui-tabs-btn').click();
-        await until(() => !document.documentElement.classList.contains('stmui-tabs-tucked'));
+    const shown = () => page.evaluate(() => {
+        const root = document.documentElement;
+        const bar = document.getElementById('stmui-tabbar');
+        return !root.classList.contains('stmui-tabs-tucked') && !!bar && getComputedStyle(bar).visibility === 'visible' && !root.dataset.stmuiPage;
+    });
+    for (let attempt = 0; attempt < 3; attempt++) {
+        await page.waitForTimeout(450);
+        if (await page.evaluate(() => document.documentElement.classList.contains('stmui-tabs-tucked'))) {
+            await page.locator('.stmui-tabs-btn').click();
+            await until(() => !document.documentElement.classList.contains('stmui-tabs-tucked'));
+        }
+        await page.waitForTimeout(250);
+        if (await shown() || await page.evaluate(() => !!document.documentElement.dataset.stmuiPage)) return;
     }
+    throw new Error('the tabs did not come back');
 };
 const setPref = async (id, value) => {
     await page.evaluate(([selectId, choice]) => {
@@ -1481,6 +1494,197 @@ await step('desktop layout: tool panels dock beside the chat, the Token Counter 
         if (rows.some(row => row.includes('Phone features')) || !rows.some(row => row.includes('Features'))) throw new Error('More still says Phone features on a computer');
         await tab.keyboard.press('Escape');
     } finally {
+        await desk.close();
+    }
+});
+
+await step('on a 320px phone every message box tool stays 44px, lorebook chips have a 44px ×, Arabic mirrors row arrows, and the translate note says where Google is asked', async () => {
+    const small = await browser.newContext({ ...devices['Pixel 7'], viewport: { width: 320, height: 640 } });
+    const tab = await small.newPage();
+    tab.on('pageerror', error => {
+        if (/Mobile-UI|PocketTavern|stmui/i.test(`${error.stack ?? ''} ${error.message}`)) extensionErrors.push(`320px: ${error.message}`);
+    });
+    try {
+        await tab.goto(ST_URL, { waitUntil: 'domcontentloaded' });
+        await tab.waitForFunction(() => document.documentElement.classList.contains('stmui-on') && window.SillyTavern?.getContext, null, { timeout: 120000 });
+        await tab.waitForTimeout(2500);
+        await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+        await tab.evaluate(async () => {
+            const context = SillyTavern.getContext();
+            if (context.characterId === undefined && !context.groupId) await context.selectCharacterById('0');
+        });
+        await tab.waitForTimeout(2000);
+        // With Guided Generations' button there are seven tools; none may be squeezed under 44px.
+        const tools = await tab.evaluate(() => ['leftSendForm', 'rightSendForm'].flatMap(id => [...document.getElementById(id).children]
+            .filter(node => getComputedStyle(node).display !== 'none' && node.getBoundingClientRect().width > 0)
+            .map(node => ({ name: node.id || node.className.split(' ')[0], w: Math.round(node.getBoundingClientRect().width) }))));
+        // Send is a 42px circle in a 44px tap area; everything else is at least 44px wide.
+        const tooSmall = tools.filter(tool => tool.w < (/send_but/.test(tool.name) ? 42 : 44));
+        if (tooSmall.length) throw new Error(`squeezed at 320px: ${JSON.stringify(tooSmall)}`);
+        // A lorebook chip's × is a full 44px target (the chip itself is 44px tall).
+        const chip = await tab.evaluate(() => {
+            const holder = document.createElement('div');
+            holder.className = 'stmui-chips';
+            holder.innerHTML = '<span class="stmui-chip"><span class="stmui-chip-text">Book</span><button type="button" class="stmui-chip-x">x</button></span>';
+            document.body.append(holder);
+            const rect = holder.querySelector('.stmui-chip-x').getBoundingClientRect();
+            holder.remove();
+            return { w: Math.round(rect.width), h: Math.round(rect.height) };
+        });
+        if (chip.w < 44 || chip.h < 44) throw new Error(`lorebook chip × is ${chip.w}x${chip.h}`);
+        // Arabic: the row arrows point the way you read, and the chat's name sits by its picture.
+        if (await tab.evaluate(() => document.documentElement.classList.contains('stmui-tabs-tucked'))) await tab.locator('.stmui-tabs-btn').click();
+        await tab.locator('.stmui-tab[data-tab="more"]').click();
+        await tab.waitForFunction(() => !!document.querySelector('#stmui-sheet .stmui-menu-row-go'));
+        const rtl = await tab.evaluate(() => {
+            const root = document.documentElement;
+            root.classList.add('stmui-rtl');
+            const arrow = getComputedStyle(document.querySelector('#stmui-sheet .stmui-menu-row-go')).transform;
+            const align = getComputedStyle(document.querySelector('.stmui-ab-who')).textAlign;
+            root.classList.remove('stmui-rtl');
+            return { arrow, align };
+        });
+        if (!rtl.arrow.startsWith('matrix(-1') || !['start', 'right'].includes(rtl.align)) throw new Error(`Arabic: ${JSON.stringify(rtl)}`);
+        // Google Translate is asked straight from the browser; the note must not say "through your server".
+        await tab.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Translate chat' }).click();
+        await tab.waitForFunction(() => /Translate chat/.test(document.querySelector('#stmui-sheet .stmui-title')?.textContent ?? ''));
+        const note = await tab.evaluate(() => ({
+            provider: SillyTavern.getContext().extensionSettings?.translate?.provider ?? 'google',
+            text: [...document.querySelectorAll('#stmui-sheet .stmui-menu-foot')].map(node => node.textContent).join(' '),
+        }));
+        if (note.provider === 'google' && !/straight from this browser/.test(note.text)) throw new Error(`translate note: ${note.text}`);
+        await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+    } finally {
+        await small.close();
+    }
+});
+
+await step('desktop layout: Escape closes Search this chat before the page, and Enter in Search everything opens the first result', async () => {
+    const desk = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const tab = await desk.newPage();
+    tab.on('pageerror', error => {
+        if (/Mobile-UI|PocketTavern|stmui/i.test(`${error.stack ?? ''} ${error.message}`)) extensionErrors.push(`desktop: ${error.message}`);
+    });
+    try {
+        await tab.goto(ST_URL, { waitUntil: 'domcontentloaded' });
+        await tab.waitForFunction(() => document.documentElement.classList.contains('stmui-wide') && window.SillyTavern?.getContext, null, { timeout: 120000 });
+        await tab.waitForTimeout(2500);
+        await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+        await tab.evaluate(async () => {
+            const context = SillyTavern.getContext();
+            if (context.characterId === undefined && !context.groupId) await context.selectCharacterById('0');
+        });
+        await tab.waitForTimeout(1500);
+        await tab.locator('.stmui-tab[data-tab="more"]').click();
+        await tab.locator('#stmui-sheet .stmui-menu-row', { hasText: 'Search this chat' }).click();
+        await tab.waitForFunction(() => document.activeElement?.closest?.('.stmui-chat-finder'));
+        await tab.keyboard.press('Escape');
+        await tab.waitForFunction(() => !document.querySelector('.stmui-chat-finder'), null, { timeout: 3000 });
+        // Ctrl+K, a few letters and Enter: the first result opens (here a setting on the Settings page).
+        await tab.evaluate(() => document.activeElement?.blur?.());
+        await tab.keyboard.press(process.platform === 'darwin' ? 'Meta+KeyK' : 'Control+KeyK');
+        await tab.waitForFunction(() => /Search everything/.test(document.querySelector('#stmui-sheet .stmui-title')?.textContent ?? ''));
+        await tab.waitForTimeout(300);
+        await tab.keyboard.type('chat width');
+        await tab.waitForTimeout(400);
+        await tab.keyboard.press('Enter');
+        await tab.waitForFunction(() => document.documentElement.dataset.stmuiPage === 'user-settings-button' && !document.getElementById('stmui-sheet'), null, { timeout: 5000 });
+        await tab.keyboard.press('Escape');
+    } finally {
+        await desk.close();
+    }
+});
+
+await step('desktop layout at 1366 × 768: preset buttons stay one row, the prompt dropdown gets its own line, the Backgrounds tabs clear their buttons, and Moonlit Echoes keeps the swipe pill together', async () => {
+    const desk = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+    const tab = await desk.newPage();
+    tab.on('pageerror', error => {
+        if (/Mobile-UI|PocketTavern|stmui/i.test(`${error.stack ?? ''} ${error.message}`)) extensionErrors.push(`1366: ${error.message}`);
+    });
+    let api = null;
+    try {
+        await tab.goto(ST_URL, { waitUntil: 'domcontentloaded' });
+        await tab.waitForFunction(() => document.documentElement.classList.contains('stmui-wide') && window.SillyTavern?.getContext, null, { timeout: 120000 });
+        await tab.waitForTimeout(2500);
+        await tab.evaluate(() => document.querySelector('#stmui-sheet .stmui-done')?.click());
+        // The prompt list only lives in the Chat Completion API; switched back in finally.
+        api = await tab.evaluate(() => document.getElementById('main_api').value);
+        await tab.evaluate(() => { const select = document.getElementById('main_api'); select.value = 'openai'; jQuery(select).trigger('change'); });
+        await tab.waitForTimeout(1500);
+        await tab.locator('.stmui-tab[data-tab="ai-config-button"]').click();
+        await tab.waitForFunction(() => document.documentElement.dataset.stmuiPage === 'ai-config-button');
+        await tab.waitForTimeout(800);
+        const presets = await tab.evaluate(() => {
+            const head = document.querySelector('#ai-config-button .title_restorable.standoutHeader:has(#import_oai_preset)');
+            const rows = () => new Set([...head.querySelectorAll(':scope > .flex-container > *')].filter(node => node.offsetParent).map(node => Math.round(node.getBoundingClientRect().top))).size;
+            // A larger font (the report): the buttons move under the name as one row, never 3 + 1.
+            const title = head.querySelector('strong');
+            title.style.fontSize = '22px';
+            const bigRows = rows();
+            title.style.fontSize = '';
+            const select = document.getElementById('completion_prompt_manager_footer_append_prompt');
+            const footer = select?.parentElement;
+            const button = footer?.querySelector(':scope > a');
+            return {
+                rows: rows(),
+                bigRows,
+                select: select && Math.round(select.getBoundingClientRect().width),
+                footer: footer && Math.round(footer.getBoundingClientRect().width),
+                below: !!(select && button) && select.getBoundingClientRect().top >= button.getBoundingClientRect().bottom - 1,
+            };
+        });
+        if (presets.rows !== 1 || presets.bigRows !== 1) throw new Error(`preset buttons wrap: ${JSON.stringify(presets)}`);
+        if (presets.select !== null && (presets.select < presets.footer * 0.8 || !presets.below)) throw new Error(`prompt dropdown is squeezed: ${JSON.stringify(presets)}`);
+        // Backgrounds: Global and Chat never sit under the select, − and + buttons.
+        await tab.locator('.stmui-tab[data-tab="backgrounds-button"]').click();
+        await tab.waitForFunction(() => document.documentElement.dataset.stmuiPage === 'backgrounds-button');
+        await tab.waitForTimeout(800);
+        const bg = await tab.evaluate(() => {
+            const boxes = selector => [...document.querySelectorAll(selector)].filter(node => node.offsetParent).map(node => node.getBoundingClientRect());
+            const tabs = boxes('#bg_tabs .bg_tab_button');
+            const buttons = boxes('#bg_tabs .heading-controls > button');
+            const hit = tabs.some(a => buttons.some(b => b.left < a.right - 1 && a.left < b.right - 1 && b.top < a.bottom - 1 && a.top < b.bottom - 1));
+            return { hit, small: buttons.filter(b => b.width < 44 || b.height < 44).length };
+        });
+        if (bg.hit || bg.small) throw new Error(`Backgrounds tab row: ${JSON.stringify(bg)}`);
+        await tab.keyboard.press('Escape');
+        // Moonlit Echoes' swipe rules (a stand-in with the same declarations): ‹ stays against the rest of the pill.
+        await tab.evaluate(async () => {
+            const context = SillyTavern.getContext();
+            if (context.characterId === undefined && !context.groupId) await context.selectCharacterById('0');
+        });
+        await tab.waitForTimeout(1500);
+        const pill = await tab.evaluate(async () => {
+            const style = document.createElement('style');
+            style.id = 'test-moonlit-swipes';
+            style.textContent = '#chat .swipe_left { position: absolute; right: calc(1em + 100px) !important; left: auto; bottom: 20px; }'
+                + ' #chat .last_mes .swipe_left, #chat .last_mes .swipe_right { transform: scale(0.8); }'
+                + ' #chat .last_mes .swipes-counter { width: 60px; letter-spacing: 1.5px; } .swipes-counter { margin-right: 10px; }';
+            document.head.append(style);
+            // Three versions of the last reply in memory only (never saved), so ‹ shows.
+            const last = SillyTavern.getContext().chat.at(-1);
+            const before = { swipes: last.swipes, id: last.swipe_id, info: last.swipe_info };
+            last.swipes = [last.mes, `${last.mes} (2)`, `${last.mes} (3)`];
+            last.swipe_id = 0;
+            last.swipe_info = last.swipes.map(() => ({}));
+            const script = await import('/script.js');
+            script.refreshSwipeButtons(true, false);
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const mes = document.querySelector('#chat .mes.last_mes');
+            const left = mes.querySelector('.swipe_left').getBoundingClientRect();
+            const right = mes.querySelector('.swipeRightBlock').getBoundingClientRect();
+            const out = { gap: Math.round(right.left - left.right), top: Math.round(right.top - left.top), scale: getComputedStyle(mes.querySelector('.swipe_left')).transform };
+            style.remove();
+            Object.assign(last, { swipes: before.swipes, swipe_id: before.id, swipe_info: before.info });
+            script.refreshSwipeButtons(true, false);
+            return out;
+        });
+        if (Math.abs(pill.gap) > 1 || Math.abs(pill.top) > 2 || pill.scale !== 'none') throw new Error(`the swipe pill splits under Moonlit Echoes: ${JSON.stringify(pill)}`);
+    } finally {
+        if (api) {
+            await tab.evaluate(value => { const select = document.getElementById('main_api'); select.value = value; jQuery(select).trigger('change'); }, api).catch(() => {});
+            await tab.waitForTimeout(2500);
+        }
         await desk.close();
     }
 });

@@ -1,6 +1,16 @@
 /** Shown in More → What's new, and once after each update. Newest first. */
 export const CHANGES = [
     {
+        version: '2.24.1',
+        items: [
+            "On the narrowest phones (320–372px) with Guided Generations, the buttons in the message box no longer get squeezed to a sliver. The context ring steps aside there; Quick switch still shows how full the context is.",
+            "In Arabic, the arrows in More and other lists point the way you read, and the chat's name sits next to its picture in the top bar.",
+            "On a computer, Escape closes Search this chat and an open lorebook entry before the page, and Enter in Search everything (Ctrl+K) opens the first result. In Search this chat, Shift+Enter goes to the newer match.",
+            "Presets and Backgrounds, tidied (thanks to a report on Reddit): the prompt dropdown has its own full-width line under its buttons, so you can read the prompt you picked; preset buttons no longer wrap 3 + 1 beside the name; and on a 1366 × 768 screen the Backgrounds buttons no longer cover the Chat tab. With Moonlit Echoes on, the swipe arrows stay together in one pill.",
+            "Fixed: Delete message in the message menu sometimes did nothing on a slow phone. Lorebook chips have a full-size × to remove them. The Translate chat sheet now says Google Translate is asked straight from your browser.",
+        ],
+    },
+    {
         version: '2.24.0',
         items: [
             "Glass: with a chat background set, every theme turns see-through like SillyTavern's own look, only tidier. The bars, pages, menus, the message box and every message are frosted over your picture.",

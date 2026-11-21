@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.24.1
+
+A fix and polish round from a full audit and a Reddit report: nothing squeezed on 320px phones, bigger chip buttons, Arabic arrows, keyboard fixes on a computer, and a tidier Presets and Backgrounds page.
+
+### Phone
+
+- **Nothing squeezed on the narrowest phones.** On a 320–372px phone with Guided Generations installed, the floating message box has seven tools (tabs arrow, persona, ☰, wand, context ring, guide button, Send) and they did not fit: the browser squeezed persona, ☰ and the wand to about 28px wide and Send a little too, so they were hard to hit and the persona picture ran into ☰. There the context ring now leaves the row (Quick switch → Context used still shows it), and the persona button is never narrower than 44px. Wider phones, the Docked box and the desktop layout keep the ring. Found by measuring the row at 320, 360, 375, 390, 393, 412 and 430px.
+- **"Backgrounds" no longer splits as "Background / s"** on a 320px phone's More sheet: under 360px the tiles get a little more room (8px apart, 4px inside), and sheets now carry the language of their labels, so a longer translated word breaks with a hyphen where the browser can instead of mid-word.
+
+### Desktop
+
+- **Escape, one step at a time.** Escape closed the whole page instead of the layer you were in: with **Search this chat** open it did nothing, and with a lorebook entry open it closed the Lorebooks page. Now it closes the search bar first, then an open lorebook entry (unless you are typing in it), the same order as Back on a phone.
+- **Enter in Search everything** (Ctrl+K / ⌘K) opens the first result, so a few letters and Enter get you there without the mouse.
+- **Backgrounds at 1366 × 768** (reported on Reddit): the select, − and + buttons sat on top of the end of the **Chat** tab. SillyTavern places them over the end of the tab row and keeps a little room for its small buttons; at Pocket Tavern's 44px they needed three times that. They now take their own place in the row and the two tabs share what is left, on every screen size.
+
+### Both
+
+- **The prompt dropdown on Presets** (Chat Completion, reported on Reddit): the dropdown of prompts to add sat beside six buttons and was squeezed to about 100px, so the prompt you picked was unreadable. It now has its own full-width line under the buttons.
+- **Preset headers** (Chat Completion Presets and the like, reported on Reddit): when the name and its four buttons did not fit on one row (a larger font, a narrow page), the buttons wrapped three and one beside a two-line name. Now they stay one row and move under the name together.
+- **Moonlit Echoes and the swipe arrows** (reported on Reddit): with Moonlit Echoes on, the ‹ arrow sat about 100px away from the rest of the swipe pill. Moonlit places that arrow with an `!important` offset meant for its own absolute layout; Pocket Tavern now pins its pill against it (and against Moonlit's 80% arrow size and wide counter). Without Moonlit nothing changes.
+- **Lorebook chips:** the × that removes a lorebook from the active list was 40 × 35px, under the 44px minimum. The chips are 44px tall now and the × is 44px wide.
+- **Arabic (right-to-left):** the › arrows on rows in More, Quick switch and other lists did not flip, so they pointed backwards (the rule that flips them never matched the arrow). They point left now. The chat's name in the top bar was pushed to the far side, away from its picture; it now starts next to it.
+- **Fixed: Delete message** in the message menu (⋯ or a long press) waited a fixed 0.12 seconds for SillyTavern's editor before pressing its Delete. On a slow phone the editor was not there yet, so nothing happened and the message stayed open for editing. It now waits until the editor is there (up to 1.5 seconds).
+- **Translate chat:** the sheet said Google Translate runs "through your SillyTavern server", but Pocket Tavern asks Google straight from the browser (other services do go through the server). The note now says which. The README's Privacy section says so too.
+- **Search this chat:** Enter goes to the next older match as before, and Shift+Enter to the next newer one.
+- **Labels:** the top bar's search button said "Find a setting" on the start screen, where it searches everything; it now says so. Lorebook picker labels that were always English ("Remove …", "+3 more", "2 of 5 selected", "Selected: …") are translated.
+- **Cleanup:** switching Pocket Tavern's character pages, chat list helpers or lorebook cards off and on again added another copy of a listener each time. They are added once now.
+- `tests/phone.mjs` has three new steps: a 320px phone where every message box tool must stay 44px, lorebook chip ×, Arabic arrows and the translate note; on the desktop layout, Escape closing Search this chat and Enter in Search everything opening a setting; and at 1366 × 768, preset buttons on one row (also with a larger font), the prompt dropdown on its own line, the Backgrounds tabs clear of their 44px buttons, and the swipe pill in one piece under Moonlit Echoes' swipe rules.
+
 ## 2.24.0
 
 Glass over your chat background, SillyTavern themes that look like themselves, and a compact desktop.

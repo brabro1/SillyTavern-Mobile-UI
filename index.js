@@ -17,7 +17,7 @@
 
 import { svgIcon, iconCss, iconUrl } from './icons.js';
 import { THEMES, findTheme, themeCss, themeFromSillyTavern, ST_THEME_COLORS } from './themes.js';
-import { t, setLocale, isRtl } from './i18n.js';
+import { t, setLocale, isRtl, currentLang } from './i18n.js';
 import './locales.js';
 import { CHANGES, VERSION } from './changelog.js';
 
@@ -306,6 +306,22 @@ function highlight(text, query) {
     return nodes;
 }
 
+/**
+ * Adds a listener to one of SillyTavern's elements only once, however often the
+ * feature that needs it is switched off and on again. The handlers check whether
+ * their feature is on, so a listener left behind while it is off does nothing.
+ */
+const wiredOnce = new WeakMap();
+
+function wireOnce(element, type, handler) {
+    if (!element) return;
+    const types = wiredOnce.get(element) ?? new Set();
+    if (types.has(type)) return;
+    types.add(type);
+    wiredOnce.set(element, types);
+    element.addEventListener(type, handler);
+}
+
 /** Keeps SillyTavern's "close drawers on outside tap" handler away from our own chrome. */
 function shieldFromDrawerAutoClose(element) {
     for (const type of ['mousedown', 'touchstart']) {
@@ -501,7 +517,7 @@ class Picker {
                 root.append(h('button', {
                     type: 'button',
                     class: 'stmui-clear menu_button',
-                    'aria-label': `Remove ${current.text}`,
+                    'aria-label': t('Remove {name}', { name: current.text }),
                     title: 'Remove',
                     onclick: () => {
                         const none = items.find(item => item.isNone);
@@ -526,7 +542,7 @@ class Picker {
                 h('button', {
                     type: 'button',
                     class: 'stmui-chip-x',
-                    'aria-label': `Remove ${item.text}`,
+                    'aria-label': t('Remove {name}', { name: item.text }),
                     onclick: () => this.commit(item.index, false),
                 }, [icon('fa-xmark')]),
             ]));
@@ -536,7 +552,7 @@ class Picker {
                 type: 'button',
                 class: 'stmui-chip stmui-chip-more',
                 onclick: () => openSheet(this, { filter: 'selected' }),
-                text: `+${selected.length - visible.length} more`,
+                text: t('+{count} more', { count: selected.length - visible.length }),
             }));
         }
         return wrap;
@@ -848,7 +864,7 @@ class Sheet {
                     type: 'button',
                     class: 'stmui-edit',
                     title: 'Open in lorebook editor',
-                    'aria-label': `Open ${item.text} in the lorebook editor`,
+                    'aria-label': t('Open {name} in the lorebook editor', { name: item.text }),
                 }, [icon('fa-pen-to-square')]));
             }
             this.list.append(li);
@@ -865,9 +881,10 @@ class Sheet {
 
         const total = picker.realBookCount();
         const selectedCount = picker.selectedItems().length;
+        const chosen = picker.selectedItems()[0];
         this.status.textContent = picker.multi
-            ? `${selectedCount} of ${total} selected`
-            : (picker.selectedItems()[0] ? `Selected: ${picker.selectedItems()[0].text}` : 'Nothing selected');
+            ? t('{count} of {total} selected', { count: selectedCount, total })
+            : (chosen ? t('Selected: {name}', { name: chosen.text }) : t('Nothing selected'));
 
         if (resetScroll) this.list.scrollTop = 0;
         else this.list.scrollTop = previousScroll;
@@ -949,6 +966,8 @@ function showSheet(instance) {
     // The viewport follower runs all the time Pocket Tavern is on (see applyState);
     // here the new sheet only needs to know whether the screen is short.
     sheet.dialog.classList.toggle('stmui-compact', (window.visualViewport?.height ?? window.innerHeight) < COMPACT_BELOW);
+    // The language of its labels, so long words (a tile name on a narrow phone) break with a hyphen.
+    sheet.dialog.lang = currentLang();
     fitSheetToViewport();
     document.body.append(sheet.dialog);
     sheet.dialog.showModal();
@@ -1863,6 +1882,12 @@ class Shell {
         this.tabbar.style.setProperty('--stmui-tab-y', `${button.offsetTop + iconBox.offsetTop}px`);
     }
 
+    setSearchLabel(label) {
+        if (this.search.title === label) return;
+        this.search.title = label;
+        this.search.setAttribute('aria-label', label);
+    }
+
     /** Called when SillyTavern switches chats. */
     onChatChanged() {
         if (this.jumpAt && Date.now() - this.jumpAt < 4000 && currentPageId() === 'rightNavHolder') closePages();
@@ -1978,6 +2003,7 @@ class Shell {
                 headIcon = section.icon;
             }
             this.search.hidden = !SEARCH_PAGES.includes(pageId) || !!editorMode;
+            this.setSearchLabel(t('Find a setting'));
             this.quick.hidden = true;
             this.avatar.replaceChildren(ui(headIcon));
             this.avatar.classList.add('stmui-ab-avatar-icon');
@@ -1991,6 +2017,8 @@ class Shell {
         this.appbar.classList.remove('stmui-ab-page');
         root.classList.remove('stmui-prompt-editor');
         this.search.hidden = true;
+        // Outside a page the same button searches everything (the start screen shows it).
+        this.setSearchLabel(t('Search everything'));
         this.quick.hidden = false;
         this.who.disabled = false;
         const context = ctx();
@@ -3217,9 +3245,15 @@ function openMessageMenu(message) {
                     class: 'stmui-menu-row stmui-menu-row-danger',
                     onclick: () => {
                         closeSheet(true);
-                        // SillyTavern deletes from edit mode and asks to confirm first.
+                        // SillyTavern deletes from edit mode and asks to confirm first. The editor
+                        // can take a moment to appear on a slow phone, so wait for its Delete.
                         edit.click();
-                        setTimeout(() => message.querySelector('.mes_edit_delete')?.click(), 120);
+                        const pressDelete = (tries = 0) => {
+                            const button = message.querySelector('.mes_edit_delete');
+                            if (button) button.click();
+                            else if (tries < 30 && message.isConnected) setTimeout(() => pressDelete(tries + 1), 50);
+                        };
+                        setTimeout(pressDelete, 60);
                     },
                 }, [ui('trash', 'stmui-menu-row-icon'), h('span', { text: 'Delete message' })]));
             }
@@ -4081,7 +4115,13 @@ function openTranslateSheet() {
             const provider = translateSettings()?.provider ?? 'google';
             const providerName = { google: 'Google Translate', deepl: 'DeepL', bing: 'Bing', yandex: 'Yandex', libre: 'LibreTranslate', lingva: 'Lingva', deeplx: 'DeepLX', oneringtranslator: 'OneRingTranslator' }[provider] ?? provider;
             body.append(h('p', { class: 'stmui-menu-foot', text: t('Tip: tap the translate button to switch between your language and the original. Hold it to open this list.') }));
-            body.append(h('p', { class: 'stmui-menu-foot', text: t('Uses {provider} through your SillyTavern server. You can change it in Extensions → Chat Translation.', { provider: providerName }) }));
+            // Google is asked straight from this browser (see GOOGLE_URL); the others go through SillyTavern's server.
+            body.append(h('p', {
+                class: 'stmui-menu-foot',
+                text: provider === 'google'
+                    ? t('Uses Google Translate, asked straight from this browser. You can pick another service in Extensions → Chat Translation.')
+                    : t('Uses {provider} through your SillyTavern server. You can change it in Extensions → Chat Translation.', { provider: providerName }),
+            }));
         },
     }));
 }
@@ -4179,7 +4219,8 @@ function syncCharacterPage() {
                 }, 150);
             });
             chars.listObserver.observe(list, { childList: true });
-            document.getElementById('character_sort_order')?.addEventListener('change', () => setTimeout(buildAzStrip, 300));
+            // Once: the observer is made again each time the character pages are switched back on.
+            wireOnce(document.getElementById('character_sort_order'), 'change', () => setTimeout(buildAzStrip, 300));
         }
     }
     buildAzStrip();
@@ -4857,7 +4898,7 @@ function syncChatHistory() {
             chatList.timer = window.setTimeout(groupChatHistory, 80);
         });
         chatList.observer.observe(list, { childList: true, subtree: false, attributes: true, attributeFilter: ['style'], attributeOldValue: false });
-        document.getElementById('select_chat_search')?.addEventListener('input', () => {
+        wireOnce(document.getElementById('select_chat_search'), 'input', () => {
             window.clearTimeout(chatList.timer);
             chatList.timer = window.setTimeout(groupChatHistory, 350);
         });
@@ -4998,6 +5039,12 @@ function openGlobalSearch() {
                 results.replaceChildren(...(blocks.length ? blocks : [h('p', { class: 'stmui-menu-foot', text: t('Nothing matches that.') })]));
             };
             input.addEventListener('input', render);
+            // Enter opens the first result, so Ctrl+K, a few letters and Enter gets you there.
+            input.addEventListener('keydown', event => {
+                if (event.key !== 'Enter' || event.isComposing) return;
+                event.preventDefault();
+                results.querySelector('.stmui-menu-row')?.click();
+            });
             load.then(() => {
                 if (input.isConnected) render();
             });
@@ -6162,9 +6209,13 @@ function openChatFinder() {
         timer = window.setTimeout(runChatSearch, 250);
     });
     input.addEventListener('keydown', event => {
+        // Enter: the next older match; Shift+Enter: the next newer one; Escape closes the bar.
         if (event.key === 'Enter') {
             event.preventDefault();
-            showFinderHit(finder.index - 1);
+            showFinderHit(finder.index + (event.shiftKey ? 1 : -1));
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            closeChatFinder();
         }
     });
     const button = (iconName, label, onclick) => h('button', { type: 'button', class: 'stmui-find-btn', 'aria-label': label, title: label, onclick }, [ui(iconName)]);
@@ -6709,8 +6760,9 @@ function syncLoreEntries() {
             lore.timer = window.setTimeout(decorateEntries, 120);
         });
         lore.observer.observe(list, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
-        list.addEventListener('input', event => {
-            if (event.target.matches?.('textarea[name="key"]')) {
+        wireOnce(list, 'input', event => {
+            // Entry cards may have been switched off since (the observer goes with them).
+            if (lore.observer && event.target.matches?.('textarea[name="key"]')) {
                 window.clearTimeout(lore.timer);
                 lore.timer = window.setTimeout(decorateEntries, 300);
             }
@@ -8601,8 +8653,21 @@ function onWideKeyDown(event) {
         event.preventDefault();
         return;
     }
+    const typing = isTypingField(document.activeElement);
+    // The same order as Back: the chat search bar, then an open lorebook entry, before the page.
+    if (chatFinderOpen() && (!typing || finder.bar.contains(document.activeElement))) {
+        closeChatFinder();
+        event.preventDefault();
+        return;
+    }
+    // Typing in the entry keeps Escape for the text box.
+    if (!typing && openLoreEntry()) {
+        closeLoreEntry();
+        event.preventDefault();
+        return;
+    }
     // Typing in a tool panel (Author's Note) keeps Escape for the text box.
-    if (!isTypingField(document.activeElement) && closeToolPanel()) {
+    if (!typing && closeToolPanel()) {
         event.preventDefault();
         return;
     }

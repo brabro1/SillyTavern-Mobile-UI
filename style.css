@@ -238,6 +238,8 @@ html.stmui-glass.stmui-chat body:not(.bubblechat):not(.documentstyle, .echostyle
     align-items: stretch;
     max-width: 100%;
     min-width: 0;
+    /* 44px, so its × is a full tap target. */
+    min-height: 44px;
     border: 1px solid var(--stmui-line);
     border-radius: 999px;
     background: var(--stmui-raised-2);
@@ -245,7 +247,14 @@ html.stmui-glass.stmui-chat body:not(.bubblechat):not(.documentstyle, .echostyle
     overflow: hidden;
 }
 
+/* The outline is drawn inside (a hairline, not a shadow), so the × fills all 44px instead of 42px within a border. */
+.stmui-chip:not(.stmui-chip-more) {
+    border: 0;
+    box-shadow: inset 0 0 0 1px var(--stmui-line);
+}
+
 .stmui-chip-text {
+    align-self: center;
     min-width: 0;
     padding: 8px 4px 8px 14px;
     line-height: 1.25;
@@ -254,7 +263,7 @@ html.stmui-glass.stmui-chat body:not(.bubblechat):not(.documentstyle, .echostyle
 
 .stmui-chip-x {
     flex: 0 0 auto;
-    width: 40px;
+    width: 44px;
     border: 0;
     background: transparent;
     color: inherit;
@@ -267,6 +276,7 @@ html.stmui-glass.stmui-chat body:not(.bubblechat):not(.documentstyle, .echostyle
 }
 
 .stmui-chip-more {
+    align-items: center;
     padding: 8px 14px;
     border-style: dashed;
     font: inherit;
@@ -838,7 +848,20 @@ input[type='search'].stmui-search-input::-webkit-search-cancel-button {
     font-weight: 600;
     font-size: 0.92em;
     line-height: 1.2;
-    overflow-wrap: anywhere;
+    /* A word too long for a narrow tile ("Backgrounds" at 320px) breaks with a hyphen, not mid-word (the sheet has a lang). */
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* The narrowest phones: a little more room per tile, so "Backgrounds" fits on one line. */
+@media (max-width: 359px) {
+    html:not(.stmui-wide) .stmui-tiles {
+        gap: 8px;
+    }
+
+    html:not(.stmui-wide) .stmui-tile {
+        padding-inline: 4px;
+    }
 }
 
 .stmui-tile-note {
@@ -1138,7 +1161,8 @@ html.stmui-shell .stmui-appbar {
     background: transparent;
     color: inherit;
     font: inherit;
-    text-align: left;
+    /* Start, not left: in Arabic the name sits next to its picture. */
+    text-align: start;
     cursor: pointer;
 }
 
@@ -1847,6 +1871,17 @@ html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right {
 html.stmui-chat:not(.stmui-editing) #chat .mes > .swipe_left,
 html.stmui-chat:not(.stmui-editing) #chat .mes > .swipeRightBlock .swipe_right {
     position: relative;
+    /* Moonlit Echoes scales the arrows to 80%; the :active nudges below still win. */
+    transform: none;
+}
+
+/*
+ * Moonlit Echoes places ‹ with `right: calc(… + 100px) !important` (it draws the arrows
+ * absolutely). In Pocket Tavern's pill the arrow is in the row, so that offset pushed
+ * it about 100px away from the rest of the pill. Pinned against it.
+ */
+html.stmui-chat:not(.stmui-editing) body:not(.bubblechat):not(.documentstyle, .echostyle, .whisperstyle, .hushstyle, .ripplestyle, .tidestyle) #chat .mes > .swipe_left {
+    inset: auto !important;
 }
 
 html.stmui-chat:not(.stmui-editing) body #chat .mes > .swipeRightBlock .swipe_right {
@@ -1866,9 +1901,12 @@ html.stmui-chat:not(.stmui-editing) #chat .mes > :is(.swipe_left, .swipeRightBlo
 
 html.stmui-chat:not(.stmui-editing) #chat .mes .swipes-counter {
     align-items: center;
+    /* Moonlit Echoes makes it 60px wide with spaced letters, and adds !important margins on older messages. */
+    width: auto;
     min-width: 30px;
     height: auto;
-    margin: 0;
+    margin: 0 !important;
+    letter-spacing: normal;
     padding: 0 2px;
     background: transparent;
     color: var(--stmui-muted);
@@ -3198,6 +3236,11 @@ html.stmui-on .mes_text video {
     padding-right: 3px;
 }
 
+/* Never squeezed under its picture, and never narrower than a 44px tap target. */
+.stmui-persona-chip {
+    min-width: 44px;
+}
+
 .stmui-ctx-ring {
     position: relative;
     display: inline-grid;
@@ -3739,6 +3782,37 @@ html.stmui-touch .drawer-content .standoutHeader {
     border-radius: 16px;
     background: var(--stmui-raised) !important;
     box-shadow: none !important;
+}
+
+/*
+ * A preset header (Chat Completion Presets and the like): the name and its buttons
+ * share a row while they fit. When they don't (a larger font, a narrow page), the
+ * buttons move under the name as one row, instead of wrapping 3 + 1 beside it.
+ */
+html.stmui-touch .drawer-content .title_restorable.standoutHeader {
+    flex-wrap: wrap;
+    gap: 8px 4px;
+}
+
+html.stmui-touch .drawer-content .title_restorable.standoutHeader > .flex-container {
+    flex-wrap: nowrap;
+}
+
+/*
+ * The prompt list's footer: the dropdown of prompts to add sat beside six buttons
+ * and was squeezed to about 100px, too narrow to read a prompt's name. It gets its
+ * own full-width line under the buttons.
+ */
+html.stmui-touch #completion_prompt_manager .completion_prompt_manager_footer {
+    flex-wrap: wrap;
+    row-gap: 8px;
+}
+
+html.stmui-touch #completion_prompt_manager_footer_append_prompt {
+    flex: 1 1 100%;
+    order: 1;
+    min-width: 0;
+    max-width: none;
 }
 
 /* -- Characters page tidy-up ---------------------------------------------- */
@@ -6322,7 +6396,8 @@ html.stmui-rtl .stmui-tab-indicator {
     transform: translateX(calc(var(--stmui-tab-index, 0) * -100%));
 }
 
-html.stmui-rtl :is(.stmui-ab-back, .stmui-menu-row-go) .stmui-svg,
+/* The row chevron is the svg itself (class stmui-menu-row-go); the back arrow is inside its button. */
+html.stmui-rtl .stmui-svg.stmui-menu-row-go,
 html.stmui-rtl .stmui-ab-back .stmui-svg {
     transform: scaleX(-1);
 }
@@ -9436,6 +9511,22 @@ html.stmui-chat.stmui-gg .stmui-gg-btn {
     }
 }
 
+/*
+ * The narrowest phones (320–372px) with the guide button: seven 44px tools do not fit
+ * in the floating box's row, and the browser squeezed persona, ☰ and the wand to about
+ * 28px. The context ring leaves the row there; Quick switch → Context used still shows it.
+ */
+@media (max-width: 372px) {
+    html.stmui-chat.stmui-gg:not(.stmui-wide):not(.stmui-docked) #rightSendForm .stmui-ctx-ring {
+        display: none;
+    }
+
+    /* Its 5px of side margin was the last pixel ☰ and the wand needed; the row's gap still separates it. */
+    html.stmui-chat.stmui-gg:not(.stmui-wide):not(.stmui-docked) #leftSendForm .stmui-persona-chip {
+        margin-inline: 0;
+    }
+}
+
 /* The sheet starts with what you typed: the actions use it as their instruction. */
 .stmui-gg-instruction {
     display: flex;
@@ -10132,6 +10223,42 @@ html.stmui-touch #Backgrounds .bg-header-row-1 > .menu_button_icon {
 
 html.stmui-touch #Backgrounds .bg-header-row-1 > .menu_button_icon > span {
     display: none;
+}
+
+/*
+ * Global / Chat and the select, − and + buttons. SillyTavern places the buttons over
+ * the end of the row and keeps 4em free for them; at 44px they need three times
+ * that and covered the Chat tab (a 410px desktop panel at 1366 × 768). The buttons
+ * join the row and the tabs share what is left.
+ */
+html.stmui-touch #bg_tabs .bg_tabs_list {
+    align-items: center;
+    gap: 8px;
+    padding-right: 0;
+}
+
+html.stmui-touch #bg_tabs .bg_tabs_list .bg_tab_button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+}
+
+html.stmui-touch #bg_tabs .bg_tabs_list .bg_tab_button a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+html.stmui-touch #bg_tabs .heading-controls {
+    position: static;
+    flex: 0 0 auto;
+    transform: none;
+}
+
+html.stmui-touch #bg_tabs .heading-controls > .menu_button {
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0;
 }
 
 html.stmui-touch #Backgrounds #bg_menu_content .bg_example {
